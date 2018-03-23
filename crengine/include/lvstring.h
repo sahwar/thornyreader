@@ -678,6 +678,9 @@ public:
     static const lString16 empty_str;
 
     friend class lString16Collection;
+
+    //removes UFFD (unicode questionmark) from the end of the line.
+    lString16 TrimEndQuestionChar(lString16 & str);
 };
 
 /// calculates hash for wide string

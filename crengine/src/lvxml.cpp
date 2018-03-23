@@ -1094,17 +1094,31 @@ public:
     }
 
     LVTextFileLine(LVTextFileBase* file, int maxsize)
-            : flags(0), lpos(0), rpos(0), align(la_unknown) {
+            : flags(0), lpos(0), rpos(0), align(la_unknown)
+    {
         text = file->ReadLine(maxsize, flags);
         //CRLog::debug("    line read: %s", UnicodeToUtf8(text).c_str());
-        if (!text.empty()) {
+
+        if (!text.empty())
+        {
+            if(file->Eof())
+            {
+                text = text.TrimEndQuestionChar(text);
+                //CRLog::debug("    line fixed: %s", UnicodeToUtf8(text).c_str());
+            }
+
             const lChar16* s = text.c_str();
-            for (int p = 0; *s; s++) {
-                if (*s == '\t') {
+            for (int p = 0; *s; s++)
+            {
+                if (*s == '\t')
+                {
                     p = (p + 8) % 8;
-                } else {
+                }
+                else
+                {
                     if (*s != ' ') {
-                        if (rpos == 0 && p > 0) {
+                        if (rpos == 0 && p > 0)
+                        {
                             //CRLog::debug("    lpos = %d", p);
                             lpos = (lUInt16) p;
                         }
@@ -2312,27 +2326,67 @@ lString16 LVTextFileBase::ReadLine(int maxLineSize, lUInt32& flags) {
     res.reserve(80);
     //FillBuffer( maxLineSize*3 );
     lChar16 ch = 0;
-    for (;;) {
-        if (eof_) {
+    int debug_sanitizedsymbolcounter =0;
+    for (;;)
+    {
+        if (eof_)
+        {
             // EOF: treat as EOLN
             flags |= LINE_HAS_EOLN; // EOLN flag
             break;
         }
         ch = ReadCharFromBuffer();
-        //if ( ch==0xFEFF && fpos==0 && res.empty() ) {
-        //} else 
-        if (ch != '\r' && ch != '\n') {
-            res.append(1, ch);
-            if (ch == ' ' || ch == '\t') {
+        /*ch== L'\u00B1' ||*/
+        //lString16 temp;
+        //temp.append(1, ch);
+        //res.append(1, ch);
+        //CRLog::trace("%s %08x %d", UnicodeToUtf8(temp).c_str(), ch, ch);
+        if (ch != '\r' && ch != '\n')
+        {
+            if ( ch<=32 )
+            {
+                switch (ch)
+                {
+                    case ' ':
+                    case '\t':
+                    case 10:        //cr
+                    case 13:        //lf
+                    case 12:
+                        //case 9:
+                    case 8:
+                    case 7:
+                    case 30:
+                    case 0x14:
+                    case 0x15:
+
+                        res.append(1, ch);
+                        break;
+                    default:  //case 0: here
+                        CRLog::trace("Found illegal character. Replacing with u/FFFD.");
+                        res.append(1, L'\ufffd');
+                        debug_sanitizedsymbolcounter++;
+                }
+            }
+
+            else
+            {
+                res.append(1, ch);
+            }
+            if (ch == ' ' || ch == '\t')
+            {
                 if (res.length() >= maxLineSize) {
                     break;
                 }
             }
-        } else {
+        }
+        else
+        {
             // eoln
-            if (!eof_) {
+            if (!eof_)
+            {
                 lChar16 ch2 = PeekCharFromBuffer();
-                if (ch2 != ch && (ch2 == '\r' || ch2 == '\n')) {
+                if (ch2 != ch && (ch2 == '\r' || ch2 == '\n'))
+                {
                     ReadCharFromBuffer();
                 }
             }
@@ -2340,39 +2394,47 @@ lString16 LVTextFileBase::ReadLine(int maxLineSize, lUInt32& flags) {
             break;
         }
     }
-    if (!res.empty()) {
-        int firstNs = 0;
+    if (!res.empty())
+    {int firstNs = 0;
         lChar16 ch = 0;
-        for (;; firstNs++) {
-            ch = res[firstNs];
+        for (;; firstNs++)
+        {ch = res[firstNs];
             if (!ch) {
                 break;
             }
-            if (ch != ' ' && ch != '\t') {
+            if (ch != ' ' && ch != '\t')
+            {
                 break;
             }
         }
-        if (ch == 0x14) {
-            if (res[res.length() - 1] == 0x15) {
+        if (ch == 0x14)
+        {
+            if (res[res.length() - 1] == 0x15)
+            {
                 // LIB.RU header flags
                 res.erase(res.length() - 1, 1);
                 res.erase(0, firstNs + 1);
                 flags |= LINE_IS_HEADER;
             }
-        } else if (ch == '-' || ch == '*' || ch == '=') {
-            bool sameChars = true;
-            for (int i = firstNs; i < res.length(); i++) {
-                lChar16 ch2 = res[i];
-                if (ch2 != ' ' && ch2 != '\t' && ch2 != ch) {
-                    sameChars = false;
-                    break;
-                }
-            }
-            if (sameChars) {
-                res = "* * *"; // hline
-                flags |= LINE_IS_HEADER;
-            }
         }
+        else
+        {
+            if (ch == '-' || ch == '*' || ch == '=')
+            {
+                bool sameChars = true;
+                for (int i = firstNs; i < res.length(); i++)
+                {
+                    lChar16 ch2 = res[i];
+                    if (ch2 != ' ' && ch2 != '\t' && ch2 != ch) {
+                        sameChars = false;
+                        break;
+                    }
+                }
+                if (sameChars) {
+                    res = "* * *"; // hline
+                    flags |= LINE_IS_HEADER;
+                }
+            }}
     }
     res.pack();
     return res;
@@ -2428,10 +2490,10 @@ bool LVTextParser::CheckFormat()
                 }
             }
         }
-        if ( illegal_char_count==0 && (space_count>=charsDecoded/16 || crlf_count>0) )
+        //if ( illegal_char_count==0 && (space_count>=charsDecoded/16 || crlf_count>0) )
             res = true;
-        if ( illegal_char_count>0 )
-            CRLog::error("illegal characters detected: count=%d", illegal_char_count );
+        //if ( illegal_char_count>0 )
+        //    CRLog::error("illegal characters detected: count=%d", illegal_char_count );
     }
     delete[] chbuf;
     Reset();

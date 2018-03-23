@@ -170,7 +170,7 @@ public:
     /// returns document
     CrDom* GetCrDom() { return cr_dom_; }
     /// draws scaled image into buffer, clear background according to current settings
-    bool DrawImageTo(LVDrawBuf* buf, LVImageSourceRef img, int x, int y, int dx, int dy);
+//    bool DrawImageTo(LVDrawBuf* buf, LVImageSourceRef img, int x, int y, int dx, int dy);
     /// draws page to image buffer
     void DrawPageTo(LVDrawBuf* buf, LVRendPageInfo& page, lvRect* pageRect);
     /// draws coverpage to image buffer

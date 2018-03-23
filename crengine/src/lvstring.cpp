@@ -4190,6 +4190,19 @@ bool lString16::startsWith(const lChar8 * substring) const
     return true;
 }
 
+//removes UFFD (unicode questionmark) from the end of the line.
+lString16 lString16::TrimEndQuestionChar(lString16 & str){
+    lString16 uffd;
+    uffd.append(1,L'\ufffd');
+    lString16 empty;
+    empty.append(1,' ');
+    if(str.endsWith(uffd))
+    {
+        str.replace(str.length()-1,str.length(),empty);
+    }
+    //CRLog::debug("TrimEndQUestionChar: %s", UnicodeToUtf8(str).c_str());
+    return str;
+}
 
 
 /// serialization/deserialization buffer

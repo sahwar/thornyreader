@@ -1554,7 +1554,7 @@ bool CrDom::setRenderProps(int width, int height, font_ref_t def_font, int inter
     //TODO pass here image zoom factor based on device dpi
     // mode: 0=disabled, 1=integer scaling factors, 2=free scaling
     // scale: 0=auto based on font size, 1=no zoom, 2=scale up to *2, 3=scale up to *3
-    if (_imgScalingOptions.zoom_in_inline.mode != DEF_IMAGE_SCALE_ZOOM_IN_MODE) {
+ /*   if (_imgScalingOptions.zoom_in_inline.mode != DEF_IMAGE_SCALE_ZOOM_IN_MODE) {
         _imgScalingOptions.zoom_in_inline.mode = (img_scaling_mode_t) DEF_IMAGE_SCALE_ZOOM_IN_MODE;
         changed = true;
     }
@@ -1586,7 +1586,7 @@ bool CrDom::setRenderProps(int width, int height, font_ref_t def_font, int inter
     if (_imgScalingOptions.zoom_out_block.max_scale != DEF_IMAGE_SCALE_ZOOM_OUT_SCALE) {
         _imgScalingOptions.zoom_out_block.max_scale = DEF_IMAGE_SCALE_ZOOM_OUT_SCALE;
         changed = true;
-    }
+    }*/
 
     css_style_ref_t s( new css_style_rec_t );
     s->display = css_d_block;
@@ -2320,10 +2320,10 @@ void ldomNode::initNodeRendMethod()
 //        CRLog::error("Invalid parent->child relation for nodes %d->%d",
 //              getParentNode()->getDataIndex(), getDataIndex() );
 //    }
-//    if ( getNodeName() == "image" ) {
-//        CRLog::trace("Init log for image");
-//    }
-
+/*if ( getNodeName() == "image" ) {
+        CRLog::trace("Init log for image");
+    }
+*/
     int d = getStyle()->display;
 
     if ( hasInvisibleParent(this) ) {
@@ -3020,8 +3020,10 @@ img_scaling_option_t::img_scaling_option_t()
 {
     // Mode: 0=disabled, 1=integer scaling factors, 2=free scaling
     // Scale: 0=auto based on font size, 1=no zoom, 2=scale up to *2, 3=scale up to *3
-    mode = IMG_NO_SCALE; //IMG_FREE_SCALING
-    max_scale = 1;
+    mode = IMG_FREE_SCALING;
+    max_scale = 3;
+    //mode = IMG_NO_SCALE; //IMG_FREE_SCALING // IMG_INTEGER_SCALING
+    //max_scale = 1;
 }
 
 img_scaling_options_t::img_scaling_options_t()

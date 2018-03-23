@@ -861,7 +861,7 @@ void LVDocView::DrawBackgroundTo(LVDrawBuf& buf, int offsetX, int offsetY, int a
     */
 }
 
-bool LVDocView::DrawImageTo(LVDrawBuf* buf, LVImageSourceRef img, int x, int y, int dx, int dy)
+/*bool LVDocView::DrawImageTo(LVDrawBuf* buf, LVImageSourceRef img, int x, int y, int dx, int dy)
 {
     if (img.isNull() || !buf)
         return false;
@@ -870,7 +870,7 @@ bool LVDocView::DrawImageTo(LVDrawBuf* buf, LVImageSourceRef img, int x, int y, 
     // draw image
     buf->Draw(img, x, y, dx, dy, true);
     return true;
-}
+}*/
 
 /// draw current page to specified buffer
 void LVDocView::Draw(LVDrawBuf& buf, bool auto_resize)

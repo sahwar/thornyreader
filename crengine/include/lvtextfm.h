@@ -264,38 +264,38 @@ public:
     void setHighlightOptions(text_highlight_options_t * options);
 
     void Clear()
-    { 
+    {
         lUInt16 width = m_pbuffer->width;
         lvtextFreeFormatter( m_pbuffer );
         m_pbuffer = lvtextAllocFormatter( width );
     }
 
     void AddSourceObject(
-                lUInt16         flags,    /* flags */
-                lUInt8          interval, /* interline space, *16 (16=single, 32=double) */
-                lUInt16         margin,   /* first line margin */
-                void *          object,    /* pointer to custom object */
-                lInt8           letter_spacing=0
-         );
+            lUInt16         flags,    /* flags */
+            lUInt8          interval, /* interline space, *16 (16=single, 32=double) */
+            lUInt16         margin,   /* first line margin */
+            void *          object,    /* pointer to custom object */
+            lInt8           letter_spacing=0
+    );
 
     void AddSourceLine(
-           const lChar16 * text,        /* pointer to unicode text string */
-           lUInt32         len,         /* number of chars in text, 0 for auto(strlen) */
-           lUInt32         color,       /* text color */
-           lUInt32         bgcolor,     /* background color */
-           LVFont          * font,        /* font to draw string */
-           lUInt32         flags=LTEXT_ALIGN_LEFT|LTEXT_FLAG_OWNTEXT,
-           lUInt8          interval=16, /* interline space, *16 (16=single, 32=double) */
-           lUInt16         margin=0,    /* first line margin */
-           void *          object=NULL,
-           lUInt32         offset=0,
-           lInt8           letter_spacing=0
-        )
+            const lChar16 * text,        /* pointer to unicode text string */
+            lUInt32         len,         /* number of chars in text, 0 for auto(strlen) */
+            lUInt32         color,       /* text color */
+            lUInt32         bgcolor,     /* background color */
+            LVFont          * font,        /* font to draw string */
+            lUInt32         flags=LTEXT_ALIGN_LEFT|LTEXT_FLAG_OWNTEXT,
+            lUInt8          interval=16, /* interline space, *16 (16=single, 32=double) */
+            lUInt16         margin=0,    /* first line margin */
+            void *          object=NULL,
+            lUInt32         offset=0,
+            lInt8           letter_spacing=0
+    )
     {
-        lvtextAddSourceLine(m_pbuffer, 
-            font,  //font->GetHandle()
-            text, len, color, bgcolor, 
-            flags, interval, margin, object, (lUInt16)offset, letter_spacing );
+        lvtextAddSourceLine(m_pbuffer,
+                            font,  //font->GetHandle()
+                            text, len, color, bgcolor,
+                            flags, interval, margin, object, (lUInt16)offset, letter_spacing );
     }
 
     lUInt32 Format(lUInt16 width, lUInt16 page_height);
