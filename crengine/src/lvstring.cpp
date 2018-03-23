@@ -4194,11 +4194,9 @@ bool lString16::startsWith(const lChar8 * substring) const
 lString16 lString16::TrimEndQuestionChar(lString16 & str){
     lString16 uffd;
     uffd.append(1,L'\ufffd');
-    lString16 empty;
-    empty.append(1,' ');
-    if(str.endsWith(uffd))
+        if(str.endsWith(uffd))
     {
-        str.replace(str.length()-1,str.length(),empty);
+        str = lString16(str,0,str.length()-1);
     }
     //CRLog::debug("TrimEndQUestionChar: %s", UnicodeToUtf8(str).c_str());
     return str;
