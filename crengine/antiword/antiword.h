@@ -702,7 +702,7 @@ extern BOOL	is_locale_utf8(void);
 #endif /* !__riscos */
 /* word2text.c */
 extern BOOL	bOutputContainsText(const output_type *);
-extern BOOL	bWordDecryptor(FILE *, long, diagram_type *);
+extern BOOL	bWordDecryptor(FILE *, long, diagram_type *, int need_coverpage);
 extern output_type	*pHdrFtrDecryptor(FILE *, ULONG, ULONG);
 extern char		*szFootnoteDecryptor(FILE *, ULONG, ULONG);
 /* worddos.c */

@@ -8,7 +8,7 @@
 // MS WORD format support using AntiWord library
 bool DetectWordFormat(LVStreamRef stream);
 
-bool ImportWordDocument(LVStreamRef stream, CrDom* dom);
+bool ImportWordDocument(LVStreamRef stream, CrDom* dom, bool need_coverpage);
 
 #endif // ENABLE_ANTIWORD==1
 

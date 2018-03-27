@@ -736,7 +736,7 @@ bool DetectWordFormat(LVStreamRef stream)
     return true;
 }
 
-bool ImportWordDocument(LVStreamRef stream,	CrDom* m_doc)
+bool ImportWordDocument(LVStreamRef stream,	CrDom* m_doc, bool need_coverpage)
 {
     AntiwordStreamGuard file(stream);
 
@@ -787,7 +787,11 @@ bool ImportWordDocument(LVStreamRef stream,	CrDom* m_doc)
         return false;
     }
 
-    bResult = bWordDecryptor(file, lFilesize, pDiag);
+    if(need_coverpage)
+    {bResult = bWordDecryptor(file, lFilesize, pDiag,1);}
+    else
+    {bResult = bWordDecryptor(file, lFilesize, pDiag,0);}
+    CRLog::trace("Read word doc");
     vDestroyDiagram(pDiag);
 
     doc = NULL;

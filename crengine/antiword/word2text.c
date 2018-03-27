@@ -641,7 +641,7 @@ lGetWidthMax(int iParagraphBreak)
  * returns TRUE when succesful, otherwise FALSE
  */
 BOOL
-bWordDecryptor(FILE *pFile, long lFilesize, diagram_type *pDiag)
+bWordDecryptor(FILE *pFile, long lFilesize, diagram_type *pDiag, int need_coverpage)
 {
 	imagedata_type	tImage;
 	const style_block_type	*pStyleTmp;
@@ -667,6 +667,7 @@ bWordDecryptor(FILE *pFile, long lFilesize, diagram_type *pDiag)
 	fail(pFile == NULL || lFilesize <= 0 || pDiag == NULL);
 
 	TRACE_MSG("bWordDecryptor");
+
 
 	iWordVersion = iInitDocument(pFile, lFilesize);
 	if (iWordVersion < 0) {
@@ -758,82 +759,112 @@ bWordDecryptor(FILE *pFile, long lFilesize, diagram_type *pDiag)
 	uiFootnoteNumber = 0;
 	uiEndnoteNumber = 0;
 	eListID = text_list;
-	for(;;) {
+	int fragments_counter=0;
+
+#include <android/log.h>
+	//need_coverpage=1; debug
+	for(;;)
+	{
+		if(need_coverpage==1)
+		{
+			if(fragments_counter>=4000) //TODO подтянуть сюда дефайн FIRSTPAGE_BLOCKS_MAX вместо 4000
+			{
+				break;
+			}
+		}
+		fragments_counter++;
 		ulChar = ulGetChar(pFile, eListID);
-		if (ulChar == (ULONG)EOF) {
-			if (bOutputContainsText(pAnchor)) {
+		if (ulChar == (ULONG) EOF)
+		{
+			if (bOutputContainsText(pAnchor))
+			{
 				OUTPUT_LINE();
-			} else {
+			}
+			else
+			{
 				RESET_LINE();
 			}
-			switch (eListID) {
-			case text_list:
-				if (tOptions.eConversionType !=
-							conversion_xml) {
-					eListID = footnote_list;
-					if (uiFootnoteNumber != 0) {
+			switch (eListID)
+			{
+				case text_list:
+					if (tOptions.eConversionType != conversion_xml)
+					{
+						eListID = footnote_list;
+						if (uiFootnoteNumber != 0)
+						{
+							vPutSeparatorLine(pAnchor);
+							OUTPUT_LINE();
+							uiFootnoteNumber = 0;
+						}
+						break;
+					}
+					/* No break or return */
+				case footnote_list:
+					eListID = endnote_list;
+					if (uiEndnoteNumber != 0)
+					{
 						vPutSeparatorLine(pAnchor);
 						OUTPUT_LINE();
-						uiFootnoteNumber = 0;
+						uiEndnoteNumber = 0;
 					}
 					break;
-				}
-				/* No break or return */
-			case footnote_list:
-				eListID = endnote_list;
-				if (uiEndnoteNumber != 0) {
-					vPutSeparatorLine(pAnchor);
-					OUTPUT_LINE();
-					uiEndnoteNumber = 0;
-				}
-				break;
-			case endnote_list:
-				eListID = textbox_list;
-				if (bExistsTextBox()) {
-					vPutSeparatorLine(pAnchor);
-					OUTPUT_LINE();
-				}
-				break;
-			case textbox_list:
-				eListID = hdrtextbox_list;
-				if (bExistsHdrTextBox()) {
-					vPutSeparatorLine(pAnchor);
-					OUTPUT_LINE();
-				}
-				break;
-			case hdrtextbox_list:
-			default:
-				eListID = end_of_lists;
-				break;
+				case endnote_list:
+					eListID = textbox_list;
+					if (bExistsTextBox())
+					{
+						vPutSeparatorLine(pAnchor);
+						OUTPUT_LINE();
+					}
+					break;
+				case textbox_list:
+					eListID = hdrtextbox_list;
+					if (bExistsHdrTextBox())
+					{
+						vPutSeparatorLine(pAnchor);
+						OUTPUT_LINE();
+					}
+					break;
+				case hdrtextbox_list:
+				default:
+					eListID = end_of_lists;
+					break;
 			}
-			if (eListID == end_of_lists) {
+			if (eListID == end_of_lists)
+			{
 				break;
 			}
 			continue;
 		}
 
-		if (ulChar == UNKNOWN_NOTE_CHAR) {
-			switch (eListID) {
-			case footnote_list:
-				ulChar = FOOTNOTE_CHAR;
-				break;
-			case endnote_list:
-				ulChar = ENDNOTE_CHAR;
-				break;
-			default:
-				break;
+		if (ulChar == UNKNOWN_NOTE_CHAR)
+		{
+			switch (eListID)
+			{
+				case footnote_list:
+					ulChar = FOOTNOTE_CHAR;
+					break;
+				case endnote_list:
+					ulChar = ENDNOTE_CHAR;
+					break;
+				default:
+					break;
 			}
 		}
 
-		if (bStartRow) {
+		if (bStartRow)
+		{
 			/* Begin of a tablerow found */
-			if (bOutputContainsText(pAnchor)) {
+			if (bOutputContainsText(pAnchor))
+			{
 				OUTPUT_LINE();
-			} else {
+			}
+			else
+			{
 				RESET_LINE();
 			}
 			fail(pAnchor != pOutput);
-			if (bTableFontClosed) {
+			if (bTableFontClosed)
+			{
 				/* Start special table font */
 				vCloseFont();
 				/*
@@ -841,15 +872,17 @@ bWordDecryptor(FILE *pFile, long lFilesize, diagram_type *pDiag)
 				 * proportional fonts for its tables and we
 				 * only one fixed-width font
 				 */
-				uiTmp = ((UINT)usFontSize * 5 + 3) / 6;
-				if (uiTmp < MIN_TABLEFONT_SIZE) {
+				uiTmp = ((UINT) usFontSize * 5 + 3) / 6;
+				if (uiTmp < MIN_TABLEFONT_SIZE)
+				{
 					uiTmp = MIN_TABLEFONT_SIZE;
-				} else if (uiTmp > MAX_TABLEFONT_SIZE) {
+				}
+				else if (uiTmp > MAX_TABLEFONT_SIZE)
+				{
 					uiTmp = MAX_TABLEFONT_SIZE;
 				}
-				pOutput->usFontSize = (USHORT)uiTmp;
-				pOutput->tFontRef =
-					tOpenTableFont(pOutput->usFontSize);
+				pOutput->usFontSize = (USHORT) uiTmp;
+				pOutput->tFontRef = tOpenTableFont(pOutput->usFontSize);
 				pOutput->usFontStyle = FONT_REGULAR;
 				pOutput->ucFontColor = FONT_COLOR_BLACK;
 				bTableFontClosed = FALSE;
@@ -858,79 +891,71 @@ bWordDecryptor(FILE *pFile, long lFilesize, diagram_type *pDiag)
 			bStartRow = FALSE;
 		}
 
-		if (bWasTableRow &&
-		    !bIsTableRow &&
-		    ulChar != PAR_END &&
-		    ulChar != HARD_RETURN &&
-		    ulChar != PAGE_BREAK &&
-		    ulChar != COLUMN_FEED) {
+		if (bWasTableRow && !bIsTableRow && ulChar != PAR_END && ulChar != HARD_RETURN && ulChar != PAGE_BREAK && ulChar != COLUMN_FEED)
+		{
 			/*
 			 * The end of a table should be followed by an
 			 * empty line, like the end of a paragraph
 			 */
 			OUTPUT_LINE();
-			vEndOfParagraph(pDiag,
-					pOutput->tFontRef,
-					pOutput->usFontSize,
-					(long)pOutput->usFontSize * 600);
+			vEndOfParagraph(pDiag, pOutput->tFontRef, pOutput->usFontSize, (long) pOutput->usFontSize * 600);
 		}
 
-		switch (ulChar) {
-		case PAGE_BREAK:
-		case COLUMN_FEED:
-			if (bIsTableRow) {
-				/* Ignore when in a table */
+		switch (ulChar)
+		{
+			case PAGE_BREAK:
+			case COLUMN_FEED:
+				if (bIsTableRow)
+				{
+					/* Ignore when in a table */
+					break;
+				}
+				if (bOutputContainsText(pAnchor))
+				{
+					OUTPUT_LINE();
+				}
+				else
+				{
+					RESET_LINE();
+				}
+				if (ulChar == PAGE_BREAK)
+				{
+					vEndOfPage(pDiag, lAfterIndentation, pSection != pSectionNext);
+				}
+				else
+				{
+					vEndOfParagraph(pDiag, pOutput->tFontRef, pOutput->usFontSize, lAfterIndentation);
+				}
 				break;
-			}
-			if (bOutputContainsText(pAnchor)) {
-				OUTPUT_LINE();
-			} else {
-				RESET_LINE();
-			}
-			if (ulChar == PAGE_BREAK) {
-				vEndOfPage(pDiag, lAfterIndentation,
-						pSection != pSectionNext);
-			} else {
-				vEndOfParagraph(pDiag,
-					pOutput->tFontRef,
-					pOutput->usFontSize,
-					lAfterIndentation);
-			}
-			break;
-		default:
-			break;
+			default:
+				break;
 		}
 
-		if (bStartFont || (bStartFontNext && ulChar != PAR_END)) {
+		if (bStartFont || (bStartFontNext && ulChar != PAR_END))
+		{
 			/* Begin of a font found */
-			if (bStartFont) {
+			if (bStartFont)
+			{
 				/* bStartFont takes priority */
 				fail(pFontInfo == NULL);
 				pFontTmp = pFontInfo;
-			} else {
+			}
+			else
+			{
 				pFontTmp = &tFontNext;
 			}
 			bAllCapitals = bIsCapitals(pFontTmp->usFontStyle);
 			bHiddenText = bIsHidden(pFontTmp->usFontStyle);
 			bMarkDelText = bIsMarkDel(pFontTmp->usFontStyle);
-			usTmp = pFontTmp->usFontStyle &
-				(FONT_BOLD|FONT_ITALIC|FONT_UNDERLINE|
-				 FONT_STRIKE|FONT_MARKDEL|
-				 FONT_SUPERSCRIPT|FONT_SUBSCRIPT);
-			if (!bIsTableRow &&
-			    (usFontSize != pFontTmp->usFontSize ||
-			     ucFontNumber != pFontTmp->ucFontNumber ||
-			     usFontStyleMinimal != usTmp ||
-			     ucFontColor != pFontTmp->ucFontColor)) {
+			usTmp = pFontTmp->usFontStyle & (FONT_BOLD | FONT_ITALIC | FONT_UNDERLINE | FONT_STRIKE | FONT_MARKDEL | FONT_SUPERSCRIPT | FONT_SUBSCRIPT);
+			if (!bIsTableRow && (usFontSize != pFontTmp->usFontSize || ucFontNumber != pFontTmp->ucFontNumber || usFontStyleMinimal != usTmp || ucFontColor != pFontTmp->ucFontColor))
+			{
 				pOutput = pStartNextOutput(pOutput);
 				vCloseFont();
 				pOutput->ucFontColor = pFontTmp->ucFontColor;
 				pOutput->usFontStyle = pFontTmp->usFontStyle;
 				pOutput->usFontSize = pFontTmp->usFontSize;
-				pOutput->tFontRef = tOpenFont(
-						pFontTmp->ucFontNumber,
-						pFontTmp->usFontStyle,
-						pFontTmp->usFontSize);
+				pOutput->tFontRef = tOpenFont(pFontTmp->ucFontNumber, pFontTmp->usFontStyle, pFontTmp->usFontSize);
 				fail(!bCheckDoubleLinkedList(pAnchor));
 			}
 			ucFontNumber = pFontTmp->ucFontNumber;
@@ -938,235 +963,243 @@ bWordDecryptor(FILE *pFile, long lFilesize, diagram_type *pDiag)
 			ucFontColor = pFontTmp->ucFontColor;
 			usFontStyle = pFontTmp->usFontStyle;
 			usFontStyleMinimal = usTmp;
-			if (bStartFont) {
+			if (bStartFont)
+			{
 				/* Get the next font info */
 				pFontInfo = pGetNextFontInfoListItem(pFontInfo);
-				NO_DBG_HEX_C(pFontInfo != NULL,
-						pFontInfo->ulFileOffset);
+				NO_DBG_HEX_C(pFontInfo != NULL, pFontInfo->ulFileOffset);
 				DBG_MSG_C(pFontInfo == NULL, "No more fonts");
 			}
 			bStartFont = FALSE;
 			bStartFontNext = FALSE;
 		}
 
-		if (bStartStyle || (bStartStyleNext && ulChar != PAR_END)) {
+		if (bStartStyle || (bStartStyleNext && ulChar != PAR_END))
+		{
 			bFirstLine = TRUE;
 			/* Begin of a style found */
-			if (bStartStyle) {
+			if (bStartStyle)
+			{
 				/* bStartStyle takes priority */
 				fail(pStyleInfo == NULL);
 				pStyleTmp = pStyleInfo;
-			} else {
+			}
+			else
+			{
 				pStyleTmp = &tStyleNext;
 			}
-			if (!bIsTableRow) {
+			if (!bIsTableRow)
+			{
 				vStoreStyle(pDiag, pOutput, pStyleTmp);
 			}
 			usIstdNext = pStyleTmp->usIstdNext;
-			lBeforeIndentation =
-				lTwips2MilliPoints(pStyleTmp->usBeforeIndent);
-			lAfterIndentation =
-				lTwips2MilliPoints(pStyleTmp->usAfterIndent);
-			lLeftIndentation =
-				lTwips2MilliPoints(pStyleTmp->sLeftIndent);
-			lLeftIndentation1 =
-				lTwips2MilliPoints(pStyleTmp->sLeftIndent1);
-			lRightIndentation =
-				lTwips2MilliPoints(pStyleTmp->sRightIndent);
+			lBeforeIndentation = lTwips2MilliPoints(pStyleTmp->usBeforeIndent);
+			lAfterIndentation = lTwips2MilliPoints(pStyleTmp->usAfterIndent);
+			lLeftIndentation = lTwips2MilliPoints(pStyleTmp->sLeftIndent);
+			lLeftIndentation1 = lTwips2MilliPoints(pStyleTmp->sLeftIndent1);
+			lRightIndentation = lTwips2MilliPoints(pStyleTmp->sRightIndent);
 			bInList = bStyleImpliesList(pStyleTmp, iWordVersion);
 			bNoMarks = !bInList || pStyleTmp->bNumPause;
 			ucNFC = pStyleTmp->ucNFC;
 			szListChar = pStyleTmp->szListChar;
 			ucAlignment = pStyleTmp->ucAlignment;
-			if (bInList && !bWasInList) {
+			if (bInList && !bWasInList)
+			{
 				/* Start of a list */
 				iListSeqNumber++;
-				vStartOfList(pDiag, ucNFC,
-						bWasTableRow && !bIsTableRow);
+				vStartOfList(pDiag, ucNFC, bWasTableRow && !bIsTableRow);
 			}
-			if (!bInList && bWasInList) {
+			if (!bInList && bWasInList)
+			{
 				/* End of a list */
 				vEndOfList(pDiag);
 			}
 			bWasInList = bInList;
-			if (bStartStyle) {
+			if (bStartStyle)
+			{
 				pStyleInfo = pGetNextTextStyle(pStyleInfo);
-				NO_DBG_HEX_C(pStyleInfo != NULL,
-						pStyleInfo->ulFileOffset);
-				DBG_MSG_C(pStyleInfo == NULL,
-						"No more styles");
+				NO_DBG_HEX_C(pStyleInfo != NULL, pStyleInfo->ulFileOffset);
+				DBG_MSG_C(pStyleInfo == NULL, "No more styles");
 			}
 			bStartStyle = FALSE;
 			bStartStyleNext = FALSE;
 		}
 
-		if (bWasEndOfParagraph) {
+		if (bWasEndOfParagraph)
+		{
 			vStartOfParagraph1(pDiag, lBeforeIndentation);
 		}
 
-		if (!bIsTableRow &&
-		    lTotalStringWidth(pAnchor) == 0) {
-			if (!bNoMarks) {
-				usListNumber = usGetListValue(iListSeqNumber,
-							iWordVersion,
-							pStyleTmp);
+		if (!bIsTableRow && lTotalStringWidth(pAnchor) == 0)
+		{
+			if (!bNoMarks)
+			{
+				usListNumber = usGetListValue(iListSeqNumber, iWordVersion, pStyleTmp);
 			}
-			if (bInList && bFirstLine) {
+			if (bInList && bFirstLine)
+			{
 				vStartOfListItem(pDiag, bNoMarks);
 			}
-			vPutIndentation(pDiag, pAnchor, bNoMarks, bFirstLine,
-					usListNumber, ucNFC, szListChar,
-					lLeftIndentation, lLeftIndentation1);
+			vPutIndentation(pDiag, pAnchor, bNoMarks, bFirstLine, usListNumber, ucNFC, szListChar, lLeftIndentation, lLeftIndentation1);
 			bFirstLine = FALSE;
 			/* One number or mark per paragraph will do */
 			bNoMarks = TRUE;
 		}
 
-		if (bWasEndOfParagraph) {
+		if (bWasEndOfParagraph)
+		{
 			vStartOfParagraph2(pDiag);
 			bWasEndOfParagraph = FALSE;
 		}
 
-		switch (ulChar) {
-		case PICTURE:
-			(void)memset(&tImage, 0, sizeof(tImage));
-			eRes = eExamineImage(pFile, ulFileOffsetImage, &tImage);
-			switch (eRes) {
-			case image_no_information:
-				bSuccess = FALSE;
+		switch (ulChar)
+		{
+			case PICTURE:
+				(void) memset(&tImage, 0, sizeof(tImage));
+				eRes = eExamineImage(pFile, ulFileOffsetImage, &tImage);
+				switch (eRes)
+				{
+					case image_no_information:
+						bSuccess = FALSE;
+						break;
+					case image_minimal_information:
+					case image_full_information:
+					#if 0
+						if (bOutputContainsText(pAnchor)) {
+							OUTPUT_LINE();
+						} else {
+							RESET_LINE();
+						}
+					#endif
+						bSuccess = bTranslateImage(pDiag, pFile, eRes == image_minimal_information, ulFileOffsetImage, &tImage);
+						break;
+					default:
+						DBG_DEC(eRes);
+						bSuccess = FALSE;
+						break;
+				}
+				if (!bSuccess)
+				{
+					vStoreString("[pic]", 5, pOutput);
+				}
 				break;
-			case image_minimal_information:
-			case image_full_information:
-#if 0
-				if (bOutputContainsText(pAnchor)) {
+			case FOOTNOTE_CHAR:
+				uiFootnoteNumber++;
+				if (tOptions.eConversionType == conversion_xml)
+				{
+					vStoreCharacter((ULONG) FOOTNOTE_OR_ENDNOTE, pOutput);
+					break;
+				}
+				vStoreCharacter((ULONG) '[', pOutput);
+				vStoreNumberAsDecimal(uiFootnoteNumber, pOutput);
+				vStoreCharacter((ULONG) ']', pOutput);
+				break;
+			case ENDNOTE_CHAR:
+				uiEndnoteNumber++;
+				vStoreCharacter((ULONG) '[', pOutput);
+				vStoreNumberAsRoman(uiEndnoteNumber, pOutput);
+				vStoreCharacter((ULONG) ']', pOutput);
+				break;
+			case UNKNOWN_NOTE_CHAR:
+				vStoreString("[?]", 3, pOutput);
+				break;
+			case PAR_END:
+				if (bIsTableRow)
+				{
+					vStoreCharacter((ULONG) '\n', pOutput);
+					break;
+				}
+				if (bOutputContainsText(pAnchor))
+				{
 					OUTPUT_LINE();
-				} else {
+				}
+				else
+				{
+					vMove2NextLine(pDiag, pOutput->tFontRef, pOutput->usFontSize);
 					RESET_LINE();
 				}
-#endif
-				bSuccess = bTranslateImage(pDiag, pFile,
-					eRes == image_minimal_information,
-					ulFileOffsetImage, &tImage);
+				vEndOfParagraph(pDiag, pOutput->tFontRef, pOutput->usFontSize, lAfterIndentation);
+				bWasEndOfParagraph = TRUE;
+				break;
+			case HARD_RETURN:
+				if (bIsTableRow)
+				{
+					vStoreCharacter((ULONG) '\n', pOutput);
+					break;
+				}
+				if (bOutputContainsText(pAnchor))
+				{
+					OUTPUT_LINE();
+				}
+				else
+				{
+					vMove2NextLine(pDiag, pOutput->tFontRef, pOutput->usFontSize);
+					RESET_LINE();
+				}
+				break;
+			case PAGE_BREAK:
+			case COLUMN_FEED:
+				pSection = pSectionNext;
+				break;
+			case TABLE_SEPARATOR:
+				if (bIsTableRow)
+				{
+					vStoreCharacter(ulChar, pOutput);
+					break;
+				}
+				vStoreCharacter((ULONG) ' ', pOutput);
+				vStoreCharacter((ULONG) TABLE_SEPARATOR_CHAR, pOutput);
+				break;
+			case TAB:
+				if (bIsTableRow || tOptions.eConversionType == conversion_xml)
+				{
+					vStoreCharacter((ULONG) ' ', pOutput);
+					break;
+				}
+				if (tOptions.iParagraphBreak == 0 && (tOptions.eConversionType == conversion_text || tOptions.eConversionType == conversion_fmt_text))
+				{
+					/* No logical lines, so no tab expansion */
+					vStoreCharacter(TAB, pOutput);
+					break;
+				}
+				lHalfSpaceWidth = (lComputeSpaceWidth(pOutput->tFontRef, pOutput->usFontSize) + 1) / 2;
+				lTmp = lTotalStringWidth(pAnchor);
+				lTmp += lDrawUnits2MilliPoints(pDiag->lXleft);
+				lTmp /= lDefaultTabWidth;
+				do
+				{
+					vStoreCharacter((ULONG) FILLER_CHAR, pOutput);
+					lWidthCurr = lTotalStringWidth(pAnchor);
+					lWidthCurr += lDrawUnits2MilliPoints(pDiag->lXleft);
+				}
+				while (lTmp == lWidthCurr / lDefaultTabWidth && lWidthCurr < lWidthMax + lRightIndentation);
 				break;
 			default:
-				DBG_DEC(eRes);
-				bSuccess = FALSE;
-				break;
-			}
-			if (!bSuccess) {
-				vStoreString("[pic]", 5, pOutput);
-			}
-			break;
-		case FOOTNOTE_CHAR:
-			uiFootnoteNumber++;
-			if (tOptions.eConversionType == conversion_xml) {
-				vStoreCharacter((ULONG)FOOTNOTE_OR_ENDNOTE,
-								pOutput);
-				break;
-			}
-			vStoreCharacter((ULONG)'[', pOutput);
-			vStoreNumberAsDecimal(uiFootnoteNumber, pOutput);
-			vStoreCharacter((ULONG)']', pOutput);
-			break;
-		case ENDNOTE_CHAR:
-			uiEndnoteNumber++;
-			vStoreCharacter((ULONG)'[', pOutput);
-			vStoreNumberAsRoman(uiEndnoteNumber, pOutput);
-			vStoreCharacter((ULONG)']', pOutput);
-			break;
-		case UNKNOWN_NOTE_CHAR:
-			vStoreString("[?]", 3, pOutput);
-			break;
-		case PAR_END:
-			if (bIsTableRow) {
-				vStoreCharacter((ULONG)'\n', pOutput);
-				break;
-			}
-			if (bOutputContainsText(pAnchor)) {
-				OUTPUT_LINE();
-			} else {
-				vMove2NextLine(pDiag,
-					pOutput->tFontRef, pOutput->usFontSize);
-				RESET_LINE();
-			}
-			vEndOfParagraph(pDiag,
-					pOutput->tFontRef,
-					pOutput->usFontSize,
-					lAfterIndentation);
-			bWasEndOfParagraph = TRUE;
-			break;
-		case HARD_RETURN:
-			if (bIsTableRow) {
-				vStoreCharacter((ULONG)'\n', pOutput);
-				break;
-			}
-			if (bOutputContainsText(pAnchor)) {
-				OUTPUT_LINE();
-			} else {
-				vMove2NextLine(pDiag,
-					pOutput->tFontRef, pOutput->usFontSize);
-				RESET_LINE();
-			}
-			break;
-		case PAGE_BREAK:
-		case COLUMN_FEED:
-			pSection = pSectionNext;
-			break;
-		case TABLE_SEPARATOR:
-			if (bIsTableRow) {
-				vStoreCharacter(ulChar, pOutput);
-				break;
-			}
-			vStoreCharacter((ULONG)' ', pOutput);
-			vStoreCharacter((ULONG)TABLE_SEPARATOR_CHAR, pOutput);
-			break;
-		case TAB:
-			if (bIsTableRow ||
-			    tOptions.eConversionType == conversion_xml) {
-				vStoreCharacter((ULONG)' ', pOutput);
-				break;
-			}
-			if (tOptions.iParagraphBreak == 0 &&
-			    (tOptions.eConversionType == conversion_text ||
-			     tOptions.eConversionType == conversion_fmt_text)) {
-				/* No logical lines, so no tab expansion */
-				vStoreCharacter(TAB, pOutput);
-				break;
-			}
-			lHalfSpaceWidth = (lComputeSpaceWidth(
-					pOutput->tFontRef,
-					pOutput->usFontSize) + 1) / 2;
-			lTmp = lTotalStringWidth(pAnchor);
-			lTmp += lDrawUnits2MilliPoints(pDiag->lXleft);
-			lTmp /= lDefaultTabWidth;
-			do {
-				vStoreCharacter((ULONG)FILLER_CHAR, pOutput);
-				lWidthCurr = lTotalStringWidth(pAnchor);
-				lWidthCurr +=
-					lDrawUnits2MilliPoints(pDiag->lXleft);
-			} while (lTmp == lWidthCurr / lDefaultTabWidth &&
-				 lWidthCurr < lWidthMax + lRightIndentation);
-			break;
-		default:
-			if (bHiddenText && tOptions.bHideHiddenText) {
-				continue;
-			}
-			if (bMarkDelText && tOptions.bRemoveRemovedText) {
-				continue;
-			}
-			if (ulChar == UNICODE_ELLIPSIS &&
-			    tOptions.eEncoding != encoding_utf_8) {
-				vStoreString("...", 3, pOutput);
-			} else {
-				if (bAllCapitals) {
-					ulChar = ulToUpper(ulChar);
+				if (bHiddenText && tOptions.bHideHiddenText)
+				{
+					continue;
 				}
-				vStoreCharacter(ulChar, pOutput);
-			}
-			break;
+				if (bMarkDelText && tOptions.bRemoveRemovedText)
+				{
+					continue;
+				}
+				if (ulChar == UNICODE_ELLIPSIS && tOptions.eEncoding != encoding_utf_8)
+				{
+					vStoreString("...", 3, pOutput);
+				}
+				else
+				{
+					if (bAllCapitals)
+					{
+						ulChar = ulToUpper(ulChar);
+					}
+					vStoreCharacter(ulChar, pOutput);
+				}
+				break;
 		}
 
-		if (bWasTableRow && !bIsTableRow) {
+		if (bWasTableRow && !bIsTableRow)
+		{
 			/* End of a table */
 			vEndOfTable(pDiag);
 			/* Resume normal font */
@@ -1176,55 +1209,54 @@ bWordDecryptor(FILE *pFile, long lFilesize, diagram_type *pDiag)
 			pOutput->ucFontColor = ucFontColor;
 			pOutput->usFontStyle = usFontStyle;
 			pOutput->usFontSize = usFontSize;
-			pOutput->tFontRef = tOpenFont(
-					ucFontNumber, usFontStyle, usFontSize);
+			pOutput->tFontRef = tOpenFont(ucFontNumber, usFontStyle, usFontSize);
 		}
 		bWasTableRow = bIsTableRow;
 
-		if (bIsTableRow) {
+		if (bIsTableRow)
+		{
 			fail(pAnchor != pOutput);
-			if (!bEndRowNorm && !bEndRowFast) {
+			if (!bEndRowNorm && !bEndRowFast)
+			{
 				continue;
 			}
 			/* End of a table row */
-			if (bEndRowNorm) {
+			if (bEndRowNorm)
+			{
 				fail(pRowInfo == NULL);
-				vTableRow2Window(pDiag, pAnchor, pRowInfo,
-						tOptions.eConversionType,
-						tOptions.iParagraphBreak);
-			} else {
+				vTableRow2Window(pDiag, pAnchor, pRowInfo, tOptions.eConversionType, tOptions.iParagraphBreak);
+			}
+			else
+			{
 				fail(!bEndRowFast);
 			}
 			/* Reset */
 			pAnchor = pStartNewOutput(pAnchor, NULL);
 			pOutput = pAnchor;
-			if (bEndRowNorm) {
+			if (bEndRowNorm)
+			{
 				pRowInfo = pGetNextRowInfoListItem();
 			}
 			bIsTableRow = FALSE;
 			bEndRowNorm = FALSE;
 			bEndRowFast = FALSE;
-			NO_DBG_HEX_C(pRowInfo != NULL,
-						pRowInfo->ulFileOffsetStart);
-			NO_DBG_HEX_C(pRowInfo != NULL,
-						pRowInfo->ulFileOffsetEnd);
+			NO_DBG_HEX_C(pRowInfo != NULL, pRowInfo->ulFileOffsetStart);
+			NO_DBG_HEX_C(pRowInfo != NULL, pRowInfo->ulFileOffsetEnd);
 			continue;
 		}
 		lWidthCurr = lTotalStringWidth(pAnchor);
 		lWidthCurr += lDrawUnits2MilliPoints(pDiag->lXleft);
-		if (lWidthCurr < lWidthMax + lRightIndentation) {
+		if (lWidthCurr < lWidthMax + lRightIndentation)
+		{
 			continue;
 		}
 		pLeftOver = pSplitList(pAnchor);
-		vJustify2Window(pDiag, pAnchor,
-				lWidthMax, lRightIndentation, ucAlignment);
+		vJustify2Window(pDiag, pAnchor, lWidthMax, lRightIndentation, ucAlignment);
 		pAnchor = pStartNewOutput(pAnchor, pLeftOver);
-		for (pOutput = pAnchor;
-		     pOutput->pNext != NULL;
-		     pOutput = pOutput->pNext)
-			;	/* EMPTY */
+		for (pOutput = pAnchor; pOutput->pNext != NULL; pOutput = pOutput->pNext);    /* EMPTY */
 		fail(pOutput == NULL);
-		if (lTotalStringWidth(pAnchor) > 0) {
+		if (lTotalStringWidth(pAnchor) > 0)
+		{
 			vSetLeftIndentation(pDiag, lLeftIndentation);
 		}
 	}
