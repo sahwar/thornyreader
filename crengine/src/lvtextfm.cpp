@@ -377,7 +377,7 @@ public:
 
     void resizeImage( int & width, int & height, int maxw, int maxh, bool isInline )
     {
-        CRLog::trace("resizeImage (%dx%d) max %dx%d %s", width, height, maxw, maxh, isInline ? "inline" : "block");
+        //CRLog::trace("resizeImage (%dx%d) max %dx%d %s", width, height, maxw, maxh, isInline ? "inline" : "block");
         bool arbitraryImageScaling = false;
         int maxScale = 1;
         bool zoomIn = width<maxw && height<maxh;
