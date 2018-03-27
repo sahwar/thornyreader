@@ -985,7 +985,7 @@ public:
         if ( index>=0 )
             return; // already added
         _fileList.add(v1.c_str());
-        CRLog::trace("New source file: %s", LCSTR(v1) );
+        //CRLog::trace("New source file: %s", LCSTR(v1) );
         _appender->addPathSubstitution( v1, cs16("_doc_fragment_") + fmt::decimal(_fileList.length()) );
         _appender->setCodeBase( v1 );
     }
@@ -1138,7 +1138,7 @@ public:
         int cnt = _fileList.length();
         for ( int i=0; i<cnt; i++ ) {
             lString16 fname = _fileList[i];
-            CRLog::trace("Import file %s", LCSTR(fname));
+           // CRLog::trace("Import file %s", LCSTR(fname));
             LVStreamRef stream = _cont->OpenStream(fname.c_str(), LVOM_READ);
             if ( stream.isNull() )
                 continue;
