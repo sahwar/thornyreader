@@ -378,8 +378,7 @@ static LVStreamRef ThResolveStream(int doc_format, const char *absolute_path_cha
 	}
 	else
 	{
-		CRLog::error("ThResolveStream smart_archive collision fail %s %d",
-		             LCSTR(absolute_path), found_count);
+		CRLog::error("ThResolveStream smart_archive collision fail %s %d", LCSTR(absolute_path), found_count);
 		return LVStreamRef();
 	}
 }
@@ -407,6 +406,10 @@ bool LVDocView::LoadDoc(int doc_format, const char *absolute_path,
 
 bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 {
+	if(cfg_firstpage_thumb_)
+	{CRLog::trace("LoadDoc: Thumbpage creation required. Generating.");}
+	else
+	{CRLog::trace("LoadDoc: Thumbpage exists. Skipping");}
 	stream_ = stream;
 	doc_format_ = doc_format;
 	CheckRenderProps(0, 0);
@@ -423,7 +426,7 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 			return false;
 		}
 		cr_dom_->setProps(doc_props_);
-		if (!ImportEpubDocument(stream_, cr_dom_))
+		if (!ImportEpubDocument(stream_, cr_dom_, cfg_firstpage_thumb_))
 		{
 			return false;
 		}
@@ -441,7 +444,7 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 		{
 			CRLog::error("pdb_format != doc_format_mobi");
 		}
-		if (!ImportMOBIDoc(stream_, cr_dom_, pdb_format))
+		if (!ImportMOBIDoc(stream_, cr_dom_, pdb_format, cfg_firstpage_thumb_))
 		{
 			if (pdb_format != doc_format_mobi)
 			{
@@ -458,7 +461,7 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 			return false;
 		}
 		cr_dom_->setProps(doc_props_);
-		if (!ImportWordDocument(stream_, cr_dom_))
+		if (!ImportWordDocument(stream_, cr_dom_, cfg_firstpage_thumb_))
 		{
 			return false;
 		}

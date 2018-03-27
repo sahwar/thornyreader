@@ -285,7 +285,7 @@ protected:
     bool smart_format_;
     bool firstpage_thumb_;
 public:
-    /// constructor
+	/// constructor
     LVTextParser(LVStreamRef stream, LvXMLParserCallback* callback, bool smart_format,
                  bool firstpage_thumb);
     /// descructor
@@ -315,6 +315,7 @@ public:
     /// Returns true if format is recognized by parser
     virtual bool CheckFormat();
     virtual bool Parse();
+    virtual bool Parse(bool need_coverpage);
     /// sets charset by name
     virtual void SetCharset(const lChar16* name);
     /// resets parsing, moves to beginning of stream
@@ -337,7 +338,9 @@ public:
     /// Returns true if format is recognized by parser
     virtual bool CheckFormat();
     virtual bool Parse();
+    virtual bool Parse(bool need_coverpage);
     LvHtmlParser(LVStreamRef stream, LvXMLParserCallback * callback);
+    LvHtmlParser(LVStreamRef stream, LvXMLParserCallback * callback, bool need_coverpage);
     virtual ~LvHtmlParser();
 };
 

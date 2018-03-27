@@ -691,7 +691,7 @@ public:
 	}
 };
 
-bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc)
+bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 {
 	LVContainerRef arc = LVOpenArchive(stream);
 	if (arc.isNull())
@@ -876,19 +876,30 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc)
 				{
 					ncxHref = codeBase + ncx->href;
 				}
-				for (int i = 1; i < 50000; i++)
+				int nodes_to_parse=50000;
+				if(firstpage_thumb)
+				{
+					CRLog::trace("        EPUB FIRSTPAGE SPINE COMPOSING");
+					nodes_to_parse=6; // irl 5: from 1 to 6
+				}
+				else
+				{
+					CRLog::trace("        EPUB FULL SPINE COMPOSING");
+					nodes_to_parse=50000;
+				}
+				for (int i = 1; i < nodes_to_parse; i++)
 				{
 					ldomNode *item = doc->nodeFromXPath(lString16("package/spine/itemref[") << fmt::decimal(i) << "]");
 					if (!item)
 					{
 						break;
 					}
-					EpubItem *epubItem = epubItems.findById(item->getAttributeValue("idref"));
-					if (epubItem)
-					{
-						// TODO: add to document
-						spineItems.add(epubItem);
-					}
+						EpubItem *epubItem = epubItems.findById(item->getAttributeValue("idref"));
+						if (epubItem)
+						{
+							// TODO: add to document
+							spineItems.add(epubItem);
+						}
 				}
 			}
 		}
@@ -931,16 +942,16 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc)
 		{
 			lString16 name = codeBase + spineItems[i]->href;
 			{
-				//CRLog::debug("Checking fragment: %s", LCSTR(name));
+				//CRLog::trace("        EPUB Checking fragment: %s", UnicodeToUtf8(name).c_str());
 				LVStreamRef stream = m_arc->OpenStream(name.c_str(), LVOM_READ);
 				if (!stream.isNull())
 				{
 					appender.setCodeBase(name);
 					lString16 base = name;
 					LVExtractLastPathElement(base);
-					//CRLog::trace("base: %s", LCSTR(base));
+					//CRLog::trace("base: %s", UnicodeToUtf8(base).c_str());
 					//LvXmlParser
-					LvHtmlParser parser(stream, &appender);
+					LvHtmlParser parser(stream, &appender, firstpage_thumb);
 					if (parser.CheckFormat() && parser.Parse())
 					{
 						// valid

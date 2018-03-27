@@ -348,7 +348,7 @@ void CreBridge::processOpen(CmdRequest& request, CmdResponse& response)
     }
     const char* absolute_path = reinterpret_cast<const char*>(absolute_path_arg);
     bool smart_archive = (bool) smart_archive_arg;
-    bool result = doc_view_->LoadDoc(doc_format, absolute_path, compressed_size, smart_archive);
+	bool result = doc_view_->LoadDoc(doc_format, absolute_path, compressed_size, smart_archive);
     if (result) {
         doc_view_->RenderIfDirty();
         response.addInt(ExportPagesCount(doc_view_->GetColumns(), doc_view_->GetPagesCount()));

@@ -1095,7 +1095,7 @@ LVStreamRef GetMOBICover(LVStreamRef stream)
     return LVStreamRef();
 }
 
-bool ImportMOBIDoc(LVStreamRef& stream, CrDom* doc, doc_format_t& doc_format)
+bool ImportMOBIDoc(LVStreamRef& stream, CrDom* doc, doc_format_t& doc_format, bool need_coverpage)
 {
     PDBFile* pdb = new PDBFile();
     LVPDBContainer* container = new LVPDBContainer();
@@ -1121,7 +1121,7 @@ bool ImportMOBIDoc(LVStreamRef& stream, CrDom* doc, doc_format_t& doc_format)
             if (pdb->getFormat() == PDBFile::MOBI && isCorrectUtf8Text(stream)) {
                 parser.SetCharset(L"utf-8");
             }
-            if (!parser.Parse()) {
+            if (!parser.Parse(need_coverpage)) {
                 return false;
             }
         }

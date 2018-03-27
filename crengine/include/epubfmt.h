@@ -40,7 +40,7 @@ public:
 };
 
 bool DetectEpubFormat(LVStreamRef stream);
-bool ImportEpubDocument(LVStreamRef stream, CrDom * doc);
+bool ImportEpubDocument(LVStreamRef stream, CrDom * doc,  bool firstpage_thumb);
 lString16 EpubGetRootFilePath(LVContainerRef m_arc);
 
 #endif // EPUBFMT_H
