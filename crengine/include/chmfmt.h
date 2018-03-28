@@ -4,7 +4,7 @@
 #include "lvtinydom.h"
 
 bool DetectCHMFormat(LVStreamRef stream);
-bool ImportCHMDocument(LVStreamRef stream, CrDom* doc);
+bool ImportCHMDocument(LVStreamRef stream, CrDom* doc, bool cfg_firstpage_thumb_);
 
 /// Opens CHM container
 LVContainerRef LVOpenCHMContainer(LVStreamRef stream);

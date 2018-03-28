@@ -11,6 +11,7 @@
 
  *******************************************************/
 
+#include <include/lvdocview.h>
 #include "include/thornyreader.h"
 #include "include/lvdocview.h"
 #include "include/CreBridge.h"
@@ -470,7 +471,7 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 	else if (doc_format == DOC_FORMAT_RTF)
 	{
 		LvDomWriter writer(cr_dom_);
-		parser = new LVRtfParser(stream_, &writer);
+		parser = new LVRtfParser(stream_, &writer, cfg_firstpage_thumb_);
 	}
 	else if (doc_format == DOC_FORMAT_CHM)
 	{
@@ -479,7 +480,7 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 			return false;
 		}
 		cr_dom_->setProps(doc_props_);
-		if (!ImportCHMDocument(stream_, cr_dom_))
+		if (!ImportCHMDocument(stream_, cr_dom_, cfg_firstpage_thumb_))
 		{
 			return false;
 		}
@@ -501,7 +502,7 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 			delete parser;
 			return false;
 		}
-		if (!parser->Parse())
+		(!parser->Parse());
 		{
 			delete parser;
 			return false;

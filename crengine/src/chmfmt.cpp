@@ -1048,7 +1048,7 @@ public:
     }
 
     bool init( LVContainerRef cont, lString16 hhcName, lString16 defEncodingName,
-               lString16Collection & urlList, lString16 mainPageName )
+               lString16Collection & urlList, lString16 mainPageName ,bool needs_coverpage)
     {
         if ( hhcName.empty() && urlList.length()==0 ) {
             lString16Collection htms;
@@ -1132,13 +1132,17 @@ public:
             return res;
         }
     }
-    int appendFragments()
+    int appendFragments(bool needs_coverpage)
     {
         int appendedFragments = 0;
         int cnt = _fileList.length();
+        if(needs_coverpage)
+        {
+            cnt=5;
+        }
         for ( int i=0; i<cnt; i++ ) {
             lString16 fname = _fileList[i];
-           // CRLog::trace("Import file %s", LCSTR(fname));
+            CRLog::trace("Import file %s", LCSTR(fname));
             LVStreamRef stream = _cont->OpenStream(fname.c_str(), LVOM_READ);
             if ( stream.isNull() )
                 continue;
@@ -1157,7 +1161,7 @@ public:
     }
 };
 
-bool ImportCHMDocument(LVStreamRef stream, CrDom* doc)
+bool ImportCHMDocument(LVStreamRef stream, CrDom* doc, bool cfg_firstpage_thumb_)
 {
     stream->SetPos(0);
     LVContainerRef cont = LVOpenCHMContainer( stream );
@@ -1189,10 +1193,10 @@ bool ImportCHMDocument(LVStreamRef stream, CrDom* doc)
     writer.OnTagOpenNoAttr(L"", L"body");
     LvDocFragmentWriter appender(&writer, cs16("body"), cs16("DocFragment"), lString16::empty_str );
     CHMTOCReader tocReader(cont, doc, &appender);
-    if (!tocReader.init(cont, tocFileName, defEncodingName, urlList, mainPageName) )
+    if (!tocReader.init(cont, tocFileName, defEncodingName, urlList, mainPageName, cfg_firstpage_thumb_) )
         return false;
 
-    fragmentCount = tocReader.appendFragments();
+    fragmentCount = tocReader.appendFragments(cfg_firstpage_thumb_);
     writer.OnTagClose(L"", L"body");
     writer.OnStop();
     CRLog::debug("CHM: %d documents merged", fragmentCount);

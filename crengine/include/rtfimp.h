@@ -365,11 +365,12 @@ protected:
     void CommitText();
     void AddChar( lChar16 ch );
     void AddChar8( lUInt8 ch );
+    bool need_coverpage_rtf;
 public:
     /// counter for image index
     int nextImageIndex() { return imageIndex++; }
     /// constructor
-    LVRtfParser( LVStreamRef stream, LvXMLParserCallback * callback );
+    LVRtfParser( LVStreamRef stream, LvXMLParserCallback * callback ,bool need_coverpage);
     /// returns true if format is recognized by parser
     virtual bool CheckFormat();
     /// parses input stream

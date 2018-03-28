@@ -359,12 +359,13 @@ public:
 
 
 /// constructor
-LVRtfParser::LVRtfParser( LVStreamRef stream, LvXMLParserCallback * callback )
+LVRtfParser::LVRtfParser( LVStreamRef stream, LvXMLParserCallback * callback ,bool need_coverpage)
     : LVFileParserBase(stream)
     , m_callback(callback)
     , txtbuf(NULL)
     , imageIndex(0)
 {
+    this->need_coverpage_rtf=need_coverpage;
     m_stack.setDestination(  new LVRtfDefDestination(*this) );
 }
 
@@ -477,6 +478,8 @@ bool LVRtfParser::Parse()
     txtpos = 0;
     txtfstart = 0;
     char cwname[33];
+    int fragments_counter=0;
+    //need_coverpage; //debug
     while ( !Eof() && !errorFlag && !m_stopped ) {
         // load next portion of data if necessary
         if ( m_buf_len - m_buf_pos < MIN_BUF_DATA_SIZE ) {
@@ -548,6 +551,14 @@ bool LVRtfParser::Parse()
                 } else {
                     // usual control word
                     OnControlWord( cwname, param, asteriskFlag );
+                }
+                fragments_counter++;
+                if(need_coverpage_rtf)
+                {
+                    if(fragments_counter>=2000) //TODO подтянуть сюда дефайн FIRSTPAGE_BLOCKS_MAX вместо 4000
+                    {
+                        break;
+                    }
                 }
             } else {
                 // control char
