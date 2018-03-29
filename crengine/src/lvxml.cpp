@@ -4046,7 +4046,7 @@ LVStreamRef GetFB2Coverpage(LVStreamRef stream)
         stream->SetPos(0);
 		return LVStreamRef();
 	}
-    parser.Parse(true); // true to parse domtree only for coverpage
+    parser.Parse();
     LVStreamRef res = callback.getStream();
     stream->SetPos(0);
     return res;
