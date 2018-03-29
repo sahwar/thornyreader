@@ -406,10 +406,11 @@ bool LVDocView::LoadDoc(int doc_format, const char *absolute_path,
 
 bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 {
-	if(cfg_firstpage_thumb_)
-	{CRLog::trace("LoadDoc: Thumbpage creation required. Generating.");}
-	else
-	{CRLog::trace("LoadDoc: Thumbpage exists. Skipping");}
+	if (cfg_firstpage_thumb_) {
+		CRLog::trace("LoadDoc: Thumbpage creation required. Generating.");
+	} else {
+		CRLog::trace("LoadDoc: Thumbpage exists. Skipping");
+	}
 	stream_ = stream;
 	doc_format_ = doc_format;
 	CheckRenderProps(0, 0);
