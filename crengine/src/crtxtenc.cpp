@@ -2050,7 +2050,7 @@ int AutodetectCodePage(const unsigned char* buf, int buf_size,
    }
    strcpy(cp_name, cp_stat_table[bestn].cp_name);
    strcpy(lang_name, cp_stat_table[bestn].lang_name);
-   CRLog::trace("Detected codepage: %s lang: %s index: %d %s", cp_name, lang_name, bestn, skipHtml ? "(skipHtml)" : "");
+   //CRLog::trace("Detected codepage: %s lang: %s index: %d %s", cp_name, lang_name, bestn, skipHtml ? "(skipHtml)" : "");
    if (skipHtml) {
        if (detectXmlHtmlEncoding(buf, buf_size, cp_name)) {
            CRLog::trace("Encoding parsed from XML/HTML: %s", cp_name);

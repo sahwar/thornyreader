@@ -1841,16 +1841,16 @@ int CrDom::render(LVRendPageList* pages,
     //    CRLog::trace("reusing existing format data...");
     //}
     if (!checkRenderContext()) {
-        CRLog::info("CrDom::checkRenderContext FORMATTING");
+        //CRLog::info("CrDom::checkRenderContext FORMATTING");
         dropStyles();
-        CRLog::trace("stylesheet_.push()");
+        //CRLog::trace("stylesheet_.push()");
         stylesheet_.push();
         applyDocStylesheet();
-        CRLog::info("initNodeStyleRecursive()");
+        //CRLog::info("initNodeStyleRecursive()");
         getRootNode()->initNodeStyleRecursive();
-        CRLog::trace("stylesheet_.pop()");
+        //CRLog::trace("stylesheet_.pop()");
         stylesheet_.pop();
-        CRLog::trace("Init render method");
+        //CRLog::trace("Init render method");
         getRootNode()->initNodeRendMethodRecursive();
         //getRootNode()->setFont(_def_font);
         //getRootNode()->setStyle(_def_style);
@@ -1871,7 +1871,7 @@ int CrDom::render(LVRendPageList* pages,
         int height = renderBlockElement( context, getRootNode(), 0, y0, width ) + y0;
         _rendered = true;
         gc();
-        CRLog::trace("finalizing... fonts.length=%d", _fonts.length());
+        //CRLog::trace("finalizing... fonts.length=%d", _fonts.length());
         context.Finalize();
         updateRenderContext();
         _pagesData.reset();
@@ -2723,7 +2723,7 @@ LvDomWriter::~LvDomWriter()
             doc_->getStylesheet()->pop();
         }
 #ifdef AXYDEBUG
-        CRLog::trace("LvDomWriter::~LvDomWriter()");
+        //CRLog::trace("LvDomWriter::~LvDomWriter()");
 #endif
         doc_->getRootNode()->initNodeStyle();
         doc_->getRootNode()->initNodeFont();
@@ -5739,7 +5739,7 @@ void LvDocFragmentWriter::setCodeBase( lString16 fileName )
     codeBasePrefix = pathSubstitutions.get(fileName);
     codeBase = LVExtractPath(filePathName);
     if ( codeBasePrefix.empty() ) {
-        CRLog::trace("codeBasePrefix is empty for path %s", LCSTR(fileName));
+        //CRLog::trace("codeBasePrefix is empty for path %s", LCSTR(fileName));
         codeBasePrefix = pathSubstitutions.get(fileName);
     }
     stylesheetFile.clear();
@@ -6461,7 +6461,7 @@ void CrDomXml::setStylesheet(const char* css, bool replace)
 #ifdef AXYDEBUG
     lUInt32 newHash = stylesheet_.getHash();
     if (oldHash != newHash) {
-        CRLog::trace("New stylesheet hash: %08x", newHash);
+        //CRLog::trace("New stylesheet hash: %08x", newHash);
     }
 #endif
 }
@@ -8178,7 +8178,7 @@ void CrDom::registerEmbeddedFonts()
         lString8 face = item->getFace();
         if (face.empty()) { face = lastface; }
         else { lastface = face; }
-        CRLog::debug("url is %s\n", UnicodeToLocal(url).c_str());
+        //CRLog::debug("url is %s\n", UnicodeToLocal(url).c_str());
         if (url.startsWithNoCase(lString16("res://")) ||
             url.startsWithNoCase(lString16("file://"))) {
             if (!fontMan->RegisterExternalFont(item->getUrl(),

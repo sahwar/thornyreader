@@ -414,9 +414,10 @@ void CreBridge::processPageLinks(CmdRequest& request, CmdResponse& response)
     uint32_t page = (uint32_t) ImportPage(external_page, doc_view_->GetColumns());
     doc_view_->GoToPage(page);
 #ifdef DEBUG_LINKS
-    CRLog::debug("processPageLinks external_page=%d page=%d page_width=%d page_height=%d",
-                 external_page, page, doc_view_->GetWidth(), doc_view_->GetHeight());
-    if (0) {
+    if (0)
+    {
+        CRLog::debug("processPageLinks external_page=%d page=%d page_width=%d page_height=%d",
+                external_page, page, doc_view_->GetWidth(), doc_view_->GetHeight());
         CRLog::debug("processPageLinks text: %s", LCSTR(doc_view_->GetPageText(page)));
     }
 #endif
@@ -481,11 +482,11 @@ void CreBridge::processPageLinks(CmdRequest& request, CmdResponse& response)
 #ifdef DEBUG_LINKS
         ldomNode* start_node = link->getStart().getNode();
         ldomNode* end_node = link->getEnd().getNode();
-        CRLog::trace("processPageLinks %s %d\n  %d:%d-%d:%d %d:%d-%d:%d\n  %s %d\n  %s %d",
+        /*CRLog::trace("processPageLinks %s %d\n  %d:%d-%d:%d %d:%d-%d:%d\n  %s %d\n  %s %d",
                      LCSTR(href), target_page, rect.left, rect.right, rect.top, rect.bottom,
                      raw_rect.left, raw_rect.right, raw_rect.top, raw_rect.bottom,
                      LCSTR(link->getStart().toString()), start_node->getDataIndex(),
-                     LCSTR(link->getEnd().toString()), end_node->getDataIndex());
+                     LCSTR(link->getEnd().toString()), end_node->getDataIndex());*/
 #endif
     }
 #undef DEBUG_LINKS

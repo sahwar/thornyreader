@@ -1142,7 +1142,7 @@ public:
         }
         for ( int i=0; i<cnt; i++ ) {
             lString16 fname = _fileList[i];
-            CRLog::trace("Import file %s", LCSTR(fname));
+            //CRLog::trace("Import file %s", LCSTR(fname));
             LVStreamRef stream = _cont->OpenStream(fname.c_str(), LVOM_READ);
             if ( stream.isNull() )
                 continue;

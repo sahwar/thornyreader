@@ -154,7 +154,7 @@ bool HyphDictionary::activate()
             HyphMan::_method = &ALGO_HYPH;
         }
 	} else if (getType() == HDT_NONE) {
-		CRLog::trace("Disabling hyphenation" );
+		//CRLog::trace("Disabling hyphenation" );
         if (HyphMan::_method != &NO_HYPH) {
             if (HyphMan::_method != &ALGO_HYPH)
                 delete HyphMan::_method;

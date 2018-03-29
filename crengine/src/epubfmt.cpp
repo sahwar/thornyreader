@@ -768,7 +768,7 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 			lString16 key = item->getText();
 			if (decryptor->setManglingKey(key))
 			{
-				CRLog::debug("Using font mangling key %s", LCSTR(key));
+				//CRLog::debug("Using font mangling key %s", LCSTR(key));
 				break;
 			}
 		}
@@ -879,12 +879,12 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 				int nodes_to_parse=50000;
 				if(firstpage_thumb)
 				{
-					CRLog::trace("        EPUB FIRSTPAGE SPINE COMPOSING");
+					//CRLog::trace("EPUB FIRSTPAGE SPINE COMPOSING");
 					nodes_to_parse=6; // irl 5: from 1 to 6
 				}
 				else
 				{
-					CRLog::trace("        EPUB FULL SPINE COMPOSING");
+					//CRLog::trace("EPUB FULL SPINE COMPOSING");
 					nodes_to_parse=50000;
 				}
 				for (int i = 1; i < nodes_to_parse; i++)

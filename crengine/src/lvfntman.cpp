@@ -77,7 +77,7 @@ void LVFontManager::SetGammaIndex( int index ) {
     if ( index>=GAMMA_LEVELS )
         index = GAMMA_LEVELS-1;
     if ( gammaIndex!=index ) {
-        CRLog::trace("FontManager gamma index changed from %d to %d", gammaIndex, index);
+        //CRLog::trace("FontManager gamma index changed from %d to %d", gammaIndex, index);
         gammaIndex = index;
         gammaLevel = cr_gamma_levels[index];
         clearGlyphCache();
@@ -105,7 +105,7 @@ void LVFontManager::SetGamma( double gamma ) {
         }
     }
     if ( gammaIndex!=oldGammaIndex ) {
-        CRLog::trace("FontManager gamma index changed from %d to %d", oldGammaIndex, gammaIndex);
+        //CRLog::trace("FontManager gamma index changed from %d to %d", oldGammaIndex, gammaIndex);
         clearGlyphCache();
     }
 }
@@ -821,8 +821,7 @@ public:
         //FT_Face_SetUnpatentedHinting( _face, 1 );
         _slot = _face->glyph;
         _faceName = familyName(_face);
-        CRLog::trace("Loaded font %s [%d]: faceName=%s, ",
-                _fileName.c_str(), index, _faceName.c_str());
+        //CRLog::trace("Loaded font %s [%d]: faceName=%s, ", _fileName.c_str(), index, _faceName.c_str());
         //if ( !FT_IS_SCALABLE( _face ) ) {
         //    Clear();
         //    return false;
@@ -895,8 +894,7 @@ public:
         //FT_Face_SetUnpatentedHinting( _face, 1 );
         _slot = _face->glyph;
         _faceName = familyName(_face);
-        CRLog::trace("Loaded font %s [%d]: faceName=%s, ",
-                _fileName.c_str(), index, _faceName.c_str());
+        //CRLog::trace("Loaded font %s [%d]: faceName=%s, ", _fileName.c_str(), index, _faceName.c_str());
         //if ( !FT_IS_SCALABLE( _face ) ) {
         //    Clear();
         //    return false;
@@ -1887,7 +1885,7 @@ public:
     virtual void SetHintingMode(hinting_mode_t mode) {
         if (_hintingMode == mode)
             return;
-        CRLog::trace("Hinting mode is changed: %d", (int)mode);
+        //CRLog::trace("Hinting mode is changed: %d", (int)mode);
         _hintingMode = mode;
         gc();
         clearGlyphCache();
@@ -2243,7 +2241,7 @@ public:
     /// registers document font
     virtual bool RegisterDocumentFont(int documentId, LVContainerRef container, lString16 name, lString8 faceName, bool bold, bool italic) {
         lString8 name8 = UnicodeToUtf8(name);
-        CRLog::trace("RegisterDocumentFont(documentId=%d, path=%s)", documentId, name8.c_str());
+        //CRLog::trace("RegisterDocumentFont(documentId=%d, path=%s)", documentId, name8.c_str());
         if (_cache.findDocumentFontDuplicate(documentId, name8)) {
             return false;
         }
