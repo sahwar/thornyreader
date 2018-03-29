@@ -14,6 +14,7 @@
 #include "../include/crtxtenc.h"
 #include "../include/lvtinydom.h"
 #include <string.h>
+#include "include/crconfig.h"
 
 //==================================================
 // RTF file parser
@@ -555,7 +556,7 @@ bool LVRtfParser::Parse()
                 fragments_counter++;
                 if(need_coverpage_rtf)
                 {
-                    if(fragments_counter>=2000) //TODO подтянуть сюда дефайн FIRSTPAGE_BLOCKS_MAX вместо 4000
+                    if(fragments_counter>=FIRSTPAGE_BLOCKS_MAX_RTF)
                     {
                         break;
                     }

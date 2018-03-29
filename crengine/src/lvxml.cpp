@@ -11,11 +11,11 @@
 
 *******************************************************/
 
-#include <include/CreBridge.h>
 #include "../include/lvxml.h"
 #include "../include/crtxtenc.h"
 #include "../include/fb2def.h"
 #include "../include/lvdocview.h"
+#include "include/crconfig.h"
 
 typedef struct {
    unsigned short indx; /* index into big table */
@@ -1011,10 +1011,6 @@ static bool startsWithOneOf( const lString16 & s, const lChar16 * list[] )
     }
     return false;
 }
-
-#define TXT_SMART_HEADERS false
-#define TXT_SMART_DESCRIPTION false
-#define FIRSTPAGE_BLOCKS_MAX 100
 
 int DetectHeadingLevelByText(const lString16& str) {
     if (!TXT_SMART_HEADERS) {

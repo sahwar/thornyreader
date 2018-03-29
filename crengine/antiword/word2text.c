@@ -15,7 +15,7 @@
 #include "drawfile.h"
 #endif /* __riscos */
 #include "antiword.h"
-
+#include "include/crconfig.h"
 
 #define INITIAL_SIZE		40
 #define EXTENTION_SIZE		20
@@ -761,13 +761,13 @@ bWordDecryptor(FILE *pFile, long lFilesize, diagram_type *pDiag, int need_coverp
 	eListID = text_list;
 	int fragments_counter=0;
 
-#include <android/log.h>
+
 	//need_coverpage=1; debug
 	for(;;)
 	{
 		if(need_coverpage==1)
 		{
-			if(fragments_counter>=4000) //TODO подтянуть сюда дефайн FIRSTPAGE_BLOCKS_MAX вместо 4000
+			if(fragments_counter>=FIRSTPAGE_BLOCKS_MAX_WORD)
 			{
 				break;
 			}
