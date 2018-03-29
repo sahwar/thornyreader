@@ -11,7 +11,6 @@
 
  *******************************************************/
 
-#include <include/lvdocview.h>
 #include "include/thornyreader.h"
 #include "include/lvdocview.h"
 #include "include/CreBridge.h"
@@ -502,7 +501,7 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 			delete parser;
 			return false;
 		}
-		(!parser->Parse());
+		if (!parser->Parse())
 		{
 			delete parser;
 			return false;
@@ -1362,7 +1361,7 @@ void LVDocView::UpdateSelections()
 {
 	CHECK_RENDER("updateSelections()")
 	ldomXRangeList ranges(cr_dom_->getSelections(), true);
-	CRLog::trace("updateSelections() : selection count = %d", cr_dom_->getSelections().length());
+	//CRLog::trace("updateSelections() : selection count = %d", cr_dom_->getSelections().length());
 	ranges.getRanges(marked_ranges_);
 }
 
@@ -2270,6 +2269,15 @@ void CreBridge::processMetadata(CmdRequest &request, CmdResponse &response)
 					lString16 thumbnail_file_name = code_base + href;
 					thumb_stream = container->OpenStream(thumbnail_file_name.c_str(), LVOM_READ);
 				}
+				href = DecodeHTMLUrlString(href);
+                if(id.endsWith("cover.jpg")||id.endsWith("cover.jpeg"))
+				{
+					CRLog::trace("EPUB structure is malformed...BUT Found coverpage! Yay!");
+					// coverpage file
+                    lString16 thumbnail_file_name = code_base + href;
+					CRLog::trace("_______EPUB coverpage file: %s", LCSTR(thumbnail_file_name));
+                    thumb_stream = container->OpenStream(thumbnail_file_name.c_str(), LVOM_READ);
+                }
 			}
 		}
 		authors = dom->textFromXPath(lString16("package/metadata/creator")).trim();
