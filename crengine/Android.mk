@@ -18,7 +18,6 @@ LOCAL_CFLAGS            += -DENABLE_ANTIWORD=1
 
 LOCAL_C_INCLUDES := \
     $(LOCAL_PATH)/../thornyreader \
-    $(LOCAL_PATH)/crengine/include \
     $(LOCAL_PATH)/libpng \
     $(LOCAL_PATH)/freetype/include
 

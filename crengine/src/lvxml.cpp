@@ -11,10 +11,10 @@
 
 *******************************************************/
 
-#include "../include/lvxml.h"
-#include "../include/crtxtenc.h"
-#include "../include/fb2def.h"
-#include "../include/lvdocview.h"
+#include "include/lvxml.h"
+#include "include/crtxtenc.h"
+#include "include/fb2def.h"
+#include "include/lvdocview.h"
 #include "include/crconfig.h"
 
 typedef struct {
@@ -24,27 +24,25 @@ typedef struct {
 
 typedef unsigned int ucs4_t;
 #if GBK_ENCODING_SUPPORT == 1
-#include "../include/encodings/gbkext1.h"
-#include "../include/encodings/gbkext2.h"
-#include "../include/encodings/gb2312.h"
-#include "../include/encodings/cp936ext.h"
+#include "include/encodings/gbkext1.h"
+#include "include/encodings/gbkext2.h"
+#include "include/encodings/gb2312.h"
+#include "include/encodings/cp936ext.h"
 #endif
 #if JIS_ENCODING_SUPPORT == 1
-#include "../include/encodings/jisx0213.h"
+#include "include/encodings/jisx0213.h"
 #endif
 #if BIG5_ENCODING_SUPPORT == 1
-#include "../include/encodings/big5.h"
-#include "../include/encodings/big5_2003.h"
+#include "include/encodings/big5.h"
+#include "include/encodings/big5_2003.h"
 #endif
 #if EUC_KR_ENCODING_SUPPORT == 1
-#include "../include/encodings/ksc5601.h"
+#include "include/encodings/ksc5601.h"
 #endif
 
 #define BUF_SIZE_INCREMENT 4096
 #define MIN_BUF_DATA_SIZE 4096
 #define CP_AUTODETECT_BUF_SIZE 0x20000
-
-
 
 int CalcTabCount(const lChar16 * str, int nlen);
 void ExpandTabs(lString16 & s);
