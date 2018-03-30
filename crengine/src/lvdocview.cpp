@@ -456,18 +456,25 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 	else if (doc_format == DOC_FORMAT_DOC)
 	{
 #if ENABLE_ANTIWORD == 1
-		if (!DetectWordFormat(stream_))
-		{
-			return false;
-		}
-		cr_dom_->setProps(doc_props_);
-		if (!ImportWordDocument(stream_, cr_dom_, cfg_firstpage_thumb_))
-		{
-			return false;
-		}
+        if (DetectWordFormat(stream_))
+        {
+            cr_dom_->setProps(doc_props_);
+            if (!ImportWordDocument(stream_, cr_dom_, cfg_firstpage_thumb_))
+            {
+                return false;
+            }
+        }
+        else if(DetectRTFFormat(stream_))
+        {
+            doc_format = DOC_FORMAT_RTF;
+        }
+        else
+        {
+            return false;
+        }
 #endif //ENABLE_ANTIWORD == 1
 	}
-	else if (doc_format == DOC_FORMAT_RTF)
+	if (doc_format == DOC_FORMAT_RTF)
 	{
 		LvDomWriter writer(cr_dom_);
 		parser = new LVRtfParser(stream_, &writer, cfg_firstpage_thumb_);
