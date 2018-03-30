@@ -1287,7 +1287,7 @@ public:
     void TxtSmartFormat()
     {
         smart_format_flags_ = tftParaPerLine | tftHeadersEmptyLineDelim; // default format
-        if (length() < 10) {
+        if (length() < MAX_PARA_LINES) {
             return;
         }
         smart_format_flags_ = 0;
@@ -2234,7 +2234,7 @@ public:
     /// delimited by empty lines
     bool DoParaPerEmptyLinesImport(LvXMLParserCallback* callback) {
         CRLog::debug("DoParaPerEmptyLinesImport()");
-        int pos = 0;
+        int pos = 0;   //position of a string in a paragraph
         int shortLineCount = 0;
         int emptyLineCount = 0;
         for (;;) {
@@ -2252,9 +2252,9 @@ public:
             while (pos < length()) {
                 LVTextFileLine* item = get(pos);
                 if (item->lpos != item->rpos) {
-                    break;
+                    break;    //Deleteing string here
                 }
-                pos++;
+                pos++;        //Aaand deleting string here
             }
             int i = pos;
             if (pos >= length() || DetectHeadingLevelByText(get(pos)->text) == 0) {
@@ -2302,14 +2302,19 @@ public:
     /// import document body
     bool DoTextImport(LvXMLParserCallback* callback) {
         if (smart_format_flags_ & tftPML) {
+            CRLog::trace("tftPML");
             return DoPMLImport(callback);
         } else if (smart_format_flags_ & tftPreFormatted) {
+            CRLog::trace("tftPreFormatted");
             return DoPreFormattedImport(callback);
         } else if (smart_format_flags_ & tftParaIdents) {
+            CRLog::trace("tftParaIdents");
             return DoParaPerIdentImport(callback);
         } else if (smart_format_flags_ & tftParaEmptyLineDelim) {
+            CRLog::trace("tftParaEmptyLineDelim");
             return DoParaPerEmptyLinesImport(callback);
         } else {
+            CRLog::trace("DoParaPerLineImport");
             return DoParaPerLineImport(callback);
         }
     }
