@@ -7,6 +7,8 @@
 
 // MS WORD format support using AntiWord library
 bool DetectWordFormat(LVStreamRef stream);
+// Check if it is RTF using AntiWord library
+bool DetectRTFFormat(LVStreamRef stream);
 
 bool ImportWordDocument(LVStreamRef stream, CrDom* dom, bool need_coverpage);
 

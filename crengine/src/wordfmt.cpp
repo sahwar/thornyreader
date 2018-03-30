@@ -736,6 +736,16 @@ bool DetectWordFormat(LVStreamRef stream)
     return true;
 }
 
+bool DetectRTFFormat(LVStreamRef stream)
+{
+    AntiwordStreamGuard file(stream);
+    setOptions();
+    if (bIsRtfFile(file)) {
+        return true;
+    }
+    return false;
+}
+
 bool ImportWordDocument(LVStreamRef stream,	CrDom* m_doc, bool need_coverpage)
 {
     AntiwordStreamGuard file(stream);
