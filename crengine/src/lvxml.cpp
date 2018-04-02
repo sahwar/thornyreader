@@ -731,7 +731,6 @@ int LVTextFileBase::ReadChars( lChar16 * buf, int maxsize )
 /// tries to autodetect text encoding
 bool LVTextFileBase::AutodetectEncoding( bool utfOnly )
 {
-    CRLog::error("AutodetectEncoding started");
     char enc_name[32];
     char lang_name[32];
     lvpos_t oldpos = m_stream->GetPos();
@@ -761,7 +760,7 @@ bool LVTextFileBase::AutodetectEncoding( bool utfOnly )
     delete[] buf;
     m_stream->SetPos( oldpos );
     if ( res) {
-        CRLog::debug("Code page decoding results: encoding=%s, lang=%s", enc_name, lang_name);
+        //CRLog::debug("Code page decoding results: encoding=%s, lang=%s", enc_name, lang_name);
         m_lang_name = lString16( lang_name );
         SetCharset( lString16( enc_name ).c_str() );
     }
@@ -2461,11 +2460,8 @@ bool LVTextParser::CheckFormat()
     Reset();
     // encoding test
     if ( !AutodetectEncoding() )
-    {
-        CRLog::error("!AutodetectEncoding()");
         return false;
-    }
-#define TEXT_PARSER_DETECT_SIZE 16384
+    #define TEXT_PARSER_DETECT_SIZE 16384
     Reset();
     lChar16 * chbuf = new lChar16[TEXT_PARSER_DETECT_SIZE];
     FillBuffer( TEXT_PARSER_DETECT_SIZE );
