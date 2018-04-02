@@ -731,6 +731,7 @@ int LVTextFileBase::ReadChars( lChar16 * buf, int maxsize )
 /// tries to autodetect text encoding
 bool LVTextFileBase::AutodetectEncoding( bool utfOnly )
 {
+    CRLog::error("AutodetectEncoding started");
     char enc_name[32];
     char lang_name[32];
     lvpos_t oldpos = m_stream->GetPos();
@@ -739,7 +740,10 @@ bool LVTextFileBase::AutodetectEncoding( bool utfOnly )
     if ( sz>m_stream->GetSize() )
         sz = m_stream->GetSize();
     if ( sz < 16 )
-        return false;
+    {
+        CRLog::error("LVTextFileBase::AutodetectEncoding: sz<16! Trying to continue...");
+        //return false;
+    }
     unsigned char * buf = new unsigned char[ sz ];
     lvsize_t bytesRead = 0;
     if ( m_stream->Read( buf, sz, &bytesRead )!=LVERR_OK ) {
@@ -757,7 +761,7 @@ bool LVTextFileBase::AutodetectEncoding( bool utfOnly )
     delete[] buf;
     m_stream->SetPos( oldpos );
     if ( res) {
-        //CRLog::debug("Code page decoding results: encoding=%s, lang=%s", enc_name, lang_name);
+        CRLog::debug("Code page decoding results: encoding=%s, lang=%s", enc_name, lang_name);
         m_lang_name = lString16( lang_name );
         SetCharset( lString16( enc_name ).c_str() );
     }
@@ -2457,49 +2461,18 @@ bool LVTextParser::CheckFormat()
     Reset();
     // encoding test
     if ( !AutodetectEncoding() )
+    {
+        CRLog::error("!AutodetectEncoding()");
         return false;
-    #define TEXT_PARSER_DETECT_SIZE 16384
+    }
+#define TEXT_PARSER_DETECT_SIZE 16384
     Reset();
     lChar16 * chbuf = new lChar16[TEXT_PARSER_DETECT_SIZE];
     FillBuffer( TEXT_PARSER_DETECT_SIZE );
     int charsDecoded = ReadTextBytes( 0, m_buf_len, chbuf, TEXT_PARSER_DETECT_SIZE-1, 0 );
-    bool res = false;
-    if ( charsDecoded > 16 ) {
-        int illegal_char_count = 0;
-        int crlf_count = 0;
-        int space_count = 0;
-        for ( int i=0; i<charsDecoded; i++ ) {
-            if ( chbuf[i]<=32 ) {
-                switch( chbuf[i] ) {
-                case ' ':
-                case '\t':
-                    space_count++;
-                    break;
-                case 10:
-                case 13:
-                    crlf_count++;
-                    break;
-                case 12:
-                //case 9:
-                case 8:
-                case 7:
-                case 30:
-                case 0x14:
-                case 0x15:
-                    break;
-                default:
-                    illegal_char_count++;
-                }
-            }
-        }
-        //if ( illegal_char_count==0 && (space_count>=charsDecoded/16 || crlf_count>0) )
-            res = true;
-        //if ( illegal_char_count>0 )
-        //    CRLog::error("illegal characters detected: count=%d", illegal_char_count );
-    }
     delete[] chbuf;
     Reset();
-    return res;
+    return true;
 }
 
 /// parses input stream

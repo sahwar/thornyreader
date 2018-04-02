@@ -515,13 +515,16 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 	}
 	if (parser)
 	{
+		CRLog::error("Parser started");
 		if (!parser->CheckFormat())
 		{
+			CRLog::error("!parser->CheckFormat()");
 			delete parser;
 			return false;
 		}
 		if (!parser->Parse())
 		{
+			CRLog::error("!parser->Parse()");
 			delete parser;
 			return false;
 		}
