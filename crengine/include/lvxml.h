@@ -163,7 +163,7 @@ protected:
     char_encoding_type m_enc_type;
     lString16 m_txt_buf;
     lString16 m_encoding_name;
-    lString16 m_lang_name = "utf-8";
+    lString16 m_lang_name;
     lChar16 * m_conv_table; // charset conversion table for 8-bit encodings
 
     lChar16 m_read_buffer[XML_CHAR_BUFFER_SIZE];
