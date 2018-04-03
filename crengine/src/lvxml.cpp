@@ -2674,22 +2674,19 @@ bool LvXmlParser::Parse(bool need_coverpage)
                     tagname.lowercase();
                 }
 
-                if(tagname=="style")
+                if(tagname=="style") // skipping all <style> tags
                 {
-                    if (attrname=="name")
+                    //if (attrname=="name")
+                    //{ if(attrvalue.pos("override")!=-1 || attrvalue.pos("GramE")!=-1 )// || attrvalue.pos("")!=-1 ){
+                    //callback_->OnTagClose(tagns.c_str(), tagname.c_str());
+                    //CRLog::trace("</%s>", LCSTR(tagname));
+                    if (SkipTillChar('>'))
                     {
-                        if(attrvalue.pos("override")!=-1 )//|| attrvalue.pos("char-style-override-10")!=-1 )
-                        {
-                            //callback_->OnTagClose(tagns.c_str(), tagname.c_str());
-                            //CRLog::trace("</%s>", LCSTR(tagname));
-                            if (SkipTillChar('>'))
-                            {
-                                m_state = ps_text;
-                                ch = ReadCharFromBuffer();
-                            }
-                            break;
-                        }
+                        m_state = ps_text;
+                        ch = ReadCharFromBuffer();
                     }
+                    break;
+                    //}}
                 }
 
                 if (close_flag)
