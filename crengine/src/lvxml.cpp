@@ -2624,7 +2624,7 @@ bool LvXmlParser::Parse(bool need_coverpage)
                 //CRLog::trace("LvXmlParser::Parse() ps_bof ret");
             }
             break;
-        case ps_lt:
+        case ps_lt:  //look for tags
             {
             	//CRLog::trace("LvXmlParser::Parse() ps_lt");
                 if (!SkipSpaces())
@@ -2673,6 +2673,25 @@ bool LvXmlParser::Parse(bool need_coverpage)
                     tagns.lowercase();
                     tagname.lowercase();
                 }
+
+                if(tagname=="style")
+                {
+                    if (attrname=="name")
+                    {
+                        if(attrvalue.pos("override")!=-1 )//|| attrvalue.pos("char-style-override-10")!=-1 )
+                        {
+                            //callback_->OnTagClose(tagns.c_str(), tagname.c_str());
+                            //CRLog::trace("</%s>", LCSTR(tagname));
+                            if (SkipTillChar('>'))
+                            {
+                                m_state = ps_text;
+                                ch = ReadCharFromBuffer();
+                            }
+                            break;
+                        }
+                    }
+                }
+
                 if (close_flag)
                 {
                     callback_->OnTagClose(tagns.c_str(), tagname.c_str());
@@ -2699,14 +2718,14 @@ bool LvXmlParser::Parse(bool need_coverpage)
                 //CRLog::trace("LvXmlParser::Parse() ps_lt ret");
             }
             break;
-        case ps_attr:
+        case ps_attr: //read tags
             {
                 //CRLog::trace("LvXmlParser::Parse() ps_attr");
                 if (!SkipSpaces())
                     break;
                 ch = PeekCharFromBuffer();
                 lChar16 nch = PeekCharFromBuffer(1);
-                if (ch == '>' || (nch == '>' && (ch == '/' || ch == '?')))
+                if (ch == '>' || ((ch == '/' || ch == '?') && nch == '>'))
                 {
                     callback_->OnTagBody();
                     // end of tag
