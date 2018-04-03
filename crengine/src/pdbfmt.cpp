@@ -154,7 +154,7 @@ struct MobiPreamble : public PalmDocPreamble
         lvByteOrderConv cnv;
         if ( cnv.lsf() )
         {
-            cnv.rev(&compression); // 2  Compression   1 == no compression, 2 = PalmDOC compression (see below)
+            cnv.rev(&compression); // 2  Compression   1 == no compression, 2 = PalmDOC compression (see below), 17480 = HUFF/CDIC compression
             cnv.rev(&textLength);  // 4  text length  Uncompressed length of the entire text of the book
             cnv.rev(&recordCount); // 2  record count  Number of PDB records used for the text of the book.
             cnv.rev(&recordSize);  // 2  record size  Maximum size of each record containing text, always 4096
@@ -181,6 +181,8 @@ struct MobiPreamble : public PalmDocPreamble
             cnv.rev(&drmFlags); //    176	4	DRM Flags	Some flags concerning the DRM info.
         }
         if ( compression!=1 && compression!=2 )
+        {
+            CRLog::error("Compression is Huffman/cdic compression! Abort!"); //TODO implement HUFF/CDIC decoding
             return false;
         if ( mobiType!=2 && mobiType!=3 && mobiType!=517 && mobiType!=518
                  && mobiType!=257 && mobiType!=258 && mobiType!=259 )
