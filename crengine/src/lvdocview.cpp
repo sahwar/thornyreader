@@ -458,18 +458,6 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 #if ENABLE_ANTIWORD == 1
         if (DetectWordFormat(stream_))
         {
-            /*
-            CrDom* a(NULL);// = new CrDom;
-            CRLog::error("CrDom* a(NULL);");
-            //a->setProps(doc_props_);
-            CRLog::error("a->setProps(doc_props_);");
-            ImportWordDocument(stream_, a, cfg_firstpage_thumb_);
-            CRLog::error("ImportWordDocument(stream_, a, cfg_firstpage_thumb_);");
-            LVStreamRef out = LVOpenFileStream("/data/data/org.readera/files/temp.xml", LVOM_WRITE);
-            CRLog::error("LVStreamRef out = LVOpenFileStream(\"/data/data/org.readera/files/temp.xml\", LVOM_WRITE);");
-            a->saveToStream(out, NULL, true);
-            CRLog::error("a->saveToStream(out, NULL, true);");
-            */
             cr_dom_->setProps(doc_props_);
             if (!ImportWordDocument(stream_, cr_dom_, cfg_firstpage_thumb_))
             {
@@ -528,6 +516,8 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 			return false;
 		}
 		delete parser;
+        LVStreamRef out = LVOpenFileStream("/data/data/org.readera/files/temp.xml", LVOM_WRITE);
+        cr_dom_->saveToStream(out, NULL, true);
 	}
 	offset_ = 0;
 	page_ = 0;
