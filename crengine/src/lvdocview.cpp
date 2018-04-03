@@ -517,11 +517,13 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 	{
 		if (!parser->CheckFormat())
 		{
+            CRLog::trace("!parser->CheckFormat()");
 			delete parser;
 			return false;
 		}
 		if (!parser->Parse())
 		{
+            CRLog::trace("!parser->Parse()");
 			delete parser;
 			return false;
 		}
