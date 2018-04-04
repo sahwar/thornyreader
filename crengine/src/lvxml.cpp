@@ -2674,7 +2674,7 @@ bool LvXmlParser::Parse(bool need_coverpage)
                     tagname.lowercase();
                 }
 
-                if(tagname=="style") // skipping all <style> tags
+                if(tagname=="style") //|| tagname=="table" || tagname=="tr" || tagname=="td") // skipping all <style> tags and <table> <tr> <td> tags
                 {
                     //if (attrname=="name")
                     //{ if(attrvalue.pos("override")!=-1 || attrvalue.pos("GramE")!=-1 )// || attrvalue.pos("")!=-1 ){
@@ -4036,7 +4036,7 @@ LVStreamRef GetFB2Coverpage(LVStreamRef stream)
         stream->SetPos(0);
 		return LVStreamRef();
 	}
-    parser.Parse(true); // true to parse domtree only for coverpage
+    parser.Parse(false); // true to parse domtree only for coverpage
     LVStreamRef res = callback.getStream();
     stream->SetPos(0);
     return res;
