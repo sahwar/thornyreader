@@ -2833,6 +2833,197 @@ bool LvXmlParser::Parse(bool need_coverpage)
     return !error;
 }
 
+bool LvXmlParser::HeaderParse()
+{
+    Reset();
+    callback_->OnStart(this);
+    //int txt_count = 0;
+    int flags = callback_->getFlags();
+    bool error = false;
+    bool in_xml_tag = false;
+    bool close_flag = false;
+    bool body_started = false;
+    bool q_flag = false;
+    lString16 tagname;
+    lString16 tagns;
+    lString16 attrname;
+    lString16 attrns;
+    lString16 attrvalue;
+
+    for (; !eof_ && !error && !body_started;)
+    {
+        if (m_stopped)
+            break;
+        // Load next portion of data if necessary
+        lChar16 ch = PeekCharFromBuffer();
+        switch (m_state)
+        {   case ps_bof:
+            {   //CRLog::trace("LvXmlParser::Parse() ps_bof");
+                // Skip file beginning until '<'
+                for ( ; !eof_ && ch!='<'; ch = PeekNextCharFromBuffer())
+                    ;
+                if (!eof_)
+                {
+                    m_state = ps_lt;
+                    ReadCharFromBuffer();
+                }
+                //CRLog::trace("LvXmlParser::Parse() ps_bof ret");
+            }
+                break;
+            case ps_lt:  //look for tags
+            {//CRLog::trace("LvXmlParser::Parse() ps_lt");
+                if (!SkipSpaces())
+                    break;
+                close_flag = false;
+                q_flag = false;
+                if (ch=='/')
+                { ch = ReadCharFromBuffer();
+                    close_flag = true;
+                }
+                else if (ch=='?')
+                {// <?xml?>
+                    ch = ReadCharFromBuffer();
+                    q_flag = true;
+                }
+                else if (ch=='!')
+                {// comments etc...
+                    if (PeekCharFromBuffer(1) == '-' && PeekCharFromBuffer(2) == '-') {
+                        // skip comments
+                        ch = PeekNextCharFromBuffer(2);
+                        while (!eof_ && (ch != '-' || PeekCharFromBuffer(1) != '-'
+                                         || PeekCharFromBuffer(2) != '>') ) {
+                            ch = PeekNextCharFromBuffer();
+                        }
+                        if (ch=='-' && PeekCharFromBuffer(1)=='-'
+                            && PeekCharFromBuffer(2)=='>' )
+                            ch = PeekNextCharFromBuffer(2);
+                        m_state = ps_text;
+                        break;
+                    }
+                }if (!ReadIdent(tagns, tagname) || PeekCharFromBuffer()=='=')
+                {// Error
+                    if (SkipTillChar('>'))
+                    {
+                        m_state = ps_text;
+                        ch = ReadCharFromBuffer();
+                    }
+                    break;
+                }
+                if (possible_capitalized_tags_) {
+                    tagns.lowercase();
+                    tagname.lowercase();
+                }
+                if (close_flag)
+                { callback_->OnTagClose(tagns.c_str(), tagname.c_str());
+                    //CRLog::trace("</%s>", LCSTR(tagname));
+                    if (SkipTillChar('>'))
+                    {
+                        m_state = ps_text;
+                        ch = ReadCharFromBuffer();
+                    }
+                    break;
+                }
+
+                if (q_flag) {
+                    tagname.insert(0, 1, '?');
+                    in_xml_tag = (tagname == "?xml");
+                } else {
+                    in_xml_tag = false;
+                }
+                callback_->OnTagOpen(tagns.c_str(), tagname.c_str());
+                //CRLog::trace("OnTagOpen %s", LCSTR(tagname));
+                if (!body_started && tagname == "body")
+                    body_started = true;
+                m_state = ps_attr;
+                //CRLog::trace("LvXmlParser::Parse() ps_lt ret");
+            }
+                break;
+            case ps_attr: //read tags
+            {//CRLog::trace("LvXmlParser::Parse() ps_attr");
+                if (!SkipSpaces())
+                    break;
+                ch = PeekCharFromBuffer();
+                lChar16 nch = PeekCharFromBuffer(1);
+                if (ch == '>' || ((ch == '/' || ch == '?') && nch == '>'))
+                {
+                    callback_->OnTagBody();
+                    // end of tag
+                    if (ch != '>')
+                        callback_->OnTagClose(tagns.c_str(), tagname.c_str());
+                    if (ch == '>')
+                        ch = PeekNextCharFromBuffer();
+                    else
+                        ch = PeekNextCharFromBuffer(1);
+                    m_state = ps_text;
+                    break;
+                }
+                if (!ReadIdent(attrns, attrname))
+                {// error: skip rest of tag
+                    SkipTillChar('<');
+                    ch = PeekNextCharFromBuffer(1);
+                    callback_->OnTagBody();
+                    m_state = ps_lt;
+                    break;
+                }
+                SkipSpaces();
+                attrvalue.reset(16);
+                ch = PeekCharFromBuffer();
+                // Read attribute value
+                if (ch == '=')
+                {
+                    // Skip '='
+                    ReadCharFromBuffer();
+                    SkipSpaces();
+                    lChar16 qChar = 0;
+                    ch = PeekCharFromBuffer();
+                    if (ch == '\"' || ch == '\'')
+                    {
+                        qChar = ReadCharFromBuffer();
+                    }
+                    for (; !eof_;)
+                    { ch = PeekCharFromBuffer();
+                        if (ch == '>')
+                            break;
+                        if (!qChar && IsSpaceChar(ch))
+                            break;
+                        if (qChar && ch == qChar)
+                        {
+                            ch = PeekNextCharFromBuffer();
+                            break;
+                        }
+                        ch = ReadCharFromBuffer();
+                        if (ch)
+                            attrvalue += ch;
+                        else
+                            break;
+                    }
+                }if (possible_capitalized_tags_) {
+                    attrns.lowercase();
+                    attrname.lowercase();
+                }if ((flags & TXTFLG_CONVERT_8BIT_ENTITY_ENCODING) && m_conv_table) {
+                    PreProcessXmlString(attrvalue, 0, m_conv_table);
+                }
+                callback_->OnAttribute(attrns.c_str(), attrname.c_str(), attrvalue.c_str());
+                if (in_xml_tag && attrname == "encoding")
+                {
+                    SetCharset(attrvalue.c_str());
+                }
+                //CRLog::trace("LvXmlParser::Parse() ps_attr ret");
+            }
+                break;
+            case ps_text:
+            {   ReadText();
+                m_state = ps_lt;
+                //CRLog::trace("LvXmlParser::Parse() ps_text ret");
+            }
+                break;
+            default:
+            {}
+        }
+    }
+    callback_->OnStop();
+    return !error;
+}
 #define TEXT_SPLIT_SIZE 8192
 
 typedef struct  {

@@ -316,6 +316,7 @@ public:
     virtual bool CheckFormat();
     virtual bool Parse();
     virtual bool Parse(bool need_coverpage);
+    virtual bool HeaderParse();
     /// sets charset by name
     virtual void SetCharset(const lChar16* name);
     /// resets parsing, moves to beginning of stream

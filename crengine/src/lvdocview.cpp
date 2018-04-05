@@ -2208,6 +2208,7 @@ void CreBridge::processMetadata(CmdRequest &request, CmdResponse &response)
 	lString16 series;
 	int series_number = 0;
 	lString16 lang;
+    //lString16 coverimage;
 
 	if (doc_format == DOC_FORMAT_EPUB)
 	{
@@ -2331,12 +2332,14 @@ void CreBridge::processMetadata(CmdRequest &request, CmdResponse &response)
 		dom.setAttributeTypes(fb2_attr_table);
 		dom.setNameSpaceTypes(fb2_ns_table);
 		LvXmlParser parser(stream, &writer);
-		if (parser.CheckFormat() && parser.Parse())
+		if (parser.CheckFormat() && parser.HeaderParse())
 		{
 			authors = ExtractDocAuthors(&dom, lString16("|"));
 			title = ExtractDocTitle(&dom);
 			lang = ExtractDocLanguage(&dom);
 			series = ExtractDocSeries(&dom, &series_number);
+            //coverimage = ExtractDocThumbImageName(&dom);
+            //CRLog::error("coverimage extracted == %s", LCSTR(coverimage));
 		}
 		else
 		{
@@ -2344,6 +2347,8 @@ void CreBridge::processMetadata(CmdRequest &request, CmdResponse &response)
 			response.result = RES_INTERNAL_ERROR;
 			return;
 		}
+        //LVStreamRef out = LVOpenFileStream("/data/data/org.readera/files/metatemp.xml", LVOM_WRITE);
+        //dom.saveToStream(out, NULL, true);
 	}
 	CmdData *doc_thumb = new CmdData();
 	int thumb_width = 0;
