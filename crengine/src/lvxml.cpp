@@ -2715,7 +2715,7 @@ bool LvXmlParser::Parse(int parservar)  //parservar is flag. 0 means full parsin
                 if (!body_started && tagname == "body")
                 {
                     body_started = true;
-                    if (parservar = 2)
+                    if (parservar == 2)
                     {
                         headers_stop = true;
                     }
