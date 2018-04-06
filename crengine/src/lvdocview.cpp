@@ -2332,7 +2332,10 @@ void CreBridge::processMetadata(CmdRequest &request, CmdResponse &response)
 		dom.setAttributeTypes(fb2_attr_table);
 		dom.setNameSpaceTypes(fb2_ns_table);
 		LvXmlParser parser(stream, &writer);
-		if (parser.CheckFormat() && parser.HeaderParse())
+        parservars ldocmetaparservars;
+        ldocmetaparservars.need_coverpage = false;
+        ldocmetaparservars.header_parse = true;
+		if (parser.CheckFormat() && parser.Parse(ldocmetaparservars))
 		{
 			authors = ExtractDocAuthors(&dom, lString16("|"));
 			title = ExtractDocTitle(&dom);
@@ -2347,8 +2350,8 @@ void CreBridge::processMetadata(CmdRequest &request, CmdResponse &response)
 			response.result = RES_INTERNAL_ERROR;
 			return;
 		}
-        //LVStreamRef out = LVOpenFileStream("/data/data/org.readera/files/metatemp.xml", LVOM_WRITE);
-        //dom.saveToStream(out, NULL, true);
+        LVStreamRef out = LVOpenFileStream("/data/data/org.readera/files/metatemp.xml", LVOM_WRITE);
+        dom.saveToStream(out, NULL, true);
 	}
 	CmdData *doc_thumb = new CmdData();
 	int thumb_width = 0;
