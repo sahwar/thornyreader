@@ -2580,14 +2580,12 @@ bool LvXmlParser::CheckFormat() {
 }
 bool LvXmlParser::Parse()
 {
-    parservars p;
-    p.need_coverpage = false;
-    p.header_parse = false;
-    return Parse(p);
+    return Parse(0);
 }
 
-
-bool LvXmlParser::Parse(parservars parservars)
+bool LvXmlParser::Parse(int parservar)  //parservar is flag. 0 means full parsing of document for rendering,
+                                                          // 1 means parsing small dom-tree for case when no coverpage image is found (new need_coverpage)
+                                                          // 2 means parsing header of file only, for metadata extracting   (new need_metadata)
 {
 	Reset();
     callback_->OnStart(this);
@@ -2717,11 +2715,11 @@ bool LvXmlParser::Parse(parservars parservars)
                 if (!body_started && tagname == "body")
                 {
                     body_started = true;
-                    if (parservars.header_parse)
+                    if (parservar = 2)
                     {
                         headers_stop = true;
                     }
-                                }
+                }
 
                 m_state = ps_attr;
                 //CRLog::trace("LvXmlParser::Parse() ps_lt ret");
@@ -2824,7 +2822,7 @@ bool LvXmlParser::Parse(parservars parservars)
             ReadText();
             fragments_counter++;
 
-	        if(parservars.need_coverpage)
+	        if(parservar== 1)
 			{
                 CRLog::trace("LvXmlParser: text fragments read : %d", fragments_counter);
 				if (fragments_counter >= FIRSTPAGE_BLOCKS_MAX)
@@ -3582,7 +3580,7 @@ bool LvHtmlParser::Parse()
     return LvXmlParser::Parse();
 }
 
-bool LvHtmlParser::Parse(parservars parservars)
+bool LvHtmlParser::Parse(int parservars)
 {
 	return LvXmlParser::Parse(parservars);
 }

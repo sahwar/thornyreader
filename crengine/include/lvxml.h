@@ -296,12 +296,6 @@ public:
     virtual bool Parse();
 };
 
-
-struct parservars{
-    bool need_coverpage = false;
-    bool header_parse = false;
-};
-
 /// XML parser
 class LvXmlParser : public LVTextFileBase
 {
@@ -322,7 +316,7 @@ public:
     virtual bool CheckFormat();
     //parse
     virtual bool Parse();
-    virtual bool Parse(parservars parservars);
+    virtual bool Parse(int parservar);
     /// sets charset by name
     virtual void SetCharset(const lChar16* name);
     /// resets parsing, moves to beginning of stream
@@ -345,7 +339,7 @@ public:
     /// Returns true if format is recognized by parser
     virtual bool CheckFormat();
     virtual bool Parse();
-    virtual bool Parse(parservars parservars);
+    virtual bool Parse(int parservars);
     LvHtmlParser(LVStreamRef stream, LvXMLParserCallback * callback);
     LvHtmlParser(LVStreamRef stream, LvXMLParserCallback * callback, bool need_coverpage);
     virtual ~LvHtmlParser();

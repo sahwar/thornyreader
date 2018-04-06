@@ -1118,18 +1118,13 @@ bool ImportMOBIDoc(LVStreamRef& stream, CrDom* doc, doc_format_t& doc_format, bo
         // HTML
         LvDomAutocloseWriter writerFilter(doc, false, HTML_AUTOCLOSE_TABLE);
         LvHtmlParser parser(stream, &writerFilter);
-        parservars mobidocparservars;
-        if (need_coverpage)
-        {
-            mobidocparservars.need_coverpage = true;
-        }
         if (!parser.CheckFormat()) {
             return false;
         } else {
             if (pdb->getFormat() == PDBFile::MOBI && isCorrectUtf8Text(stream)) {
                 parser.SetCharset(L"utf-8");
             }
-            if (!parser.Parse(mobidocparservars)) {
+            if (!parser.Parse(1)) {
                 return false;
             }
         }
