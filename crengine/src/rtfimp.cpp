@@ -10,15 +10,12 @@
    See LICENSE file for details
 
 *******************************************************/
-#include "../include/rtfimp.h"
-#include "../include/crtxtenc.h"
-#include "../include/lvtinydom.h"
+
 #include <string.h>
+#include "include/rtfimp.h"
+#include "include/crtxtenc.h"
+#include "include/lvtinydom.h"
 #include "include/crconfig.h"
-
-//==================================================
-// RTF file parser
-
 
 #undef RTF_CMD
 #undef RTF_CHR
@@ -42,7 +39,7 @@
 #define RTF_DST( name, index ) \
     { RTF_##name, #name, CWT_DEST, index, 0 },
 static const rtf_control_word rtf_words[] = {
-#include "../include/rtfcmd.h"
+#include "include/rtfcmd.h"
 };
 static const int rtf_words_count = sizeof(rtf_words) / sizeof(rtf_control_word);
 

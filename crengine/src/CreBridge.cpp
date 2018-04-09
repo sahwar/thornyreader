@@ -543,17 +543,18 @@ void CreBridge::processPageXPath(CmdRequest& request, CmdResponse& response)
 void CreBridge::processOutline(CmdRequest& request, CmdResponse& response)
 {
     response.cmd = CMD_RES_OUTLINE;
-
     response.addInt((uint32_t) 0);
-
     int columns = doc_view_->GetColumns();
     LVPtrVector<LvTocItem, false> outline;
     doc_view_->GetOutline(outline);
+    CRLog::trace("processOutline size: %d", outline.length());
+    if (outline.length() > 5000) {
+        return;
+    }
     for (int i = 0; i < outline.length(); i++) {
         LvTocItem* row = outline[i];
-        response.addWords(
-                (uint16_t) OUTLINE_TARGET_XPATH,
-                (uint16_t) ExportPage(columns, row->getPage()));
+        uint16_t row_page = (uint16_t) ExportPage(columns, row->getPage());
+        response.addWords((uint16_t) OUTLINE_TARGET_XPATH, row_page);
         response.addInt((uint32_t) row->getLevel());
         responseAddString(response, row->getName());
         responseAddString(response, row->getPath());
