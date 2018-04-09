@@ -121,6 +121,7 @@ public:
     virtual bool GetSpaceMode() { return false; }
     /// virtual destructor
     virtual ~LVFileFormatParser();
+    virtual void FullDom() = 0;
 };
 
 class LVFileParserBase : public LVFileFormatParser
@@ -294,6 +295,8 @@ public:
     virtual bool CheckFormat();
     /// parses input stream
     virtual bool Parse();
+
+    virtual void FullDom();
 };
 
 /// XML parser
@@ -307,6 +310,7 @@ private:
     bool SkipTillChar( lChar16 ch );
     bool ReadIdent( lString16 & ns, lString16 & str );
     bool ReadText();
+    bool need_coverpage_;
 protected:
     bool possible_capitalized_tags_;
     bool m_allowHtml;
@@ -316,19 +320,20 @@ public:
     virtual bool CheckFormat();
     //parse
     virtual bool Parse();
-    virtual bool Parse(int parservar);
     /// sets charset by name
     virtual void SetCharset(const lChar16* name);
     /// resets parsing, moves to beginning of stream
     virtual void Reset();
     /// constructor
-    LvXmlParser( LVStreamRef stream, LvXMLParserCallback * callback, bool allowHtml=true, bool fb2Only=false );
+    LvXmlParser( LVStreamRef stream, LvXMLParserCallback * callback, bool allowHtml=true, bool fb2Only=false, bool coverpage_needed= false );
     /// changes space mode
     virtual void SetSpaceMode( bool flgTrimSpaces );
     /// returns space mode
     bool GetSpaceMode() { return m_trimspaces; }
     /// destructor
     virtual ~LvXmlParser();
+
+    void FullDom();
 };
 
 extern const char * * HTML_AUTOCLOSE_TABLE[];
@@ -339,7 +344,6 @@ public:
     /// Returns true if format is recognized by parser
     virtual bool CheckFormat();
     virtual bool Parse();
-    virtual bool Parse(int parservars);
     LvHtmlParser(LVStreamRef stream, LvXMLParserCallback * callback);
     LvHtmlParser(LVStreamRef stream, LvXMLParserCallback * callback, bool need_coverpage);
     virtual ~LvHtmlParser();

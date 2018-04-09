@@ -2502,6 +2502,9 @@ bool LVTextParser::Parse() {
     return true;
 }
 
+void LVTextParser::FullDom(){
+    //do nothing
+};
 /*******************************************************************************/
 // XML parser
 /*******************************************************************************/
@@ -2578,14 +2581,12 @@ bool LvXmlParser::CheckFormat() {
     Reset();
     return res;
 }
-bool LvXmlParser::Parse()
-{
-    return Parse(0);
-}
 
-bool LvXmlParser::Parse(int parservar)  //parservar is flag. 0 means full parsing of document for rendering,
-                                                          // 1 means parsing small dom-tree for case when no coverpage image is found (new need_coverpage)
-                                                          // 2 means parsing header of file only, for metadata extracting   (new need_metadata)
+void LvXmlParser::FullDom()
+{
+    need_coverpage_ = false;
+}
+bool LvXmlParser::Parse()
 {
 	Reset();
     callback_->OnStart(this);
@@ -2597,7 +2598,6 @@ bool LvXmlParser::Parse(int parservar)  //parservar is flag. 0 means full parsin
     bool q_flag = false;
     bool body_started = false;
 	bool firstpage_thumb_num_reached = false;
-    bool headers_stop = false;
     int fragments_counter = 0;
     lString16 tagname;
     lString16 tagns;
@@ -2605,7 +2605,7 @@ bool LvXmlParser::Parse(int parservar)  //parservar is flag. 0 means full parsin
     lString16 attrns;
     lString16 attrvalue;
 
-	for (; !eof_ && !error && !firstpage_thumb_num_reached && !headers_stop;)
+	for (; !eof_ && !error && !firstpage_thumb_num_reached ;)
     {
 	    if (m_stopped)
              break;
@@ -2712,14 +2712,6 @@ bool LvXmlParser::Parse(int parservar)  //parservar is flag. 0 means full parsin
                 }
                 callback_->OnTagOpen(tagns.c_str(), tagname.c_str());
                 //CRLog::trace("OnTagOpen %s", LCSTR(tagname));
-                if (!body_started && tagname == "body")
-                {
-                    body_started = true;
-                    if (parservar == 2)
-                    {
-                        headers_stop = true;
-                    }
-                }
 
                 m_state = ps_attr;
                 //CRLog::trace("LvXmlParser::Parse() ps_lt ret");
@@ -2822,7 +2814,7 @@ bool LvXmlParser::Parse(int parservar)  //parservar is flag. 0 means full parsin
             ReadText();
             fragments_counter++;
 
-	        if(parservar== 1)
+	        if(need_coverpage_)
 			{
                 CRLog::trace("LvXmlParser: text fragments read : %d", fragments_counter);
 				if (fragments_counter >= FIRSTPAGE_BLOCKS_MAX)
@@ -3484,7 +3476,7 @@ void LvXmlParser::SetSpaceMode(bool flgTrimSpaces)
     m_trimspaces = flgTrimSpaces;
 }
 
-LvXmlParser::LvXmlParser(LVStreamRef stream, LvXMLParserCallback* callback,bool allowHtml, bool fb2Only)
+LvXmlParser::LvXmlParser(LVStreamRef stream, LvXMLParserCallback* callback,bool allowHtml, bool fb2Only, bool need_coverpage)
         : LVTextFileBase(stream),
           callback_(callback),
           m_trimspaces(true),
@@ -3492,6 +3484,7 @@ LvXmlParser::LvXmlParser(LVStreamRef stream, LvXMLParserCallback* callback,bool 
           possible_capitalized_tags_(false),
           m_allowHtml(allowHtml),
           m_fb2Only(fb2Only) {
+    this->need_coverpage_= need_coverpage;
 }
 
 LvXmlParser::~LvXmlParser() {}
@@ -3580,10 +3573,6 @@ bool LvHtmlParser::Parse()
     return LvXmlParser::Parse();
 }
 
-bool LvHtmlParser::Parse(int parservars)
-{
-	return LvXmlParser::Parse(parservars);
-}
 /// read file contents to string
 lString16 LVReadCssText(lString16 filename)
 {

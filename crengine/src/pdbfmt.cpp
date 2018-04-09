@@ -1124,7 +1124,7 @@ bool ImportMOBIDoc(LVStreamRef& stream, CrDom* doc, doc_format_t& doc_format, bo
             if (pdb->getFormat() == PDBFile::MOBI && isCorrectUtf8Text(stream)) {
                 parser.SetCharset(L"utf-8");
             }
-            if (!parser.Parse(1)) {
+            if (!parser.Parse()) {
                 return false;
             }
         }

@@ -365,7 +365,7 @@ protected:
     void CommitText();
     void AddChar( lChar16 ch );
     void AddChar8( lUInt8 ch );
-    bool need_coverpage_rtf;
+    bool need_coverpage_;
 public:
     /// counter for image index
     int nextImageIndex() { return imageIndex++; }
@@ -385,6 +385,7 @@ public:
     virtual lChar16 * GetCharsetTable( );
     /// virtual destructor
     virtual ~LVRtfParser();
+    void FullDom();
 };
 
 
