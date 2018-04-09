@@ -1,6 +1,7 @@
 #include "include/lvstream.h"
 #include "include/chmfmt.h"
 #include "chmlib/src/chm_lib.h"
+#include <include/crconfig.h>
 
 struct crChmExternalFileStream : public chmExternalFileStream {
     /** returns file size, in bytes, if opened successfully */
@@ -1138,7 +1139,7 @@ public:
         int cnt = _fileList.length();
         if(needs_coverpage)
         {
-            cnt=5;
+            cnt=(cnt<FIRSTPAGE_BLOCKS_MAX_CHM)? cnt : FIRSTPAGE_BLOCKS_MAX_CHM;
         }
         for ( int i=0; i<cnt; i++ ) {
             lString16 fname = _fileList[i];
