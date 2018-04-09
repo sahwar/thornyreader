@@ -737,7 +737,10 @@ bool LVTextFileBase::AutodetectEncoding( bool utfOnly )
     if ( sz>m_stream->GetSize() )
         sz = m_stream->GetSize();
     if ( sz < 16 )
-        return false;
+    {
+        CRLog::error("LVTextFileBase::AutodetectEncoding: sz<16! Trying to continue...");
+        //return false;
+    }
     unsigned char * buf = new unsigned char[ sz ];
     lvsize_t bytesRead = 0;
     if ( m_stream->Read( buf, sz, &bytesRead )!=LVERR_OK ) {
@@ -2461,43 +2464,9 @@ bool LVTextParser::CheckFormat()
     lChar16 * chbuf = new lChar16[TEXT_PARSER_DETECT_SIZE];
     FillBuffer( TEXT_PARSER_DETECT_SIZE );
     int charsDecoded = ReadTextBytes( 0, m_buf_len, chbuf, TEXT_PARSER_DETECT_SIZE-1, 0 );
-    bool res = false;
-    if ( charsDecoded > 16 ) {
-        int illegal_char_count = 0;
-        int crlf_count = 0;
-        int space_count = 0;
-        for ( int i=0; i<charsDecoded; i++ ) {
-            if ( chbuf[i]<=32 ) {
-                switch( chbuf[i] ) {
-                case ' ':
-                case '\t':
-                    space_count++;
-                    break;
-                case 10:
-                case 13:
-                    crlf_count++;
-                    break;
-                case 12:
-                //case 9:
-                case 8:
-                case 7:
-                case 30:
-                case 0x14:
-                case 0x15:
-                    break;
-                default:
-                    illegal_char_count++;
-                }
-            }
-        }
-        //if ( illegal_char_count==0 && (space_count>=charsDecoded/16 || crlf_count>0) )
-            res = true;
-        //if ( illegal_char_count>0 )
-        //    CRLog::error("illegal characters detected: count=%d", illegal_char_count );
-    }
     delete[] chbuf;
     Reset();
-    return res;
+    return true;
 }
 
 /// parses input stream
@@ -2531,6 +2500,9 @@ bool LVTextParser::Parse() {
     return true;
 }
 
+void LVTextParser::FullDom(){
+    //do nothing
+};
 /*******************************************************************************/
 // XML parser
 /*******************************************************************************/
@@ -2607,12 +2579,12 @@ bool LvXmlParser::CheckFormat() {
     Reset();
     return res;
 }
-bool LvXmlParser::Parse()
-{
-    return Parse(false);
-}
 
-bool LvXmlParser::Parse(bool need_coverpage)
+void LvXmlParser::FullDom()
+{
+    need_coverpage_ = false;
+}
+bool LvXmlParser::Parse()
 {
 	Reset();
     callback_->OnStart(this);
@@ -2631,7 +2603,7 @@ bool LvXmlParser::Parse(bool need_coverpage)
     lString16 attrns;
     lString16 attrvalue;
 
-	for (; !eof_ && !error && !firstpage_thumb_num_reached;)
+	for (; !eof_ && !error && !firstpage_thumb_num_reached ;)
     {
 	    if (m_stopped)
              break;
@@ -2653,7 +2625,7 @@ bool LvXmlParser::Parse(bool need_coverpage)
                 //CRLog::trace("LvXmlParser::Parse() ps_bof ret");
             }
             break;
-        case ps_lt:
+        case ps_lt:  //look for tags
             {
             	//CRLog::trace("LvXmlParser::Parse() ps_lt");
                 if (!SkipSpaces())
@@ -2702,6 +2674,22 @@ bool LvXmlParser::Parse(bool need_coverpage)
                     tagns.lowercase();
                     tagname.lowercase();
                 }
+
+                if(tagname=="style") //|| tagname=="table" || tagname=="tr" || tagname=="td") // skipping all <style> tags and <table> <tr> <td> tags
+                {
+                    //if (attrname=="name")
+                    //{ if(attrvalue.pos("override")!=-1 || attrvalue.pos("GramE")!=-1 )// || attrvalue.pos("")!=-1 ){
+                    //callback_->OnTagClose(tagns.c_str(), tagname.c_str());
+                    //CRLog::trace("</%s>", LCSTR(tagname));
+                    if (SkipTillChar('>'))
+                    {
+                        m_state = ps_text;
+                        ch = ReadCharFromBuffer();
+                    }
+                    break;
+                    //}}
+                }
+
                 if (close_flag)
                 {
                     callback_->OnTagClose(tagns.c_str(), tagname.c_str());
@@ -2722,20 +2710,19 @@ bool LvXmlParser::Parse(bool need_coverpage)
                 }
                 callback_->OnTagOpen(tagns.c_str(), tagname.c_str());
                 //CRLog::trace("OnTagOpen %s", LCSTR(tagname));
-                if (!body_started && tagname == "body")
-                    body_started = true;
+
                 m_state = ps_attr;
                 //CRLog::trace("LvXmlParser::Parse() ps_lt ret");
             }
             break;
-        case ps_attr:
+        case ps_attr: //read tags
             {
                 //CRLog::trace("LvXmlParser::Parse() ps_attr");
                 if (!SkipSpaces())
                     break;
                 ch = PeekCharFromBuffer();
                 lChar16 nch = PeekCharFromBuffer(1);
-                if (ch == '>' || (nch == '>' && (ch == '/' || ch == '?')))
+                if (ch == '>' || ((ch == '/' || ch == '?') && nch == '>'))
                 {
                     callback_->OnTagBody();
                     // end of tag
@@ -2825,7 +2812,7 @@ bool LvXmlParser::Parse(bool need_coverpage)
             ReadText();
             fragments_counter++;
 
-	        if(need_coverpage)
+	        if(need_coverpage_)
 			{
                 CRLog::trace("LvXmlParser: text fragments read : %d", fragments_counter);
 				if (fragments_counter >= FIRSTPAGE_BLOCKS_MAX)
@@ -3487,7 +3474,7 @@ void LvXmlParser::SetSpaceMode(bool flgTrimSpaces)
     m_trimspaces = flgTrimSpaces;
 }
 
-LvXmlParser::LvXmlParser(LVStreamRef stream, LvXMLParserCallback* callback,bool allowHtml, bool fb2Only)
+LvXmlParser::LvXmlParser(LVStreamRef stream, LvXMLParserCallback* callback,bool allowHtml, bool fb2Only, bool need_coverpage)
         : LVTextFileBase(stream),
           callback_(callback),
           m_trimspaces(true),
@@ -3495,6 +3482,7 @@ LvXmlParser::LvXmlParser(LVStreamRef stream, LvXMLParserCallback* callback,bool 
           possible_capitalized_tags_(false),
           m_allowHtml(allowHtml),
           m_fb2Only(fb2Only) {
+    this->need_coverpage_= need_coverpage;
 }
 
 LvXmlParser::~LvXmlParser() {}
@@ -3583,10 +3571,6 @@ bool LvHtmlParser::Parse()
     return LvXmlParser::Parse();
 }
 
-bool LvHtmlParser::Parse(bool need_coverpage)
-{
-	return LvXmlParser::Parse(need_coverpage);
-}
 /// read file contents to string
 lString16 LVReadCssText(lString16 filename)
 {

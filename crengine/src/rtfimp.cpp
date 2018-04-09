@@ -363,7 +363,7 @@ LVRtfParser::LVRtfParser( LVStreamRef stream, LvXMLParserCallback * callback ,bo
     , txtbuf(NULL)
     , imageIndex(0)
 {
-    this->need_coverpage_rtf=need_coverpage;
+    this->need_coverpage_=need_coverpage;
     m_stack.setDestination(  new LVRtfDefDestination(*this) );
 }
 
@@ -551,10 +551,11 @@ bool LVRtfParser::Parse()
                     OnControlWord( cwname, param, asteriskFlag );
                 }
                 fragments_counter++;
-                if(need_coverpage_rtf)
+                if(need_coverpage_)
                 {
                     if(fragments_counter>=FIRSTPAGE_BLOCKS_MAX_RTF)
                     {
+                        txtpos=0; //to prevent from assert falling on CommitText()
                         break;
                     }
                 }
@@ -601,13 +602,16 @@ bool LVRtfParser::Parse()
 
     CommitText();
     m_stack.getDestination()->OnAction(LVRtfDestination::RA_SECTION);
-
-      m_callback->OnTagClose( NULL, L"body" );
+    m_callback->OnTagClose( NULL, L"body" );
     m_callback->OnTagClose( NULL, L"FictionBook" );
 
     return !errorFlag;
 }
 
+void LVRtfParser::FullDom()
+{
+    need_coverpage_ = false;
+}
 /// resets parsing, moves to beginning of stream
 void LVRtfParser::Reset()
 {

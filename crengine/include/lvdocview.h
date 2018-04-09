@@ -95,6 +95,11 @@ private:
     void CheckPos();
     /// set properties before rendering
     void CheckRenderProps(int dx, int dy);
+
+    bool CheckImage();
+
+    bool NeedCheckImage();
+
 public:
     bool position_is_set_;
     int doc_format_;

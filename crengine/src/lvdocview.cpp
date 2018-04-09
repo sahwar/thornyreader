@@ -406,19 +406,23 @@ bool LVDocView::LoadDoc(int doc_format, const char *absolute_path,
 
 bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 {
-	if (cfg_firstpage_thumb_) {
-		CRLog::trace("LoadDoc: Thumbpage creation required. Generating.");
-	} else {
-		CRLog::trace("LoadDoc: Thumbpage exists. Skipping");
-	}
-	stream_ = stream;
+    //cfg_firstpage_thumb_ = true; //for debug
+    if (cfg_firstpage_thumb_)
+    {
+        CRLog::trace("LoadDoc: Thumbpage creation required. Generating.");
+    }
+    else
+    {
+        CRLog::trace("LoadDoc: Thumbpage exists. Skipping");
+    }
+    stream_ = stream;
 	doc_format_ = doc_format;
 	CheckRenderProps(0, 0);
 	LVFileFormatParser *parser = nullptr;
 	if (doc_format == DOC_FORMAT_FB2)
 	{
 		LvDomWriter writer(cr_dom_);
-		parser = new LvXmlParser(stream_, &writer, false, true);
+		parser = new LvXmlParser(stream_, &writer, false, true, cfg_firstpage_thumb_);
 	}
 	else if (doc_format == DOC_FORMAT_EPUB)
 	{
@@ -479,18 +483,22 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 	{
 		LvDomWriter writer(cr_dom_);
 		parser = new LVRtfParser(stream_, &writer, cfg_firstpage_thumb_);
+        CRLog::error("New LVRtfParser");
 	}
 	else if (doc_format == DOC_FORMAT_CHM)
 	{
 		if (!DetectCHMFormat(stream_))
 		{
+            CRLog::error("!detectCHM");
 			return false;
 		}
 		cr_dom_->setProps(doc_props_);
 		if (!ImportCHMDocument(stream_, cr_dom_, cfg_firstpage_thumb_))
 		{
+            CRLog::error("!importCHM");
 			return false;
 		}
+        CRLog::error("ImportCHM");
 	}
 	else if (doc_format == DOC_FORMAT_TXT)
 	{
@@ -503,19 +511,39 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 		parser = new LvHtmlParser(stream_, &writer);
 	}
 	if (parser)
-	{
+	{CRLog::error("parser");
 		if (!parser->CheckFormat())
 		{
+            CRLog::trace("!parser->CheckFormat()");
 			delete parser;
 			return false;
 		}
+        CRLog::error("parser.checkFormat ok");
 		if (!parser->Parse())
-		{
-			delete parser;
-			return false;
-		}
-		delete parser;
-	}
+		{   CRLog::error("1");
+            CRLog::trace("!parser->Parse()");
+            delete parser;
+            return false;
+        }
+        CRLog::error("parser.parse ok");
+        if (NeedCheckImage() && CheckImage())
+        {
+            CRLog::error("Image found in shortened tree. Regenerating full tree.");
+            cr_dom_->clear();
+            parser->FullDom();
+            if (!parser->Parse())
+            {CRLog::error("2");
+                CRLog::trace("!parser->Parse()");
+                delete parser;
+                return false;
+            }
+        }
+    }
+    delete parser;
+    CRLog::error("dumping domtree");
+    LVStreamRef out = LVOpenFileStream("/data/data/org.readera/files/temp.xml", LVOM_WRITE);
+    cr_dom_->saveToStream(out, NULL, true);
+
 	offset_ = 0;
 	page_ = 0;
 #if 0
@@ -2205,6 +2233,7 @@ void CreBridge::processMetadata(CmdRequest &request, CmdResponse &response)
 	lString16 series;
 	int series_number = 0;
 	lString16 lang;
+    //lString16 coverimage;
 
 	if (doc_format == DOC_FORMAT_EPUB)
 	{
@@ -2328,12 +2357,14 @@ void CreBridge::processMetadata(CmdRequest &request, CmdResponse &response)
 		dom.setAttributeTypes(fb2_attr_table);
 		dom.setNameSpaceTypes(fb2_ns_table);
 		LvXmlParser parser(stream, &writer);
-		if (parser.CheckFormat() && parser.Parse())
+        if (parser.CheckFormat() && parser.Parse())
 		{
 			authors = ExtractDocAuthors(&dom, lString16("|"));
 			title = ExtractDocTitle(&dom);
 			lang = ExtractDocLanguage(&dom);
 			series = ExtractDocSeries(&dom, &series_number);
+            //coverimage = ExtractDocThumbImageName(&dom);
+            //CRLog::error("coverimage extracted == %s", LCSTR(coverimage));
 		}
 		else
 		{
@@ -2341,6 +2372,8 @@ void CreBridge::processMetadata(CmdRequest &request, CmdResponse &response)
 			response.result = RES_INTERNAL_ERROR;
 			return;
 		}
+        LVStreamRef out = LVOpenFileStream("/data/data/org.readera/files/metatemp.xml", LVOM_WRITE);
+        dom.saveToStream(out, NULL, true);
 	}
 	CmdData *doc_thumb = new CmdData();
 	int thumb_width = 0;
@@ -2369,4 +2402,32 @@ void CreBridge::processMetadata(CmdRequest &request, CmdResponse &response)
 	responseAddString(response, series);
 	response.addInt((uint32_t) series_number);
 	responseAddString(response, lang);
+}
+
+bool LVDocView::CheckImage()
+{
+    ldomXPointer a = cr_dom_->createXPointer(L"/FictionBook/description/coverpage/image");
+    ldomXPointer b = cr_dom_->createXPointer(L"/FictionBook/body/image");
+    ldomXPointer c = cr_dom_->createXPointer(L"/FictionBook/body/section/image");
+    ldomXPointer d = cr_dom_->createXPointer(L"/FictionBook/body/section/img");
+    if(a.isNull() && b.isNull() && c.isNull() && d.isNull())
+    {return false;}
+    return true;  //returns true if image is found
+
+}
+bool LVDocView::NeedCheckImage()
+{
+    if (!cfg_firstpage_thumb_)
+    {
+        return false;
+    }
+    if (doc_format_ == DOC_FORMAT_RTF)
+    {
+        return true;
+    }
+    if (doc_format_ == DOC_FORMAT_FB2)
+    {
+        return true;
+    }
+    return false;
 }

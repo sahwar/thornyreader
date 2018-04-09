@@ -1015,6 +1015,7 @@ public:
     }
     /// returns href attribute of <A> element, null string if not found
     lString16 getHRef();
+    lString16 getImgHRef();
 	/// create a copy of pointer data
 	ldomXPointer * clone()
 	{
@@ -1890,5 +1891,6 @@ lString16 ExtractDocTitle(CrDom* dom);
 lString16 ExtractDocLanguage(CrDom* dom);
 /// returns "(Series Name #number)" if pSeriesNumber is NULL, separate name and number otherwise
 lString16 ExtractDocSeries(CrDom* dom, int* pSeriesNumber=NULL);
+lString16 ExtractDocThumbImageName(CrDom* dom);
 
 #endif

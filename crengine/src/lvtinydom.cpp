@@ -3707,6 +3707,16 @@ lString16 ExtractDocSeries(CrDom* dom, int* p_series_number)
     return res;
 }
 
+lString16 ExtractDocThumbImageName(CrDom* doc)
+{
+    lString16 result = doc->createXPointer(L"/FictionBook/description/title-info/coverpage/image").getImgHRef();
+    if (result.startsWith("#"))
+    {
+        result = result.substr(1);
+    }
+    return result;
+}
+
 void ldomXPointerEx::initIndex()
 {
     int m[MAX_DOM_LEVEL];
@@ -5598,6 +5608,26 @@ lString16 ldomXPointer::getHRef()
     return ref;
 }
 
+lString16 ldomXPointer::getImgHRef()
+{
+    if (isNull())
+    {   CRLog::error("emptystr");
+        return lString16::empty_str;
+    }
+    ldomNode *node = getNode();
+    while (node && !node->isElement())
+    {   CRLog::error("node is not element");
+        node = node->getParentNode();
+    }
+    if (!node)
+    {CRLog::error("!node");
+        return lString16::empty_str;}
+
+    lString16 ref = node->getAttributeValue(LXML_NS_ANY, attr_href);
+    if (!ref.empty())
+        ref = DecodeHTMLUrlString(ref);
+    return ref;
+}
 
 /// returns href attribute of <A> element, null string if not found
 lString16 ldomXRange::getHRef()
