@@ -19,7 +19,7 @@
 
 //#define DEBUG_CSS
 
-#ifndef AXYDEBUG
+#ifndef TRDEBUG
 #undef DEBUG_CSS
 #endif
 
@@ -328,7 +328,7 @@ static lString16 GetNodeDesc(const ldomNode* node)
 void LVCssDeclaration::apply(const ldomNode* node, css_style_rec_t* style)
 {
     if (!_data) {
-#ifdef AXYDEBUG
+#ifdef TRDEBUG
         CRLog::info("CSS: no declaration for %s", LCSTR(GetNodeDesc(node)));
 #endif
         return;
@@ -599,13 +599,13 @@ bool LVCssSelector::check(const ldomNode* node) const
         return true;
     }
     if (node->isNull()) {
-#ifdef AXYDEBUG
+#ifdef TRDEBUG
         CRLog::info("    selector miss [%s] (reason: null node)", debug_desc_.c_str());
 #endif
         return false;
     }
     if (node->isRoot()) {
-#ifdef AXYDEBUG
+#ifdef TRDEBUG
         //CRLog::trace("    selector miss [%s] (reason: root node)", debug_desc_.c_str());
 #endif
         return false;
@@ -631,7 +631,7 @@ bool LVCssSelector::check(const ldomNode* node) const
 void LVStyleSheet::applyCss(const ldomNode* node, css_style_rec_t* style)
 {
     if (!_selectors.length()) {
-#ifdef AXYDEBUG
+#ifdef TRDEBUG
         CRLog::info("LVStyleSheet::applyCss[%s]: selectors null", LCSTR(GetNodeDesc(node)));
 #endif
         return;
@@ -774,7 +774,7 @@ static css_decl_code parse_property_name(const char*& res)
             }
         }
     }
-#ifdef AXYDEBUG
+#ifdef TRDEBUG
     CRLog::debug("parse_property_name cssd_unknown");
 #endif
     return cssd_unknown;
@@ -1294,12 +1294,12 @@ void LVCssSelector::insertRuleAfterStart(LVCssSelectorRule* rule)
 bool LVCssSelector::parse(const char*& str, CrDomXml* dom)
 {
     if (!str || !*str) {
-#ifdef AXYDEBUG
+#ifdef TRDEBUG
         CRLog::info("LVCssSelector::parse: empty string");
 #endif
         return false;
     }
-#ifdef AXYDEBUG
+#ifdef TRDEBUG
     skip_spaces_and_comments(str);
     char selector[512];
     int i;
@@ -1327,7 +1327,7 @@ bool LVCssSelector::parse(const char*& str, CrDomXml* dom)
             // identificator
             char ident[64];
             if (!parse_ident(str, ident)) {
-#ifdef AXYDEBUG
+#ifdef TRDEBUG
                 CRLog::info("LVCssSelector::parse fail: !parse_ident");
 #endif
                 return false;
@@ -1335,7 +1335,7 @@ bool LVCssSelector::parse(const char*& str, CrDomXml* dom)
             _id = dom->getElementNameIndex(lString16(ident).c_str());
             skip_spaces_and_comments(str);
         } else {
-#ifdef AXYDEBUG
+#ifdef TRDEBUG
             CRLog::info("LVCssSelector::parse fail: unknown selector type");
 #endif
             return false;
@@ -1348,7 +1348,7 @@ bool LVCssSelector::parse(const char*& str, CrDomXml* dom)
         while (*str == '[' || *str == '.' || *str == '#') {
             LVCssSelectorRule* rule = parse_attr(str, dom);
             if (!rule) {
-#ifdef AXYDEBUG
+#ifdef TRDEBUG
                 CRLog::info("LVCssSelector::parse fail: parse_attr");
 #endif
                 return false;
@@ -1396,7 +1396,7 @@ bool LVCssSelector::parse(const char*& str, CrDomXml* dom)
             continue;
         }
         if (!attr_rule) {
-#ifdef AXYDEBUG
+#ifdef TRDEBUG
             CRLog::info("LVCssSelector::parse fail: !attr_rule");
 #endif
             return false;
@@ -1436,7 +1436,7 @@ bool LVStyleSheet::parse(const char* str)
             // parse declaration
             LVCssDeclRef decl(new LVCssDeclaration);
             if (!decl->parse(str)) {
-#ifdef AXYDEBUG
+#ifdef TRDEBUG
                 CRLog::info("LVCssDeclaration::parse fail");
 #endif
                 err = true;
@@ -1456,7 +1456,7 @@ bool LVStyleSheet::parse(const char* str)
             // Error: delete chain of selectors
             delete selector;
             // Skip until end of rule
-#ifdef AXYDEBUG
+#ifdef TRDEBUG
             if (skip_spaces_and_comments(str)) {
                 lString8 css_error;
                 while (*str && *str != '}') {

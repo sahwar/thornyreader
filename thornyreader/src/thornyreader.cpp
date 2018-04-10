@@ -18,7 +18,7 @@
 #include "thornyreader.h"
 
 const bool ThornyReaderIsDebugBuild() {
-#if !defined(NDEBUG) || defined(AXYDEBUG) || defined(DEBUG) || defined(_DEBUG)
+#if !defined(NDEBUG) || defined(TRDEBUG) || defined(DEBUG) || defined(_DEBUG)
     return true;
 #else
     return false;
@@ -40,10 +40,10 @@ void ThornyReaderStart(const char *name) {
         ndebug = "NDEBUG=ndef";
 #endif
         const char *axy_debug;
-#ifdef AXYDEBUG
-        axy_debug = "AXYDEBUG=def";
+#ifdef TRDEBUG
+        axy_debug = "TRDEBUG=def";
 #else
-        axy_debug = "AXYDEBUG=ndef";
+        axy_debug = "TRDEBUG=ndef";
 #endif
         __android_log_print(ANDROID_LOG_DEBUG,
                             THORNYREADER_LOG_TAG,

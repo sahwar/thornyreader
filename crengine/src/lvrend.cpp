@@ -1786,7 +1786,7 @@ void setNodeStyleRend(ldomNode* enode, css_style_ref_t parent_style, LVFontRef p
     //lvdomElementFormatRec * fmt = node->getRenderData();
     css_style_ref_t style(new css_style_rec_t);
     css_style_rec_t* pstyle = style.get();
-#ifdef AXYDEBUG
+#ifdef TRDEBUG
     if (parent_style.isNull()) {
         CRLog::error("setNodeStyleRend: parent style is null");
     }
