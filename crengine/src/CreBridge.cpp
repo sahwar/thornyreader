@@ -569,7 +569,7 @@ void CreBridge::processQuit(CmdRequest& request, CmdResponse& response)
 CreBridge::CreBridge() : StBridge(THORNYREADER_LOG_TAG)
 {
     doc_view_ = NULL;
-#ifdef AXYDEBUG
+#ifdef TRDEBUG
     CRLog::setLevel(CRLog::TRACE);
 #else
     CRLog::setLevel(CRLog::FATAL);

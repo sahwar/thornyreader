@@ -2079,7 +2079,7 @@ void ldomElementWriter::onBodyEnter()
                 LCSTR(_element->getNodeName()));
 #endif
         _element->initNodeStyle();
-#ifdef AXYDEBUG
+#ifdef TRDEBUG
         if (_element->getStyle().isNull()) {
             CRLog::error("element style init error %x %s",
                     _element->getNodeIndex(),
@@ -2705,7 +2705,7 @@ LvDomWriter::LvDomWriter(CrDom* document, bool headerOnly)
     _stopTagId = 0xFFFE;
     IS_FIRST_BODY = true;
     if (doc_->isDefStyleSet()) {
-#ifdef AXYDEBUG
+#ifdef TRDEBUG
         CRLog::trace("LvDomWriter::LvDomWriter()");
 #endif
         doc_->getRootNode()->initNodeStyle();
@@ -2722,7 +2722,7 @@ LvDomWriter::~LvDomWriter()
         if (_popStyleOnFinish) {
             doc_->getStylesheet()->pop();
         }
-#ifdef AXYDEBUG
+#ifdef TRDEBUG
         //CRLog::trace("LvDomWriter::~LvDomWriter()");
 #endif
         doc_->getRootNode()->initNodeStyle();
@@ -6488,7 +6488,7 @@ void CrDomXml::setStylesheet(const char* css, bool replace)
     if (css && *css) {
        stylesheet_.parse(css);
     }
-#ifdef AXYDEBUG
+#ifdef TRDEBUG
     lUInt32 newHash = stylesheet_.getHash();
     if (oldHash != newHash) {
         //CRLog::trace("New stylesheet hash: %08x", newHash);
@@ -7648,7 +7648,7 @@ void ldomNode::initNodeStyle()
         setNodeStyleRend(this, getCrDom()->getDefaultStyle(), getCrDom()->getDefaultFont());
     } else {
         ldomNode* parent = getParentNode();
-#ifdef AXYDEBUG
+#ifdef TRDEBUG
         if (parent->getChildIndex(getDataIndex()) < 0) {
             CRLog::error("Invalid parent->child relation for nodes %d->%d",
                          parent->getDataIndex(), getDataIndex());
