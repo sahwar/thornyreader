@@ -483,7 +483,6 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 	{
 		LvDomWriter writer(cr_dom_);
 		parser = new LVRtfParser(stream_, &writer, cfg_firstpage_thumb_);
-        CRLog::error("New LVRtfParser");
 	}
 	else if (doc_format == DOC_FORMAT_CHM)
 	{
@@ -498,7 +497,6 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
             CRLog::error("!importCHM");
 			return false;
 		}
-        CRLog::error("ImportCHM");
 	}
 	else if (doc_format == DOC_FORMAT_TXT)
 	{
@@ -518,21 +516,19 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 			delete parser;
 			return false;
 		}
-        CRLog::error("parser.checkFormat ok");
 		if (!parser->Parse())
-		{   CRLog::error("1");
+		{
             CRLog::trace("!parser->Parse()");
             delete parser;
             return false;
         }
-        CRLog::error("parser.parse ok");
         if (NeedCheckImage() && CheckImage())
         {
             CRLog::error("Image found in shortened tree. Regenerating full tree.");
             cr_dom_->clear();
             parser->FullDom();
             if (!parser->Parse())
-            {CRLog::error("2");
+            {
                 CRLog::trace("!parser->Parse()");
                 delete parser;
                 return false;
@@ -540,19 +536,22 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
         }
     }
     delete parser;
-    CRLog::error("dumping domtree");
+#ifdef TRDEBUG
+#if 1
+	CRLog::error("dumping domtree");
     LVStreamRef out = LVOpenFileStream("/data/data/org.readera/files/temp.xml", LVOM_WRITE);
     cr_dom_->saveToStream(out, NULL, true);
-
-	offset_ = 0;
-	page_ = 0;
-#if 0
-	lString16 stylesheet = cr_dom_->createXPointer(L"/FictionBook/stylesheet").getText();
-	if (!stylesheet.empty() && cfg_embeded_styles_) {
-		cr_dom_->getStylesheet()->parse(UnicodeToUtf8(stylesheet).c_str());
-		cr_dom_->setStylesheet(UnicodeToUtf8(stylesheet).c_str(), false);
-	}
 #endif
+#if 0
+    lString16 stylesheet = cr_dom_->createXPointer(L"/FictionBook/stylesheet").getText();
+    if (!stylesheet.empty() && cfg_embeded_styles_) {
+        cr_dom_->getStylesheet()->parse(UnicodeToUtf8(stylesheet).c_str());
+        cr_dom_->setStylesheet(UnicodeToUtf8(stylesheet).c_str(), false);
+    }
+#endif
+#endif
+    offset_ = 0;
+    page_ = 0;
 	//show_cover_ = !getCoverPageImage().isNull();
 	CheckRenderProps(0, 0);
 	REQUEST_RENDER("LoadDoc")
@@ -1924,7 +1923,7 @@ void LVDocView::GetCurrentPageLinks(ldomXRangeList &links_list)
 				return;
 			}
 			ProcessLinkNode(element_node);
-#ifdef AXYDEBUG
+#ifdef TRDEBUG
 			lString16 text = element_node->getText();
 			int start = node_range->getStart().getOffset();
 			int end = node_range->getEnd().getOffset();
@@ -1946,7 +1945,7 @@ void LVDocView::GetCurrentPageLinks(ldomXRangeList &links_list)
 			{
 				return true;
 			}
-#ifdef AXYDEBUG
+#ifdef TRDEBUG
 			if (element_node->getChildCount() == 0)
 			{
 				// Empty link in malformed doc, example: <a name="sync_on_demand"></a>
@@ -2036,10 +2035,17 @@ void LVDocView::GetOutline(LVPtrVector<LvTocItem, false> &outline)
 	if (cr_dom_)
 	{
 		LvTocItem *outline_root = cr_dom_->getToc();
-		// First item its just dummy container, so we skip it
-		for (int i = 0; i < outline_root->getChildCount(); i++)
+		if (outline_root->getChildCount() == 0)
 		{
-			UpdateOutline(this, outline, outline_root->getChild(i));
+			CRLog::error("outline root childcount = 0, no table of contents generated");
+		}
+		else
+		{
+			// First item its just dummy container, so we skip it
+			for (int i = 0; i < outline_root->getChildCount(); i++)
+			{
+				UpdateOutline(this, outline, outline_root->getChild(i));
+			}
 		}
 	}
 }
