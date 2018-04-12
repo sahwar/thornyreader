@@ -102,9 +102,7 @@ public:
     /// get linearly interpolated pixel value (coordinates are fixed floating points *16)
     virtual lUInt32 GetInterpolatedColor(int x16, int y16) = 0;
     /// draw gradient filled rectangle with colors for top-left, top-right, bottom-right, bottom-left
-    virtual void GradientRect(int x0, int y0, int x1, int y1, lUInt32 color1, lUInt32 color2, lUInt32 color3, lUInt32 color4) {
-        CR_UNUSED8(x0, x1, y0, y1, color1, color2, color3, color4);
-    }
+    virtual void GradientRect(int x0, int y0, int x1, int y1, lUInt32 color1, lUInt32 color2, lUInt32 color3, lUInt32 color4) {}
     /// fills rectangle with specified color
     virtual void FillRect( int x0, int y0, int x1, int y1, lUInt32 color ) = 0;
     /// draw frame
@@ -159,7 +157,7 @@ public:
     /// draws image
     virtual void Draw( LVImageSourceRef img, int x, int y, int width, int height, bool dither=true ) = 0;
     /// draws part of source image, possible rescaled
-    virtual void Draw( LVImageSourceRef img, int x, int y, int width, int height, int srcx, int srcy, int srcwidth, int srcheight, bool dither=true ) { CR_UNUSED10(img, x, y, width, height, srcx, srcy, srcwidth, srcheight, dither); }
+    virtual void Draw( LVImageSourceRef img, int x, int y, int width, int height, int srcx, int srcy, int srcwidth, int srcheight, bool dither=true ) {}
     /// for GL buf only - rotated drawing
     virtual void DrawRotated( LVImageSourceRef img, int x, int y, int width, int height, int rotationAngle) { Draw(img, x, y, width, height); CR_UNUSED(rotationAngle); }
     /// draws buffer content to another buffer doing color conversion if necessary
@@ -167,9 +165,7 @@ public:
     /// draws rescaled buffer content to another buffer doing color conversion if necessary
     virtual void DrawRescaled(LVDrawBuf * src, int x, int y, int dx, int dy, int options) = 0;
     /// draws rescaled buffer content to another buffer doing color conversion if necessary
-    virtual void DrawFragment(LVDrawBuf * src, int srcx, int srcy, int srcdx, int srcdy, int x, int y, int dx, int dy, int options) {
-        CR_UNUSED10(src, srcx, srcy, srcdx, srcdy, x, y, dx, dy, options);
-    }
+    virtual void DrawFragment(LVDrawBuf * src, int srcx, int srcy, int srcdx, int srcdy, int x, int y, int dx, int dy, int options) { }
 #if defined(_WIN32) && !defined(QT_GL)
     /// draws buffer content to another buffer doing color conversion if necessary
     virtual void DrawTo( HDC dc, int x, int y, int options, lUInt32 * palette ) = 0;
