@@ -2378,8 +2378,12 @@ void CreBridge::processMetadata(CmdRequest &request, CmdResponse &response)
 			response.result = RES_INTERNAL_ERROR;
 			return;
 		}
-        LVStreamRef out = LVOpenFileStream("/data/data/org.readera/files/metatemp.xml", LVOM_WRITE);
+#ifdef TRDEBUG
+#if 0
+		LVStreamRef out = LVOpenFileStream("/data/data/org.readera/files/metatemp.xml", LVOM_WRITE);
         dom.saveToStream(out, NULL, true);
+#endif
+#endif
 	}
 	CmdData *doc_thumb = new CmdData();
 	int thumb_width = 0;
