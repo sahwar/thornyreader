@@ -537,7 +537,7 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
     }
     delete parser;
 #ifdef TRDEBUG
-#if 1
+#if 0
 	CRLog::error("dumping domtree");
     LVStreamRef out = LVOpenFileStream("/data/data/org.readera/files/temp.xml", LVOM_WRITE);
     cr_dom_->saveToStream(out, NULL, true);
