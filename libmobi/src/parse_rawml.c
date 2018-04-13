@@ -1017,7 +1017,6 @@ MOBI_RET mobi_get_ncx_filepos_array(MOBIArray *links, const MOBIRawml *rawml) {
                 }
             }
         }
-        part = part->next;
     }
     return MOBI_SUCCESS;
 }
@@ -1608,7 +1607,7 @@ MOBI_RET mobi_reconstruct_links_kf7(const MOBIRawml *rawml) {
         array_free(links);
         return ret;
     }
-    ret = mobi_get_ncx_filepos_array(links, rawml);
+    ret = mobi_get_ncx_filepos_array(links, part);
     if (ret != MOBI_SUCCESS) {
         array_free(links);
         return ret;
@@ -2090,14 +2089,14 @@ MOBI_RET mobi_parse_rawml_opt(MOBIRawml *rawml, const MOBIData *m, bool parse_to
         return ret;
     }
     if (reconstruct) {
-#ifdef USE_XMLWRITER
-        ret = mobi_build_opf(rawml, m);
+        ret = mobi_reconstruct_links(rawml);
         if (ret != MOBI_SUCCESS) {
             return ret;
         }
-#endif
-        ret = mobi_reconstruct_links(rawml);
+        printlogcat("Building opf");
+        ret = mobi_build_opf(rawml, m);
         if (ret != MOBI_SUCCESS) {
+            printlogcat("build opf FAILED");
             return ret;
         }
         if (mobi_is_kf8(m)) {
