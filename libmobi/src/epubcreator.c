@@ -183,9 +183,9 @@ bool create_epub(const MOBIRawml *rawml, const char *fullpath) {
             MOBIFileMeta file_meta = mobi_get_filemeta_by_type(curr->type);
             //CRLog::error("extension == %s",file_meta.extension);
             if (curr->size > 0) {
-                printlogcat("file.meta.type = %d", file_meta.type);
+                //printlogcat("file.meta.type = %d", file_meta.type);
                 if (file_meta.type == T_OPF)
-                {   printlogcat("file.meta.type = T_OPF. Printing opf into file");
+                { //printlogcat("file.meta.type = T_OPF. Printing opf into file");
                     snprintf(partname, sizeof(partname), "OEBPS/content.opf");
                 }
                 else {

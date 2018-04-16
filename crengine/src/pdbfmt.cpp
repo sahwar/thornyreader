@@ -180,11 +180,11 @@ struct MobiPreamble : public PalmDocPreamble
             cnv.rev(&drmSize); //    172	4	DRM Size	Number of bytes in DRM info.
             cnv.rev(&drmFlags); //    176	4	DRM Flags	Some flags concerning the DRM info.
         }
-        if ( compression!=1 && compression!=2 )
+        /*if ( compression!=1 && compression!=2 )
         {
-            CRLog::error("Compression is Huffman/cdic compression! Abort!"); //TODO implement HUFF/CDIC decoding
+            CRLog::error("Compression is Huffman/cdic compression! Abort!");
             return false;
-        }
+        }*/
         if ( mobiType!=2 && mobiType!=3 && mobiType!=517 && mobiType!=518
                  && mobiType!=257 && mobiType!=258 && mobiType!=259 )
             return false; // unsupported type

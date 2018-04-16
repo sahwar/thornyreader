@@ -392,7 +392,7 @@ bool LVDocView::LoadDoc(int doc_format, const char *absolute_path,
 	{
 		return false;
 	}
-	if (LoadDoc(doc_format, stream, absolute_path))
+	if (LoadDoc(doc_format, stream, absolute_path, compressed_size, smart_archive))
 	{
 		stream_.Clear();
 		return true;
@@ -405,8 +405,10 @@ bool LVDocView::LoadDoc(int doc_format, const char *absolute_path,
 	}
 }
 
-bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream, const char *absolute_path)
+bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream, const char *absolute_path, uint32_t compressed_size, bool smart_archive)
 {
+	bool mobi_converted = false;
+
     //cfg_firstpage_thumb_ = true; //for debug
     if (cfg_firstpage_thumb_)
     {
@@ -448,17 +450,17 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream, const char *absolute
             }
             return false;
         } */
-        MOBIData* mobiData;
-        MOBIRawml* rawml;
+
         CRLog::error("MOBIDOC OPENING");
-        if(ImportMOBIDocNew(absolute_path,rawml,mobiData))
+        if(ImportMOBIDocNew(absolute_path))
         {   CRLog::error("MOBIDOC OPENED");
          //   ConvertMOBIDocToEpub(rawml,"/data/data/org.readera/files/epub.epub");
 
+
             //GetMobiMetaFromFile(absolute_path);
-            lString16 epubnewpath;
-            epubnewpath.append("/data/data/org.readera/files/");
-            epubnewpath.append("epub.epub"); //TODO add unique name of document being read here
+            //lString16 epubnewpath;
+            //epubnewpath.append("/data/data/org.readera/files/");
+            //epubnewpath.append("epub.epub"); //TODO add unique name of document being read here
             //if (!ConvertMOBIDocToEpub(rawml,LCSTR(epubnewpath)))
             /*if (!ConvertMOBIDocToEpub(rawml,"/data/data/org.readera/files/epub.epub"))
             {
@@ -471,10 +473,16 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream, const char *absolute
                 return false;//placeholder false to avoid crashes
             }
             FreeMOBIStructures(rawml, mobiData);*/
+	        doc_format = DOC_FORMAT_EPUB;
+	        mobi_converted= true;
         }
 	}
-    else if (doc_format == DOC_FORMAT_EPUB)
+    if (doc_format == DOC_FORMAT_EPUB)
     {
+	    if (mobi_converted)
+	    {   CRLog::error("Reading converted mobi from epub container");
+		    stream_=ThResolveStream(DOC_FORMAT_EPUB,"/data/data/org.readera/files/epub.epub",compressed_size,smart_archive);
+	    }
         if (!DetectEpubFormat(stream_))
         {
             return false;
@@ -2405,18 +2413,21 @@ void CreBridge::processMetadata(CmdRequest &request, CmdResponse &response)
         dom.saveToStream(out, NULL, true);
 #endif
 #endif
-	}else if (doc_format == DOC_FORMAT_MOBI)
+	}
+	else if (doc_format == DOC_FORMAT_MOBI)
     {
         thumb_stream = GetMOBICover(stream);
         mobiresponse mobiresponse = GetMobiMetaFromFile(absolute_path);
         title = mobiresponse.title;
         authors = mobiresponse.author;
         lang = mobiresponse.language;
-        if (mobiresponse.series!= L"NULL")
+       /* if (mobiresponse.series!= L"NULL")
         {
             series.append(mobiresponse.series);
             series_number = 0;
-        }
+        }*/
+	    series.append("Unknown series. No info from MOBI file");
+	    series_number = 1;
     }
 
 	CmdData *doc_thumb = new CmdData();
