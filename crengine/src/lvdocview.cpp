@@ -21,6 +21,7 @@
 #include "include/wordfmt.h"
 #include "include/pdbfmt.h"
 #include "include/crcss.h"
+#include "include/mobihandler.h"
 
 // Yep, twice include single header with different define.
 // Probably should be last in include list, to don't mess up with other includes.
@@ -391,7 +392,7 @@ bool LVDocView::LoadDoc(int doc_format, const char *absolute_path,
 	{
 		return false;
 	}
-	if (LoadDoc(doc_format, stream))
+	if (LoadDoc(doc_format, stream, absolute_path))
 	{
 		stream_.Clear();
 		return true;
@@ -404,16 +405,16 @@ bool LVDocView::LoadDoc(int doc_format, const char *absolute_path,
 	}
 }
 
-bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
+bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream, const char *absolute_path)
 {
     //cfg_firstpage_thumb_ = true; //for debug
     if (cfg_firstpage_thumb_)
     {
-        CRLog::trace("LoadDoc: Firstpage thumb generation");
+        CRLog::trace("LoadDoc: Partial parsing, need only first page");
     }
     else
     {
-        CRLog::trace("LoadDoc: Reading");
+        CRLog::trace("LoadDoc: Full parsing, need all pages");
     }
     stream_ = stream;
 	doc_format_ = doc_format;
@@ -424,40 +425,67 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 		LvDomWriter writer(cr_dom_);
 		parser = new LvXmlParser(stream_, &writer, false, true, cfg_firstpage_thumb_);
 	}
-	else if (doc_format == DOC_FORMAT_EPUB)
-	{
-		if (!DetectEpubFormat(stream_))
-		{
-			return false;
-		}
-		cr_dom_->setProps(doc_props_);
-		if (!ImportEpubDocument(stream_, cr_dom_, cfg_firstpage_thumb_))
-		{
-			return false;
-		}
-		doc_props_ = cr_dom_->getProps();
-	}
 	else if (doc_format == DOC_FORMAT_MOBI)
 	{
+
 		doc_format_t pdb_format = doc_format_none;
 		if (!DetectMOBIFormat(stream_, pdb_format))
 		{
 			return false;
 		}
+
+        /* OLD CALL
 		cr_dom_->setProps(doc_props_);
 		if (pdb_format != doc_format_mobi)
 		{
 			CRLog::warn("pdb_format != doc_format_mobi");
 		}
-		if (!ImportMOBIDoc(stream_, cr_dom_, pdb_format, cfg_firstpage_thumb_))
-		{
-			if (pdb_format != doc_format_mobi)
-			{
-				CRLog::warn("pdb_format != doc_format_mobi");
-			}
-			return false;
-		}
+		if (!ImportMOBIDoc(stream_, cr_dom_, pdb_format, cfg_firstpage_thumb_)) //old call
+        {
+            if (pdb_format != doc_format_mobi)
+            {
+                CRLog::error("pdb_format != doc_format_mobi");
+            }
+            return false;
+        } */
+        MOBIData* mobiData;
+        MOBIRawml* rawml;
+        CRLog::error("MOBIDOC OPENING");
+        if(ImportMOBIDocNew(absolute_path,rawml,mobiData))
+        {   CRLog::error("MOBIDOC OPENED");
+         //   ConvertMOBIDocToEpub(rawml,"/data/data/org.readera/files/epub.epub");
+
+            //GetMobiMetaFromFile(absolute_path);
+            lString16 epubnewpath;
+            epubnewpath.append("/data/data/org.readera/files/");
+            epubnewpath.append("epub.epub"); //TODO add unique name of document being read here
+            //if (!ConvertMOBIDocToEpub(rawml,LCSTR(epubnewpath)))
+            /*if (!ConvertMOBIDocToEpub(rawml,"/data/data/org.readera/files/epub.epub"))
+            {
+                return false;
+                FreeMOBIStructures(rawml,mobiData);
+            }
+            else
+            {
+                //doc_format == DOC_FORMAT_EPUB; //TODO pass recently created epub to read epub
+                return false;//placeholder false to avoid crashes
+            }
+            FreeMOBIStructures(rawml, mobiData);*/
+        }
 	}
+    else if (doc_format == DOC_FORMAT_EPUB)
+    {
+        if (!DetectEpubFormat(stream_))
+        {
+            return false;
+        }
+        cr_dom_->setProps(doc_props_);
+        if (!ImportEpubDocument(stream_, cr_dom_, cfg_firstpage_thumb_))
+        {
+            return false;
+        }
+        doc_props_ = cr_dom_->getProps();
+    }
 	else if (doc_format == DOC_FORMAT_DOC)
 	{
 #if ENABLE_ANTIWORD == 1
@@ -512,13 +540,13 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 	{
 		if (!parser->CheckFormat())
 		{
-            CRLog::warn("!parser->CheckFormat()");
+            CRLog::trace("!parser->CheckFormat()");
 			delete parser;
 			return false;
 		}
 		if (!parser->Parse())
 		{
-            CRLog::warn("!parser->Parse()");
+            CRLog::trace("!parser->Parse()");
             delete parser;
             return false;
         }
@@ -2347,16 +2375,9 @@ void CreBridge::processMetadata(CmdRequest &request, CmdResponse &response)
 		}
 		delete dom;
 	}
-	else if (doc_format == DOC_FORMAT_FB2 || doc_format == DOC_FORMAT_MOBI)
+	else if (doc_format == DOC_FORMAT_FB2)
 	{
-		if (doc_format == DOC_FORMAT_FB2)
-		{
-			thumb_stream = GetFB2Coverpage(stream);
-		}
-		else
-		{
-			thumb_stream = GetMOBICover(stream);
-		}
+        thumb_stream = GetFB2Coverpage(stream);
 		CrDom dom;
 		LvDomWriter writer(&dom, true);
 		dom.setNodeTypes(fb2_elem_table);
@@ -2384,7 +2405,20 @@ void CreBridge::processMetadata(CmdRequest &request, CmdResponse &response)
         dom.saveToStream(out, NULL, true);
 #endif
 #endif
-	}
+	}else if (doc_format == DOC_FORMAT_MOBI)
+    {
+        thumb_stream = GetMOBICover(stream);
+        mobiresponse mobiresponse = GetMobiMetaFromFile(absolute_path);
+        title = mobiresponse.title;
+        authors = mobiresponse.author;
+        lang = mobiresponse.language;
+        if (mobiresponse.series!= L"NULL")
+        {
+            series.append(mobiresponse.series);
+            series_number = 0;
+        }
+    }
+
 	CmdData *doc_thumb = new CmdData();
 	int thumb_width = 0;
 	int thumb_height = 0;

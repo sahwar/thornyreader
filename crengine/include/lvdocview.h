@@ -88,7 +88,7 @@ private:
     int config_text_align_;
     void UpdateScrollInfo();
     /// load document from stream
-    bool LoadDoc(int doc_format, LVStreamRef stream);
+    bool LoadDoc(int doc_format, LVStreamRef stream, const char *absolute_path);
     /// create empty document with specified message (to show errors)
     void CreateEmptyDom();
     /// ensure current position is set to current bookmark value
