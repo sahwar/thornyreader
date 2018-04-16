@@ -2093,7 +2093,7 @@ MOBI_RET mobi_parse_rawml_opt(MOBIRawml *rawml, const MOBIData *m, bool parse_to
         if (ret != MOBI_SUCCESS) {
             return ret;
         }
-        printlogcat("Building opf");
+        //printlogcat("Building opf");
         ret = mobi_build_opf(rawml, m);
         if (ret != MOBI_SUCCESS) {
             printlogcat("build opf FAILED");
