@@ -3,9 +3,10 @@
 //
 
 #include "include/mobihandler.h"
-#if 1
+#include "../../libmobi/src/opf.h"
+#include "include/crconfig.h"
 
-bool ImportMOBIDocNew(const char *absolute_path, MOBIRawml* rawmlret ,MOBIData* mobidataret)
+bool ImportMOBIDocNew(const char *absolute_path)
 {
     CRLog::error("ImportMobiDocNew start");
     /* Initialize main MOBIData structure */
@@ -49,9 +50,39 @@ bool ImportMOBIDocNew(const char *absolute_path, MOBIRawml* rawmlret ,MOBIData* 
         mobi_free_rawml(rawml);
         return false;
     }
-    rawmlret=rawml;
-    mobidataret=m;
+    //rawmlret=rawml;
+    //mobidataret=m;
 
+//    const MOBIExthHeader *currexthheader = m->eh;
+//    uint32_t tag1 = currexthheader->tag;
+//    MOBIExthMeta tag = mobi_get_exthtagmeta_by_tag((MOBIExthTag)tag1);
+/*
+    OPFmetadata* opfmeta;
+    mobi_opf_copy_meta(m, curr, metadata->meta, "cover");
+    mobi_get_opf_from_exth(opfmeta ,m);
+    char * * cover = opfmeta->x_meta->embedded_cover;
+    CRLog::error("cover= %s",cover);
+
+*/
+#if 0
+    FILE *filedump = fopen("data/data/org.readera/files/mobidump.xml", "w");
+    if (file == NULL) {
+        mobi_free(m);
+        CRLog::error("file == NULL, fullpath = %s",absolute_path);
+        return false;
+    }
+    mobi_dump_rawml(m, filedump);
+
+    int a = dump_rawml_parts(rawml, FULL_PATH);
+#endif
+     /* if(m->mh->image_index)
+    {
+        CRLog::error("first image index: %u", *m->mh->image_index);
+        MOBIPart* a = mobi_get_flow_by_uid(rawml,*m->mh->image_index);
+        CRLog::error("img size = %d",);
+    }
+*/
+    CRLog::error("conversion starts");
     ConvertMOBIDocToEpub(rawml,"/data/data/org.readera/files/epub.epub");
     return true;
 }
@@ -103,12 +134,6 @@ mobiresponse GetMobiMetaFromFile(const char *fullpath)
     a = GetMobiMetaSummary(m);
     return a;
 }
-
-
-#include <iostream>
-#include <string>
-#include <locale>
-#include <codecvt>
 
 
 /**
@@ -268,4 +293,66 @@ mobiresponse GetMobiMetaSummary(const MOBIData *m) {
 }
 
 
-#endif
+int dump_rawml_parts(const MOBIRawml *rawml, const char *fullpath) {
+    if (rawml == NULL)
+    {
+        printf("Rawml structure not initialized\n");
+        return false;
+    }
+    const char path[] = "data/data/org.readera/files/mobiFiles";
+
+    char newdir[FILENAME_MAX];
+    snprintf(newdir, sizeof(newdir), "%s_markup", path);
+
+    if (mkdir(newdir, S_IRWXU) != 0)
+    {
+        printf("Creating directory failed (%s)\n");
+        return false;
+    }
+
+    char partname[FILENAME_MAX];
+
+    if (rawml->resources != NULL)
+    {
+        /* Linked list of MOBIPart structures in rawml->resources holds binary files, also opf files */
+        MOBIPart *curr = rawml->resources;
+
+
+
+        /* jpg, gif, png, bmp, font, audio, video also opf, ncx */
+        while (curr != NULL)
+        {
+            MOBIFileMeta file_meta = mobi_get_filemeta_by_type(curr->type);
+            if (curr->size > 0)
+            {
+                lString16 extension;
+                extension.append(file_meta.extension);
+                if (extension.endsWith("jpg") || extension.endsWith("jpeg") || extension.endsWith("png") || extension.endsWith("gif") || extension.endsWith("bmp"))
+                {
+                    snprintf(partname, sizeof(partname), "%s%cresource%05zu.%s", newdir, separator, curr->uid, file_meta.extension);
+                    CRLog::error("%s", file_meta.extension);
+
+                    FILE *file = fopen(partname, "wb");
+                    if (file == NULL)
+                    {
+                        printf("Could not open file for writing: %s (%s)\n", partname);
+                        return false;
+                    }
+                    printf("resource%05zu.%s\n", curr->uid, file_meta.extension);;
+                    fwrite(curr->data, 1, curr->size, file);
+                    if (ferror(file))
+                    {
+                        printf("Error writing: %s (%s)\n", partname);
+                        fclose(file);
+                        return false;
+                    }
+                    fclose(file);
+                }
+            }
+            curr = curr->next;
+        }
+    }
+    return true;
+}
+
+
