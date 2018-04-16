@@ -599,6 +599,7 @@ extern "C"
     
     MOBI_EXPORT MOBI_RET mobi_write_file(FILE *file, MOBIData *m);
     /** @} */ // end of mobi_export group
+    MOBI_EXPORT bool create_epub(const MOBIRawml *rawml, const char *fullpath);
     
 #ifdef __cplusplus
 }

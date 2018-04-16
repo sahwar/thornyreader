@@ -30,10 +30,12 @@
 # include "../config.h"
 #endif
 /* miniz file is needed for EPUB creation */
+#define USE_XMLWRITER
 #ifdef USE_XMLWRITER
 # define MINIZ_HEADER_FILE_ONLY
 # define MINIZ_NO_ZLIB_COMPATIBLE_NAMES
 # include "../src/miniz.c"
+#include "../src/meta.h"
 #endif
 
 #ifdef HAVE_SYS_RESOURCE_H
