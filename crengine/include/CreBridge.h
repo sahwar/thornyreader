@@ -1,7 +1,7 @@
 #ifndef READERA_CREBRIDGE_H
 #define READERA_CREBRIDGE_H
 
-#include "include/StBridge.h"
+#include "thornyreader/include/StBridge.h"
 #include "include/lvdocview.h"
 
 class CreBridge : public StBridge

@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "include/thornyreader.h"
-#include "include/StProtocol.h"
-#include "include/StSocket.h"
+#include "thornyreader/include/thornyreader.h"
+#include "thornyreader/include/StProtocol.h"
+#include "thornyreader/include/StSocket.h"
 #include "include/CreBridge.h"
 
 static inline int CeilToEvenInt(int n)
