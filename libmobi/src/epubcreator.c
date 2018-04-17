@@ -217,3 +217,60 @@ bool create_epub(const MOBIRawml *rawml, const char *fullpath) {
     return true;
 }
 #endif
+/**
+ @brief get coverpage or cover thumbnail offsets from EXTH headers
+ @param[in] m MOBIData structure
+ @Returns -1 if found none, image offset if found cover
+ */
+
+/*      https://wiki.mobileread.com/wiki/MOBI#Image_Records
+        201	4	coveroffset	Add to first image field in Mobi Header to find PDB record containing the cover image	<EmbeddedCover>
+        202	4	thumboffset	Add to first image field in Mobi Header to find PDB record containing the thumbnail cover image
+ */
+
+int GetExthCoverOffset(const MOBIData *m) {
+    if (m->eh == NULL) {
+        return -1;
+    }
+    /* Linked list of MOBIExthHeader structures holds EXTH records */
+    const MOBIExthHeader *curr = m->eh;
+    if (curr != NULL) {
+        printlogcat("EXTH records:");
+    }
+    uint32_t val32;
+    while (curr != NULL) {
+        MOBIExthMeta tag = mobi_get_exthtagmeta_by_tag(curr->tag);
+        if (tag.tag != 0) {
+            size_t size = curr->size;
+            unsigned char *data = curr->data;
+            val32 = mobi_decode_exthvalue(data, size);
+
+            if (tag.type == EXTH_COVEROFFSET)
+            {
+                printlogcat("COVEROFFSET FOUND 1!");
+                return val32;
+            }
+            else if (tag.type == EXTH_THUMBOFFSET)
+            {
+                printlogcat("THUMBNAIL COVER OFFSET FOUND 1!");
+                return val32;
+            }
+            else if (tag.type == EXTH_NUMERIC) //check all tags again
+            {
+                // printlogcat("%s (%i): %u\n", tag.name, tag.tag, val32);
+                if (tag.tag == 202)
+                {
+                    printlogcat("COVEROFFSET FOUND 2!");
+                    return val32;
+                }
+                if (tag.tag == 201)
+                {
+                    printlogcat("THUMBNAIL COVER OFFSET FOUND 2!");
+                    return val32;
+                }
+            }
+        }
+        curr = curr->next;
+    }
+    return -1;
+}
