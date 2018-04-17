@@ -3,7 +3,7 @@
 //
 
 #include "include/mobihandler.h"
-#include "../../libmobi/src/opf.h"
+#include "libmobi/src/opf.h"
 #include "include/crconfig.h"
 
 bool ImportMOBIDocNew(const char *absolute_path)
@@ -50,20 +50,6 @@ bool ImportMOBIDocNew(const char *absolute_path)
         mobi_free_rawml(rawml);
         return false;
     }
-    //rawmlret=rawml;
-    //mobidataret=m;
-
-//    const MOBIExthHeader *currexthheader = m->eh;
-//    uint32_t tag1 = currexthheader->tag;
-//    MOBIExthMeta tag = mobi_get_exthtagmeta_by_tag((MOBIExthTag)tag1);
-/*
-    OPFmetadata* opfmeta;
-    mobi_opf_copy_meta(m, curr, metadata->meta, "cover");
-    mobi_get_opf_from_exth(opfmeta ,m);
-    char * * cover = opfmeta->x_meta->embedded_cover;
-    CRLog::error("cover= %s",cover);
-
-*/
 #if 0
     FILE *filedump = fopen("data/data/org.readera/files/mobidump.xml", "w");
     if (file == NULL) {
@@ -75,15 +61,8 @@ bool ImportMOBIDocNew(const char *absolute_path)
 
     int a = dump_rawml_parts(rawml, FULL_PATH);
 #endif
-     /* if(m->mh->image_index)
-    {
-        CRLog::error("first image index: %u", *m->mh->image_index);
-        MOBIPart* a = mobi_get_flow_by_uid(rawml,*m->mh->image_index);
-        CRLog::error("img size = %d",);
-    }
-*/
-    CRLog::error("conversion starts");
-    ConvertMOBIDocToEpub(rawml,"/data/data/org.readera/files/epub.epub");
+
+    ConvertMOBIDocToEpub(rawml,MOBI_TO_EPUB_FILEPATH);
     return true;
 }
 
@@ -293,66 +272,64 @@ mobiresponse GetMobiMetaSummary(const MOBIData *m) {
 }
 
 
-int dump_rawml_parts(const MOBIRawml *rawml, const char *fullpath) {
-    if (rawml == NULL)
-    {
+LVStreamRef GetMobiCoverPageToStream(const char *fullpath) {
+    MOBIData *m = mobi_init();
+    if (m == NULL) {
+        CRLog::error("m == NULL");
+        return LVStreamRef();
+    }
+/* Open file for reading */
+    FILE *file = fopen(fullpath, "rb");
+    if (file == NULL) {
+        mobi_free(m);
+        CRLog::error("file == NULL, fullpath = %s",fullpath);
+        return LVStreamRef();
+    }
+    MOBI_RET mobi_ret = mobi_load_file(m, file);
+    fclose(file);
+    if (mobi_ret != MOBI_SUCCESS) {
+        CRLog::error("mobi_ret != MOBI_SUCCESS");
+        mobi_free(m);
+        return LVStreamRef();
+    }
+    MOBIRawml *rawml = mobi_init_rawml(m);
+    if (rawml == NULL) {
+        CRLog::error("rawml == NULL");
+        mobi_free(m);
+        return LVStreamRef();
+    }
+    mobi_ret = mobi_parse_rawml(rawml, m);
+    if (mobi_ret != MOBI_SUCCESS) {
+        CRLog::error("mobi_ret != MOBI_SUCCESS");
+        mobi_free(m);
+        mobi_free_rawml(rawml);
+        return LVStreamRef();
+    }
+    if (rawml == NULL) {
         printf("Rawml structure not initialized\n");
-        return false;
+        return LVStreamRef();
     }
-    const char path[] = "data/data/org.readera/files/mobiFiles";
-
-    char newdir[FILENAME_MAX];
-    snprintf(newdir, sizeof(newdir), "%s_markup", path);
-
-    if (mkdir(newdir, S_IRWXU) != 0)
-    {
-        printf("Creating directory failed (%s)\n");
-        return false;
-    }
-
-    char partname[FILENAME_MAX];
-
     if (rawml->resources != NULL)
-    {
-        /* Linked list of MOBIPart structures in rawml->resources holds binary files, also opf files */
+    {   MOBIPart *last = nullptr;
         MOBIPart *curr = rawml->resources;
-
-
-
-        /* jpg, gif, png, bmp, font, audio, video also opf, ncx */
         while (curr != NULL)
-        {
-            MOBIFileMeta file_meta = mobi_get_filemeta_by_type(curr->type);
+        { MOBIFileMeta file_meta = mobi_get_filemeta_by_type(curr->type);
             if (curr->size > 0)
-            {
-                lString16 extension;
-                extension.append(file_meta.extension);
-                if (extension.endsWith("jpg") || extension.endsWith("jpeg") || extension.endsWith("png") || extension.endsWith("gif") || extension.endsWith("bmp"))
+            { if (file_meta.type == T_GIF || file_meta.type == T_JPG || file_meta.type == T_BMP || file_meta.type == T_PNG)
                 {
-                    snprintf(partname, sizeof(partname), "%s%cresource%05zu.%s", newdir, separator, curr->uid, file_meta.extension);
-                    CRLog::error("%s", file_meta.extension);
-
-                    FILE *file = fopen(partname, "wb");
-                    if (file == NULL)
-                    {
-                        printf("Could not open file for writing: %s (%s)\n", partname);
-                        return false;
-                    }
-                    printf("resource%05zu.%s\n", curr->uid, file_meta.extension);;
-                    fwrite(curr->data, 1, curr->size, file);
-                    if (ferror(file))
-                    {
-                        printf("Error writing: %s (%s)\n", partname);
-                        fclose(file);
-                        return false;
-                    }
-                    fclose(file);
+                    last=curr;
                 }
             }
             curr = curr->next;
         }
+        if (!last) {
+            return LVStreamRef();
+        }
+        LVStreamRef img;
+        LVStreamRef res = LVCreateMemoryStream(last->data, static_cast<int>(last->size));
+        return res;
     }
-    return true;
+    return LVStreamRef();
 }
 
 

@@ -1,17 +1,20 @@
 //
 // Created by Admin on 13/4/2018.
 //
-#include "lvtinydom.h"
-#include "../../libmobi/src/mobi.h"
-#include "trlog.h"
+
 #include <cctype>
-#include "../../libmobi/tools/common.h"
 #include <iostream>
 #include <string>
 #include <locale>
 #include <codecvt>
 
-#define FULL_PATH "data/data/org.readera/files/mobifiles"
+#include "lvtinydom.h"
+#include "trlog.h"
+#include "lvxml.h"
+
+#include "libmobi/src/mobi.h"
+#include "libmobi/tools/common.h"
+//#include "libmobi/src/meta.h"
 
 #define EPUB_CONTAINER "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
 <container version=\"1.0\" xmlns=\"urn:oasis:names:tc:opendocument:xmlns:container\">\n\
@@ -21,7 +24,6 @@
 </container>"
 #define EPUB_MIMETYPE "application/epub+zip"
 
-//#include "../../libmobi/src/meta.h"
 
 struct mobiresponse
 {
@@ -40,4 +42,5 @@ void FreeMOBIStructures(MOBIRawml* rawml, MOBIData* m);
 void GetMobiMeta(const MOBIData *m);
 mobiresponse GetMobiMetaSummary(const MOBIData *m);
 mobiresponse GetMobiMetaFromFile(const char *fullpath);
-int dump_rawml_parts(const MOBIRawml *rawml, const char *fullpath);
+int GetMobiCoverPageFile(const MOBIRawml *rawml, const char *fullpath);
+LVStreamRef GetMobiCoverPageToStream(const char *fullpath);

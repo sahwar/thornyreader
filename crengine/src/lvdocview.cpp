@@ -22,6 +22,7 @@
 #include "include/pdbfmt.h"
 #include "include/crcss.h"
 #include "include/mobihandler.h"
+#include "include/crconfig.h"
 
 // Yep, twice include single header with different define.
 // Probably should be last in include list, to don't mess up with other includes.
@@ -429,50 +430,22 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream, const char *absolute
 	}
 	else if (doc_format == DOC_FORMAT_MOBI)
 	{
-
+        /* OLD CALL
 		doc_format_t pdb_format = doc_format_none;
 		if (!DetectMOBIFormat(stream_, pdb_format))
-		{
-			return false;
-		}
-
-        /* OLD CALL
-		cr_dom_->setProps(doc_props_);
+		{return false;}
+        cr_dom_->setProps(doc_props_);
 		if (pdb_format != doc_format_mobi)
-		{
-			CRLog::warn("pdb_format != doc_format_mobi");
+		{CRLog::error("pdb_format != doc_format_mobi");
 		}
 		if (!ImportMOBIDoc(stream_, cr_dom_, pdb_format, cfg_firstpage_thumb_)) //old call
-        {
-            if (pdb_format != doc_format_mobi)
-            {
-                CRLog::error("pdb_format != doc_format_mobi");
-            }
-            return false;
+        {if (pdb_format != doc_format_mobi)
+            {CRLog::error("pdb_format != doc_format_mobi");
+            }return false;
         } */
 
-        CRLog::error("MOBIDOC OPENING");
         if(ImportMOBIDocNew(absolute_path))
-        {   CRLog::error("MOBIDOC OPENED");
-         //   ConvertMOBIDocToEpub(rawml,"/data/data/org.readera/files/epub.epub");
-
-
-            //GetMobiMetaFromFile(absolute_path);
-            //lString16 epubnewpath;
-            //epubnewpath.append("/data/data/org.readera/files/");
-            //epubnewpath.append("epub.epub"); //TODO add unique name of document being read here
-            //if (!ConvertMOBIDocToEpub(rawml,LCSTR(epubnewpath)))
-            /*if (!ConvertMOBIDocToEpub(rawml,"/data/data/org.readera/files/epub.epub"))
-            {
-                return false;
-                FreeMOBIStructures(rawml,mobiData);
-            }
-            else
-            {
-                //doc_format == DOC_FORMAT_EPUB; //TODO pass recently created epub to read epub
-                return false;//placeholder false to avoid crashes
-            }
-            FreeMOBIStructures(rawml, mobiData);*/
+        {
 	        doc_format = DOC_FORMAT_EPUB;
 	        mobi_converted= true;
         }
@@ -481,7 +454,7 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream, const char *absolute
     {
 	    if (mobi_converted)
 	    {   CRLog::error("Reading converted mobi from epub container");
-		    stream_=ThResolveStream(DOC_FORMAT_EPUB,"/data/data/org.readera/files/epub.epub",compressed_size,smart_archive);
+		    stream_=ThResolveStream(DOC_FORMAT_EPUB,MOBI_TO_EPUB_FILEPATH,compressed_size,smart_archive);
 	    }
         if (!DetectEpubFormat(stream_))
         {
@@ -493,6 +466,18 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream, const char *absolute
             return false;
         }
         doc_props_ = cr_dom_->getProps();
+        if (mobi_converted)
+        {
+            if( remove(MOBI_TO_EPUB_FILEPATH) != 0 )
+            {
+                CRLog::error("Error deleting mobi to epub converted file");
+            }
+            else
+            {
+                CRLog::trace("Mobi to epub converted file successfully deleted" );
+            }
+            mobi_converted = false;
+        }
     }
 	else if (doc_format == DOC_FORMAT_DOC)
 	{
@@ -2416,18 +2401,17 @@ void CreBridge::processMetadata(CmdRequest &request, CmdResponse &response)
 	}
 	else if (doc_format == DOC_FORMAT_MOBI)
     {
-        thumb_stream = GetMOBICover(stream);
+        //thumb_stream = GetMOBICover(stream); //old implementation
+        thumb_stream = GetMobiCoverPageToStream(absolute_path);
         mobiresponse mobiresponse = GetMobiMetaFromFile(absolute_path);
         title = mobiresponse.title;
         authors = mobiresponse.author;
         lang = mobiresponse.language;
-       /* if (mobiresponse.series!= L"NULL")
+        if (mobiresponse.series!= L"NULL")
         {
             series.append(mobiresponse.series);
             series_number = 0;
-        }*/
-	    series.append("Unknown series. No info from MOBI file");
-	    series_number = 1;
+        }
     }
 
 	CmdData *doc_thumb = new CmdData();
