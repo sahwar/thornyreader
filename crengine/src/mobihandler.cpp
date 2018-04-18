@@ -58,8 +58,8 @@ bool ImportMOBIDocNew(const char *absolute_path)
         return false;
     }
     mobi_dump_rawml(m, filedump);
-
-    int a = dump_rawml_parts(rawml, FULL_PATH);
+    fclose(filedump);
+    //int a = dump_rawml_parts(rawml, FULL_PATH);
 #endif
 
     ConvertMOBIDocToEpub(rawml,MOBI_TO_EPUB_FILEPATH);
