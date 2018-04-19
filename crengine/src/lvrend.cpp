@@ -17,8 +17,9 @@
 
 //#define DEBUG_TREE_DRAW 3
 // define to non-zero (1..5) to see block bounds
-#define DEBUG_TREE_DRAW 1
-#define DEBUG_DUMP_ENABLED
+//#define DEBUG_TREE_DRAW 1
+#define DEBUG_TREE_DRAW 0
+//#define DEBUG_DUMP_ENABLED
 #ifdef DEBUG_DUMP_ENABLED
 class simpleLogFile
 {
@@ -1609,7 +1610,7 @@ void DrawDocument( LVDrawBuf & drawbuf, ldomNode * enode, int x0, int y0, int dx
         int padding_left = !draw_padding_bg ? 0 : lengthToPx( enode->getStyle()->padding[0], width, em ) + DEBUG_TREE_DRAW;
         int padding_right = !draw_padding_bg ? 0 : lengthToPx( enode->getStyle()->padding[1], width, em ) + DEBUG_TREE_DRAW;
         int padding_top = !draw_padding_bg ? 0 : lengthToPx( enode->getStyle()->padding[2], width, em ) + DEBUG_TREE_DRAW;
-        //int padding_bottom = !draw_padding_bg ? 0 : lengthToPx( enode->getStyle()->padding[3], width, em ) + DEBUG_TREE_DRAW;
+        int padding_bottom = !draw_padding_bg ? 0 : lengthToPx( enode->getStyle()->padding[3], width, em ) + DEBUG_TREE_DRAW;
         if ( (doc_y + height <= 0 || doc_y > 0 + dy)
             && (
                enode->getRendMethod()!=erm_table_row
@@ -1701,7 +1702,6 @@ void DrawDocument( LVDrawBuf & drawbuf, ldomNode * enode, int x0, int y0, int dx
                 }
 
 #if (DEBUG_TREE_DRAW!=0)
-                lUInt32 color = 1;
                 drawbuf.FillRect( doc_x+x0, doc_y+y0, doc_x+x0+fmt.getWidth(), doc_y+y0+1, color );
                 drawbuf.FillRect( doc_x+x0, doc_y+y0, doc_x+x0+1, doc_y+y0+fmt.getHeight(), color );
                 drawbuf.FillRect( doc_x+x0+fmt.getWidth()-1, doc_y+y0, doc_x+x0+fmt.getWidth(), doc_y+y0+fmt.getHeight(), color );
