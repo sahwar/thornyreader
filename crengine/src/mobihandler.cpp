@@ -52,7 +52,7 @@ bool ImportMOBIDocNew(const char *absolute_path)
     }
 #if 0
     FILE *filedump = fopen("data/data/org.readera/files/mobidump.xml", "w");
-    if (file == NULL) {
+    if (filedump == NULL) {
         mobi_free(m);
         CRLog::error("file == NULL, fullpath = %s",absolute_path);
         return false;
