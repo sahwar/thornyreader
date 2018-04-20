@@ -201,11 +201,13 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
                 response.result = RES_BAD_REQ_DATA;
                 return;
             }
+            doc_view_->cfg_aamode = int_val;
             fontMan->SetAntialiasMode(int_val);
             doc_view_->RequestRender();
         } else if (key == CONFIG_CRE_FONT_GAMMA) {
             double gamma = 1.0;
             if (sscanf(val, "%lf", &gamma) == 1) {
+                doc_view_->cfg_gamma=gamma;
                 fontMan->SetGamma(gamma);
             }
         } else if (key == CONFIG_CRE_PAGES_COLUMNS) {
@@ -248,6 +250,7 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
             doc_view_->RequestRender();
         } else if (key == CONFIG_CRE_FONT_FACE_FALLBACK) {
             fontMan->SetFallbackFontFace(UnicodeToUtf8(lString16(val)));
+            doc_view_->cfg_font_face_fallback = lString16(val);
             doc_view_->UpdatePageMargins();
             doc_view_->RequestRender();
         } else if (key == CONFIG_CRE_FONT_SIZE) {
@@ -317,6 +320,7 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
             } else {
                 HyphMan::activateDictionary(lString16(HYPH_DICT_ID_ALGORITHM));
             }
+            doc_view_->cfg_cre_hyphenation = int_val;
             doc_view_->RequestRender();
         } else if (key == CONFIG_CRE_FLOATING_PUNCTUATION) {
             int int_val = atoi(val);
@@ -324,6 +328,7 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
                 response.result = RES_BAD_REQ_DATA;
                 return;
             }
+            doc_view_->cfg_cre_floating_punctuation = int_val;
             bool bool_val = (bool) int_val;
             if (bool_val != gFlgFloatingPunctuationEnabled) {
                 gFlgFloatingPunctuationEnabled = bool_val;

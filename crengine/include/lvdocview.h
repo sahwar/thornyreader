@@ -69,6 +69,8 @@ private:
     LVImageSourceRef background_image;
     LVRef<LVColorDrawBuf> background_image_scaled_;
     LVRendPageList pages_list_;
+    LVRendPageList pages_list_prev;
+    LVRendPageList pages_list_lbo; //last but one = предпоследний
     lvRect page_rects_[2];
     CRPropRef doc_props_;
     ldomMarkedRangeList marked_ranges_;
@@ -100,6 +102,8 @@ private:
 
     bool NeedCheckImage();
 
+    lString16 GenerateConfigKey();
+
 public:
     bool position_is_set_;
     int doc_format_;
@@ -117,6 +121,14 @@ public:
     bool cfg_enable_footnotes_;
     bool cfg_firstpage_thumb_;
     bool cfg_txt_smart_format_;
+
+    int cfg_aamode;
+    double cfg_gamma;
+    lString16 cfg_font_face_fallback;
+    int cfg_cre_hyphenation;
+    int cfg_cre_floating_punctuation;
+    lString16 cfgkey;
+    lString16 cfgkey_prev;
 
     inline bool IsPagesMode() { return viewport_mode_ == MODE_PAGES; }
     inline bool IsScrollMode() { return viewport_mode_ == MODE_SCROLL; }
