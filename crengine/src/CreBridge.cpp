@@ -222,6 +222,7 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
             doc_view_->RequestRender();
         } else if (key == CONFIG_CRE_FONT_FACE_FALLBACK) {
             fontMan->SetFallbackFontFace(UnicodeToUtf8(lString16(val)));
+            doc_view_->UpdatePageMargins();
             doc_view_->RequestRender();
         } else if (key == CONFIG_CRE_FONT_SIZE) {
             int int_val = atoi(val);
