@@ -109,6 +109,11 @@ mobiresponse GetMobiMetaFromFile(const char *fullpath)
     }
     mobi_ret = mobi_load_file(m, file);
     fclose(file);
+    if (mobi_ret != MOBI_SUCCESS) {
+        CRLog::error("mobi_ret != MOBI_SUCCESS");
+        mobi_free(m);
+        return a;
+    }
     //GetMobiMeta(m);
     a = GetMobiMetaSummary(m);
     return a;
