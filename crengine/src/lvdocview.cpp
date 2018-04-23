@@ -35,7 +35,7 @@
 
 #if 0
 #define REQUEST_RENDER(caller) { CRLog::trace("RequestRender " caller); RequestRender(); }
-#define CHECK_RENDER(caller) { CRLog::trace("CheckRender " caller); CheckRender(); }
+#define CHECK_RENDER(caller) { CRLog::trace("RenderIfDirty " caller); RenderIfDirty(); }
 #else
 #define REQUEST_RENDER(caller) RequestRender();
 #define CHECK_RENDER(caller) RenderIfDirty();
@@ -74,6 +74,7 @@ LVDocView::LVDocView()
 	base_font_ = fontMan->GetFont(cfg_font_size_, 400, false, DEF_FONT_FAMILY, cfg_font_face_);
 	doc_props_ = LVCreatePropsContainer();
 	CreateEmptyDom();
+    pages_list_prev = LVRendPageList();
 }
 
 LVDocView::~LVDocView()
@@ -121,31 +122,95 @@ void LVDocView::CreateEmptyDom()
 
 void LVDocView::RenderIfDirty()
 {
-	if (is_rendered_)
-	{
-		return;
-	}
-	is_rendered_ = true;
-	position_is_set_ = false;
-	if (cr_dom_ && cr_dom_->getRootNode() != NULL)
-	{
-		int dx = page_rects_[0].width() - margins_.left - margins_.right;
-		int dy = page_rects_[0].height() - margins_.top - margins_.bottom;
-		CheckRenderProps(dx, dy);
-		if (base_font_.isNull())
-		{
-			CRLog::error("RenderIfDirty base_font_.isNull()");
-			return;
-		}
-		int y0 = show_cover_ ? dy + margins_.bottom * 4 : 0;
-		cr_dom_->render(&pages_list_, dx, dy, show_cover_, y0, base_font_, cfg_interline_space_);
-		fontMan->gc();
-		is_rendered_ = true;
-		UpdateSelections();
+    if (is_rendered_)
+    {
+        return;
+    }
+
+    CRLog::error("RenderifDirty start");
+    is_rendered_ = true;
+    position_is_set_ = false;
+    if (!isParsed)
+    {
+        return;
+    }
+
+    if (cr_dom_ == NULL || cr_dom_->getRootNode() == NULL )
+    {
+        CRLog::error("Abort! crdom is null");
+        return;
+    }
+
+    lString16 key = GenerateConfigKey();
+    lString16 tempkey;
+    LVRendPageList temppages_list;
+
+    if (!cfgkey.empty() && SameStrings(key,cfgkey))
+    {
+        CRLog::error("break");
+        return;
+    }
+    int dx = page_rects_[0].width() - margins_.left - margins_.right;
+    int dy = page_rects_[0].height() - margins_.top - margins_.bottom;
+    CheckRenderProps(dx, dy);
+    if (base_font_.isNull())
+    {
+        CRLog::error("RenderIfDirty base_font_.isNull()");
+        return;
+    }
+    int y0 = show_cover_ ? dy + margins_.bottom * 4 : 0;
+    if (SameStrings(key,cfgkey_prev))
+    {
+        CRLog::error("Use_prev");
+        temppages_list = pages_list_;
+        tempkey = cfgkey;
+
+        pages_list_= pages_list_prev;
+        cfgkey = cfgkey_prev;
+
+        pages_list_prev = temppages_list;
+        cfgkey_prev = tempkey;
+        CRLog::error("_________________");
+       // CRLog::error("_key         = %s", LCSTR(key));
+        CRLog::error("_cfgkey      = %s", LCSTR(this->cfgkey));
+        CRLog::error("_cfgkey_prev = %s", LCSTR(this->cfgkey_prev));
+        CRLog::error("_________________");
+
+        fontMan->gc();
+        UpdateSelections();
 		UpdateBookmarksRanges();
-	}
+        int dx = page_rects_[0].width() - margins_.left - margins_.right;
+        int dy = page_rects_[0].height() - margins_.top - margins_.bottom;
+        CheckRenderProps(dx, dy);
+        return;
+    }
+    if (!cfgkey.empty())
+    {
+        CRLog::error("Saving curent to prev");
+        cfgkey_prev=cfgkey;
+        pages_list_prev=pages_list_;
+    }
+
+    CRLog::error("RUN");
+
+
+    cr_dom_->render(&pages_list_, dx, dy, show_cover_, y0, base_font_, cfg_interline_space_);
+    fontMan->gc();
+    UpdateSelections();
+    UpdateBookmarksRanges();
+    this->cfgkey = key;
     CRLog::error("RenderifDirty stop");
 }
+
+bool LVDocView::SameStrings(lString16 a, lString16 b)
+{
+    if(a.compare(b) == 0)
+    {
+        return true;
+    }
+    return false;
+}
+
 
 /// Invalidate formatted data, request render
 void LVDocView::RequestRender()
@@ -576,6 +641,7 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream, const char *absolute
     page_ = 0;
 	//show_cover_ = !getCoverPageImage().isNull();
 	CheckRenderProps(0, 0);
+	isParsed = true;
 	REQUEST_RENDER("LoadDoc")
 	return true;
 }
@@ -2477,28 +2543,26 @@ inline int booltoint(bool val) { return val ? 1 : 0 ; };
 lString16 LVDocView::GenerateConfigKey()
 {
     lString16 result;
-//    int configarray[18];
-    int configarray[1];
+    int configarray[18];
 
-    //configarray[0] = this->width_;
-    //configarray[1] = this->height_;
-    //configarray[2] = this->page_columns_;
-    //configarray[3] = this->text_color_;
-    //configarray[4] = this->background_color_;
-    //configarray[5] = this->cfg_font_size_;
-    configarray[0] = this->cfg_font_size_;
-    //configarray[6] = this->cfg_interline_space_;
-    //configarray[7] = booltoint(this->cfg_embeded_styles_);
-    //configarray[8] = booltoint(this->cfg_embeded_fonts_);
-    //configarray[9] = booltoint(this->cfg_enable_footnotes_);
-    //configarray[10] = booltoint(this->cfg_firstpage_thumb_);
-    //configarray[11] = this->cfg_margins_.left;
-    //configarray[12] = this->cfg_margins_.top;
-    //configarray[13] = this->cfg_margins_.right;
-    //configarray[14] = this->cfg_margins_.bottom;
-    //configarray[15] = this->cfg_aamode;
-    //configarray[16] = this->cfg_cre_hyphenation;
-    //configarray[17] = this->cfg_cre_floating_punctuation;
+    configarray[0] = this->width_;
+    configarray[1] = this->height_;
+    configarray[2] = this->page_columns_;
+    configarray[3] = this->text_color_;
+    configarray[4] = this->background_color_;
+    configarray[5] = this->cfg_font_size_;
+    configarray[6] = this->cfg_interline_space_;
+    configarray[7] = booltoint(this->cfg_embeded_styles_);
+    configarray[8] = booltoint(this->cfg_embeded_fonts_);
+    configarray[9] = booltoint(this->cfg_enable_footnotes_);
+    configarray[10] = booltoint(this->cfg_firstpage_thumb_);
+    configarray[11] = this->cfg_margins_.left;
+    configarray[12] = this->cfg_margins_.top;
+    configarray[13] = this->cfg_margins_.right;
+    configarray[14] = this->cfg_margins_.bottom;
+    configarray[15] = this->cfg_aamode;
+    configarray[16] = this->cfg_cre_hyphenation;
+    configarray[17] = this->cfg_cre_floating_punctuation;
     double h18 = this->cfg_gamma;
     lString16 h19 = this->cfg_font_face_fallback;
     lString8 h20 = this->cfg_font_face_;
@@ -2512,11 +2576,11 @@ lString16 LVDocView::GenerateConfigKey()
     }
     char h18ch[12];
     sprintf(h18ch, "%f", h18);
-    //result.append(h18ch);
-	//result.append(":");
-    //result.append(h19);
-	//result.append(":");
-    //result.append(Utf8ToUnicode(h20));
+    result.append(h18ch);
+	result.append(":");
+    result.append(h19);
+	result.append(":");
+    result.append(Utf8ToUnicode(h20));
 
     //CRLog::trace("ConfigKey %s",LCSTR(result));
     return result;
