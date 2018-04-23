@@ -29,10 +29,10 @@ class LVPtrVector
     T * * _list;
     int _size;
     int _count;
-    /*    LVPtrVector & operator = (LVPtrVector&) {
+	LVPtrVector & operator = (LVPtrVector&) {
 		// no assignment
 		return *this;
-	}*/
+	}
 public:
     /// default constructor
     LVPtrVector() : _list(NULL), _size(0), _count(0) {}
@@ -85,11 +85,9 @@ public:
             _count = 0;
             if ( ownItems ) {
                 for (int i=cnt - 1; i>=0; --i)
-                {
-                    //delete _list[i];
-                }
+                    delete _list[i];
             }
-            //free( _list );
+            free( _list );
         }
         _list = NULL;
         _size = 0;
@@ -207,18 +205,6 @@ public:
             reserve( v._count );
             for ( int i=0; i<v._count; i++ )
                 add( new T(*v[i]) );
-        }
-    }
-
-    void Copy(const LVPtrVector & source )
-    {
-        if (source._count>0)
-        {
-            reserve(source._count);
-        }
-        for ( int i=0; i<source._count; i++ )
-        {
-            add( new T(*source[i]) );
         }
     }
     /// stack-like interface: pop top item from stack

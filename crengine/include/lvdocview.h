@@ -70,6 +70,7 @@ private:
     LVRef<LVColorDrawBuf> background_image_scaled_;
     LVRendPageList pages_list_;
     LVRendPageList pages_list_prev;
+    LVRendPageList pages_list_lbo; //last but one = предпоследний
     lvRect page_rects_[2];
     CRPropRef doc_props_;
     ldomMarkedRangeList marked_ranges_;
@@ -128,7 +129,6 @@ public:
     int cfg_cre_floating_punctuation;
     lString16 cfgkey;
     lString16 cfgkey_prev;
-    bool isParsed = false;
 
     inline bool IsPagesMode() { return viewport_mode_ == MODE_PAGES; }
     inline bool IsScrollMode() { return viewport_mode_ == MODE_SCROLL; }
@@ -235,9 +235,6 @@ public:
                              bool smart_archive);
     LVDocView();
     ~LVDocView();
-
-    bool SameStrings(lString16 a, lString16 b);
-
 };
 
 #endif //__LV_TEXT_VIEW_H_INCLUDED__

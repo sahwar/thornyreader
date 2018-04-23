@@ -215,7 +215,6 @@ public:
 class LVRendPageList : public LVPtrVector<LVRendPageInfo>
 {
 public:
-    LVRendPageList(){};
     int FindNearestPage( int y, int direction );
     bool serialize( SerialBuf & buf );
     bool deserialize( SerialBuf & buf );
