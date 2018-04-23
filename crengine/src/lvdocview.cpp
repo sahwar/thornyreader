@@ -2334,9 +2334,9 @@ void CreBridge::processMetadata(CmdRequest &request, CmdResponse &response)
 					thumb_stream = container->OpenStream(thumbnail_file_name.c_str(), LVOM_READ);
 				}
 				href = DecodeHTMLUrlString(href);
-                if(id.endsWith("cover.jpg")||id.endsWith("cover.jpeg"))
+                if(id.endsWith("cover.jpg")||id.endsWith("cover.jpeg")||href.endsWith("cover.jpg")||href.endsWith("cover.jpeg"))
 				{
-					CRLog::trace("EPUB structure is malformed...BUT Found coverpage! Yay!");
+					CRLog::trace("EPUB structure is malformed...BUT Found coverpage image! Yay!");
 					// coverpage file
                     lString16 thumbnail_file_name = code_base + href;
 					CRLog::trace("_______EPUB coverpage file: %s", LCSTR(thumbnail_file_name));
