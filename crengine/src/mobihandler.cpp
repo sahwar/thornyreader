@@ -6,7 +6,7 @@
 #include "libmobi/src/opf.h"
 #include "include/crconfig.h"
 
-bool ImportMOBIDocNew(const char *absolute_path)
+bool ImportMOBIDocNew(const char *absolute_path,const char* epubnewpath)
 {
     CRLog::error("ImportMobiDocNew start");
     /* Initialize main MOBIData structure */
@@ -62,7 +62,7 @@ bool ImportMOBIDocNew(const char *absolute_path)
     //int a = dump_rawml_parts(rawml, FULL_PATH);
 #endif
 
-    ConvertMOBIDocToEpub(rawml,MOBI_TO_EPUB_FILEPATH);
+    ConvertMOBIDocToEpub(rawml,epubnewpath);
     return true;
 }
 

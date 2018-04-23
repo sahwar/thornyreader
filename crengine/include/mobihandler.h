@@ -36,7 +36,7 @@ struct mobiresponse
 
 #define FULLNAME_MAX 1024
 
-bool ImportMOBIDocNew(const char *absolute_path);
+bool ImportMOBIDocNew(const char *absolute_path,const char *epubnewpath);
 bool ConvertMOBIDocToEpub(MOBIRawml* rawml, const char* epubnewpath);
 void FreeMOBIStructures(MOBIRawml* rawml, MOBIData* m);
 void GetMobiMeta(const MOBIData *m);

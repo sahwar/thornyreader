@@ -88,7 +88,7 @@ private:
     int config_text_align_;
     void UpdateScrollInfo();
     /// load document from stream
-    bool LoadDoc(int doc_format, LVStreamRef stream, const char *absolute_path, uint32_t compressed_size, bool smart_archive);
+    bool LoadDoc(int doc_format, LVStreamRef stream, const char *absolute_path, uint32_t compressed_size, bool smart_archive); //,const char* savelocation);
     /// create empty document with specified message (to show errors)
     void CreateEmptyDom();
     /// ensure current position is set to current bookmark value
@@ -223,6 +223,8 @@ public:
                              bool smart_archive);
     LVDocView();
     ~LVDocView();
+    // returns 1 if mobi, 2 if epub, 0 if failed
+    int MobiOrEpub(const char *absolute_path); // returns 1 if mobi, 2 if epub, 0 if failed
 };
 
 #endif //__LV_TEXT_VIEW_H_INCLUDED__
