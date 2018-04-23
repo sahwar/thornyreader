@@ -456,7 +456,7 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream, const char *absolute
 		{
 			doc_format = DOC_FORMAT_EPUB;
 		}
-		else //(MobiOrEpub(absolute_path)==1)  // definitely a mobi
+		else //if (MobiOrEpub(absolute_path)==1)  // definitely a mobi
 		{
 			if (got_save_location_command)
 			{
