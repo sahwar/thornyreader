@@ -144,7 +144,6 @@ void LVDocView::RenderIfDirty()
 		UpdateSelections();
 		UpdateBookmarksRanges();
 	}
-    CRLog::error("RenderifDirty stop");
 }
 
 /// Invalidate formatted data, request render
@@ -2471,55 +2470,3 @@ bool LVDocView::NeedCheckImage()
     }
     return false;
 }
-
-inline int booltoint(bool val) { return val ? 1 : 0 ; };
-
-lString16 LVDocView::GenerateConfigKey()
-{
-    lString16 result;
-//    int configarray[18];
-    int configarray[1];
-
-    //configarray[0] = this->width_;
-    //configarray[1] = this->height_;
-    //configarray[2] = this->page_columns_;
-    //configarray[3] = this->text_color_;
-    //configarray[4] = this->background_color_;
-    //configarray[5] = this->cfg_font_size_;
-    configarray[0] = this->cfg_font_size_;
-    //configarray[6] = this->cfg_interline_space_;
-    //configarray[7] = booltoint(this->cfg_embeded_styles_);
-    //configarray[8] = booltoint(this->cfg_embeded_fonts_);
-    //configarray[9] = booltoint(this->cfg_enable_footnotes_);
-    //configarray[10] = booltoint(this->cfg_firstpage_thumb_);
-    //configarray[11] = this->cfg_margins_.left;
-    //configarray[12] = this->cfg_margins_.top;
-    //configarray[13] = this->cfg_margins_.right;
-    //configarray[14] = this->cfg_margins_.bottom;
-    //configarray[15] = this->cfg_aamode;
-    //configarray[16] = this->cfg_cre_hyphenation;
-    //configarray[17] = this->cfg_cre_floating_punctuation;
-    double h18 = this->cfg_gamma;
-    lString16 h19 = this->cfg_font_face_fallback;
-    lString8 h20 = this->cfg_font_face_;
-
-    for (int i = 0; i < sizeof(configarray)/ sizeof(configarray[0]); ++i)
-    {
-        char str[12];
-        sprintf(str, "%d", configarray[i]);
-        result.append(str);
-        result.append(":");
-    }
-    char h18ch[12];
-    sprintf(h18ch, "%f", h18);
-    //result.append(h18ch);
-	//result.append(":");
-    //result.append(h19);
-	//result.append(":");
-    //result.append(Utf8ToUnicode(h20));
-
-    //CRLog::trace("ConfigKey %s",LCSTR(result));
-    return result;
-    //return lString16();
-}
-
