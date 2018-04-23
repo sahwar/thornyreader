@@ -27,11 +27,6 @@ const bool ThornyReaderIsDebugBuild() {
 }
 
 void ThornyReaderStart(const char *name) {
-#ifdef TRDEBUG
-    __android_log_print(ANDROID_LOG_DEBUG,
-            THORNYREADER_LOG_TAG,
-            "\n\n___________________________________________________________");
-#endif
     __android_log_print(ANDROID_LOG_INFO,
                         THORNYREADER_LOG_TAG,
                         "Start %s v%s%s",
