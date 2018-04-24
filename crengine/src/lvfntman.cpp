@@ -25,7 +25,10 @@
 // freetype font glyph buffer size, in bytes
 // 0x20000 (_WIN32, LBOOK), 0x40000 (LINUX)
 #define GLYPH_CACHE_SIZE 0x40000
-
+#define DEBUG_FONT_MAN 0
+#if (DEBUG_FONT_MAN==1)
+#define DEBUG_FONT_MAN_LOG_FILE "data/data/org.readera/files/fontmanlog.log"
+#endif
 inline int myabs(int n) { return n < 0 ? -n : n; }
 
 LVFontManager* fontMan = NULL;
@@ -1944,7 +1947,7 @@ public:
         	CRLog::error("Error while initializing freetype library");
         }
     #if (DEBUG_FONT_MAN==1)
-        _log = fopen(DEBUG_FONT_MAN_LOG_FILE, "at");
+        _log = fopen(DEBUG_FONT_MAN_LOG_FILE, "wt");
         if ( _log ) {
             fprintf(_log, "=========================== LOGGING STARTED ===================\n");
         }
