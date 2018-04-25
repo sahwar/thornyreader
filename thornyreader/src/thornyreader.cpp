@@ -16,6 +16,7 @@
 
 #include <android/log.h>
 #include "thornyreader.h"
+#include "StProtocol.h"
 
 const bool ThornyReaderIsDebugBuild() {
 #if !defined(NDEBUG) || defined(TRDEBUG) || defined(DEBUG) || defined(_DEBUG)
@@ -51,4 +52,10 @@ void ThornyReaderStart(const char *name) {
                             ndebug,
                             axy_debug);
     }
+}
+
+void ThornyReaderVersion(const char* version, CmdResponse& response)
+{
+    response.cmd = CMD_RES_VERSION;
+    response.addIpcString(version, false);
 }

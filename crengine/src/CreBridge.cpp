@@ -664,6 +664,9 @@ void CreBridge::process(CmdRequest& request, CmdResponse& response)
             //CRLog::trace("CreBridge: CMD_REQ_QUIT");
             processQuit(request, response);
             break;
+        case CMD_REQ_VERSION:
+            ThornyReaderVersion(THORNYREADER_VERSION, response);
+            break;
         default:
             CRLog::error("Unknown request: %d", request.cmd);
             response.result = RES_UNKNOWN_CMD;
