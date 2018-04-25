@@ -129,6 +129,11 @@ void CreBridge::processConvert(CmdRequest& request, CmdResponse& response)
         response.result = RES_BAD_REQ_DATA;
         return;
     }
+    if (src_format != DOC_FORMAT_MOBI || dst_format != DOC_FORMAT_EPUB) {
+        response.result = RES_BAD_REQ_DATA;
+        return;
+    }
+
 }
 
 void CreBridge::processFonts(CmdRequest& request, CmdResponse& response)
