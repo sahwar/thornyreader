@@ -115,6 +115,22 @@ void CreBridge::convertBitmap(LVColorDrawBuf* bitmap)
     }
 }
 
+void CreBridge::processConvert(CmdRequest& request, CmdResponse& response)
+{
+    response.cmd = CMD_RES_CONVERT;
+    CmdDataIterator iter(request.first);
+    uint32_t src_format = 0;
+    uint8_t* src_path_arg = NULL;
+    uint32_t dst_format = 0;
+    uint8_t* dst_path_arg = NULL;
+    iter.getInt(&src_format).getByteArray(&src_path_arg)
+            .getInt(&dst_format).getByteArray(&dst_path_arg);
+    if (!iter.isValid() || !src_path_arg || !dst_path_arg) {
+        response.result = RES_BAD_REQ_DATA;
+        return;
+    }
+}
+
 void CreBridge::processFonts(CmdRequest& request, CmdResponse& response)
 {
     response.cmd = CMD_RES_PDF_FONTS;
@@ -597,56 +613,59 @@ void CreBridge::process(CmdRequest& request, CmdResponse& response)
     switch (request.cmd)
     {
         case CMD_REQ_PDF_FONTS:
-            //CRLog::trace("CreBridge :CMD_REQ_PDF_FONTS");
+            //CRLog::trace("CreBridge: CMD_REQ_PDF_FONTS");
             processFonts(request, response);
             break;
         case CMD_REQ_SET_CONFIG:
-            //CRLog::trace("CreBridge :CMD_REQ_SET_CONFIG");
+            //CRLog::trace("CreBridge: CMD_REQ_SET_CONFIG");
             processConfig(request, response);
             break;
         case CMD_REQ_OPEN:
-            //CRLog::trace("CreBridge :CMD_REQ_OPEN");
+            //CRLog::trace("CreBridge: CMD_REQ_OPEN");
             processOpen(request, response);
             break;
         case CMD_REQ_PAGE:
-            //CRLog::trace("CreBridge :CMD_REQ_PAGE");
+            //CRLog::trace("CreBridge: CMD_REQ_PAGE");
             processPage(request, response);
             break;
         case CMD_REQ_LINKS:
-            //CRLog::trace("CreBridge :CMD_REQ_LINKS");
+            //CRLog::trace("CreBridge: CMD_REQ_LINKS");
             processPageLinks(request, response);
             break;
         case CMD_REQ_PAGE_RENDER:
-            //CRLog::trace("CreBridge :CMD_REQ_PAGE_RENDER");
+            //CRLog::trace("CreBridge: CMD_REQ_PAGE_RENDER");
             processPageRender(request, response);
             break;
         case CMD_REQ_OUTLINE:
-            //CRLog::trace("CreBridge :CMD_REQ_OUTLINE");
+            //CRLog::trace("CreBridge: CMD_REQ_OUTLINE");
             processOutline(request, response);
             break;
         case CMD_REQ_CRE_PAGE_BY_XPATH:
-            //CRLog::trace("CreBridge :CMD_REQ_CRE_PAGE_BY_XPATH");
+            //CRLog::trace("CreBridge: CMD_REQ_CRE_PAGE_BY_XPATH");
             processPageByXPath(request, response);
             break;
         case CMD_REQ_CRE_PAGE_XPATH:
-            //CRLog::trace("CreBridge :CMD_REQ_CRE_PAGE_XPATH");
+            //CRLog::trace("CreBridge: CMD_REQ_CRE_PAGE_XPATH");
             processPageXPath(request, response);
             break;
+        case CMD_REQ_CONVERT:
+            //CRLog::trace("CreBridge: CMD_REQ_CONVERT");
+            processConvert(request, response);
+            break;
         case CMD_REQ_CRE_METADATA:
-            //CRLog::trace("CreBridge :CMD_REQ_CRE_METADATA");
+            //CRLog::trace("CreBridge: CMD_REQ_CRE_METADATA");
             processMetadata(request, response);
             break;
         case CMD_REQ_ALIVE:
-            //CRLog::trace("CreBridge :CMD_REQ_ALIVE");
+            //CRLog::trace("CreBridge: CMD_REQ_ALIVE");
             response.cmd = CMD_RES_ALIVE;
             break;
         case CMD_REQ_QUIT:
-            //CRLog::trace("CreBridge :CMD_REQ_QUIT");
+            //CRLog::trace("CreBridge: CMD_REQ_QUIT");
             processQuit(request, response);
             break;
         default:
             CRLog::error("Unknown request: %d", request.cmd);
-            //CRLog::trace("CreBridge :RES_UNKNOWN_CMD");
             response.result = RES_UNKNOWN_CMD;
             break;
     }

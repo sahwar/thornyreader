@@ -16,6 +16,7 @@ public:
     void process(CmdRequest& request, CmdResponse& response);
 
 protected:
+    void processConvert(CmdRequest& request, CmdResponse& response);
     void processFonts(CmdRequest& request, CmdResponse& response);
     void processConfig(CmdRequest& request, CmdResponse& response);
     void processOpen(CmdRequest& request, CmdResponse& response);

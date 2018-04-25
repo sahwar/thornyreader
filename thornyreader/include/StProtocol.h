@@ -59,6 +59,10 @@
 #define CMD_RES_ALIVE			        31
 #define CMD_REQ_LINKS   			    32
 #define CMD_RES_LINKS			        33
+#define CMD_REQ_CONVERT   			    34
+#define CMD_RES_CONVERT			        35
+#define CMD_REQ_VERSION   			    36
+#define CMD_RES_VERSION			        37
 
 #define CMD_REQ_PDF_STORAGE 124
 #define CMD_RES_PDF_STORAGE 125
