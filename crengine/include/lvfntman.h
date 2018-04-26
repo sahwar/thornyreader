@@ -138,6 +138,8 @@ public:
         lUInt8  width;       ///< 4: full width of glyph
     };
 
+    virtual unsigned int getCharIndex( lChar16 code, lChar16 def_char ) { return 0;};
+    virtual LVFontGlyphCacheItem * GetGlyphItem(lUInt16 ch,unsigned int ch_glyph_index ){return NULL;};
     /// hyphenation character
     virtual lChar16 getHyphChar() { return UNICODE_SOFT_HYPHEN_CODE; }
 
@@ -295,7 +297,12 @@ protected:
     bool _allowKerning;
     hinting_mode_t _hintingMode;
 public:
-    int fallbackFontFaceArrayLength;
+    virtual void FallbackFontFaceNext() { return;};
+    virtual void FallbackFontFacePrevious() { return;};
+
+    virtual int GetFallbackFontArraySize() { return 0 ;};
+
+
     /// garbage collector frees unused fonts
     virtual void gc() = 0;
     /// returns most similar font

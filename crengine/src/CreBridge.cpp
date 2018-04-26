@@ -255,15 +255,16 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
             doc_view_->cfg_font_face_ = UnicodeToUtf8(lString16(val));
 
             lString16Collection collection;
-            lString16 a;
-            lString16 b;
-            lString16 c;
+            lString16 a,b,c,d;
             a.append("Noto Sans Mono CJK SC");
+            c.append("Noto Sans Mono CJK KR");
+            d.append("Noto Sans Mono CJK TC");
             b.append("Noto Naskh Arabic UI");
-            c.append("Noto Sa2");
             collection.add(a);
+            collection.add(c);
+            collection.add(d);
             collection.add(b);
-            //collection.add(c);
+
             lString8 fallbackstr;
             if (collection.length()>0)
             {
@@ -273,13 +274,13 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
                     fontMan->SetFallbackFontFaceInArray(fallbackstr, i);
                     fallbackstr.clear();
                 }
-                fontMan->SetFallbackFontFace(fontMan->GetFallbackFontFaceFromArray(0));
+                fontMan->SetFallbackFontFace(fontMan->GetFallbackFontFaceFromArray(0));// initialize. Don't deletre this line!
             }
-            else
+            /*else
             {
                 fallbackstr.append("Noto Arial Unicode MS");
                 fontMan->SetFallbackFontFace(fallbackstr);
-            }
+            }*/
 
             //fallback.append("Arial Unicode MS");//"AR PL ShanHeiSun Uni" chinese
             //fallback.append("Noto Sans");//"AR PL ShanHeiSun Uni" chinese
