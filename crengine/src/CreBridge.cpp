@@ -133,7 +133,12 @@ void CreBridge::processConvert(CmdRequest& request, CmdResponse& response)
         response.result = RES_BAD_REQ_DATA;
         return;
     }
-
+    const char* src_path = reinterpret_cast<const char*>(src_path_arg);
+    const char* dst_path = reinterpret_cast<const char*>(dst_path_arg);
+    bool convert = true;
+    if (!convert) {
+        response.result = RES_INTERNAL_ERROR;
+    }
 }
 
 void CreBridge::processFonts(CmdRequest& request, CmdResponse& response)
