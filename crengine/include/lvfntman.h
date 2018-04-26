@@ -178,6 +178,8 @@ public:
 //        \param buf is buffer [width*height] to place glyph data
 //        \return true if glyph was found
 //    */
+
+
 //    virtual bool getGlyphImage(lUInt16 code, lUInt8 * buf, lChar16 def_char=0) = 0;
     /** \brief get glyph item
         \param code is unicode character
@@ -237,6 +239,7 @@ public:
     void setFallbackFont( LVProtectedFastRef<LVFont> font ) { CR_UNUSED(font); }
     /// get fallback font for this font
     LVFont * getFallbackFont() { return NULL; }
+    LVFont * getFallbackFont(int i) { return NULL; }
 };
 
 typedef LVProtectedFastRef<LVFont> LVFontRef;
@@ -292,14 +295,27 @@ protected:
     bool _allowKerning;
     hinting_mode_t _hintingMode;
 public:
+    int fallbackFontFaceArrayLength;
     /// garbage collector frees unused fonts
     virtual void gc() = 0;
     /// returns most similar font
     virtual LVFontRef GetFont(int size, int weight, bool italic, css_font_family_t family, lString8 typeface, int documentId = -1) = 0;
     /// set fallback font face (returns true if specified font is found)
     virtual bool SetFallbackFontFace( lString8 face ) { CR_UNUSED(face); return false; }
+
+    /// set fallback font face (returns true if specified font is found)
+    virtual bool SetFallbackFontFaceInArray( lString8 face ,int index) { CR_UNUSED(face); return false; }
+
     /// get fallback font face (returns empty string if no fallback font is set)
     virtual lString8 GetFallbackFontFace() { return lString8::empty_str; }
+
+    /// get fallback font face (returns empty string if no fallback font is set)
+    virtual lString8 GetFallbackFontFaceFromArray(int index) { return lString8::empty_str; }
+
+    virtual bool SetFallBackFace(int index) { return false;};
+
+    virtual bool ResetFallBackFace() { return false;};
+
     /// returns fallback font for specified size
     virtual LVFontRef GetFallbackFont(int /*size*/) { return LVFontRef(); }
     /// registers font by name

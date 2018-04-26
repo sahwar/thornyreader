@@ -171,6 +171,15 @@ void CreBridge::processFonts(CmdRequest& request, CmdResponse& response)
             fontMan->RegisterFont(UnicodeToUtf8(font));
         }
     }
+    lString16 fallback;
+    lString16 fallback1;
+
+    //fallback.append("/sdcard/arialuni.ttf");
+    fallback.append("/system/fonts/NotoSansCJK-Regular.ttc");
+    fontMan->RegisterFont(UnicodeToUtf8(fallback));
+
+    fallback1.append("/system/fonts/NotoNaskhArabicUI-Regular.ttf");
+    fontMan->RegisterFont(UnicodeToUtf8(fallback1));
 }
 
 void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
@@ -244,6 +253,38 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
             doc_view_->UpdatePageMargins();
         } else if (key == CONFIG_CRE_FONT_FACE_MAIN) {
             doc_view_->cfg_font_face_ = UnicodeToUtf8(lString16(val));
+
+            lString16Collection collection;
+            lString16 a;
+            lString16 b;
+            lString16 c;
+            a.append("Noto Sans Mono CJK SC");
+            b.append("Noto Naskh Arabic UI");
+            c.append("Noto Sa2");
+            collection.add(a);
+            collection.add(b);
+            //collection.add(c);
+            lString8 fallbackstr;
+            if (collection.length()>0)
+            {
+                for (int i = 0; i < collection.length(); ++i)
+                {
+                    fallbackstr.append((LCSTR(collection.at(i).c_str())));
+                    fontMan->SetFallbackFontFaceInArray(fallbackstr, i);
+                    fallbackstr.clear();
+                }
+                fontMan->SetFallbackFontFace(fontMan->GetFallbackFontFaceFromArray(0));
+            }
+            else
+            {
+                fallbackstr.append("Noto Arial Unicode MS");
+                fontMan->SetFallbackFontFace(fallbackstr);
+            }
+
+            //fallback.append("Arial Unicode MS");//"AR PL ShanHeiSun Uni" chinese
+            //fallback.append("Noto Sans");//"AR PL ShanHeiSun Uni" chinese
+            //fontMan->SetFallbackFontFace(fallback);
+
             doc_view_->UpdatePageMargins();
             doc_view_->RequestRender();
         } else if (key == CONFIG_CRE_FONT_FACE_FALLBACK) {

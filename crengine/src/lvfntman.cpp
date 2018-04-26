@@ -19,13 +19,14 @@
 #include "include/gammatbl.h"
 #include "freetype/include/config/ftheader.h"
 #include "freetype.h"
+#include "include/crconfig.h"
 
 #define ALLOW_KERNING 1
 #define MAX_LINE_CHARS 2048
 // freetype font glyph buffer size, in bytes
 // 0x20000 (_WIN32, LBOOK), 0x40000 (LINUX)
 #define GLYPH_CACHE_SIZE 0x40000
-#define DEBUG_FONT_MAN 0
+#define DEBUG_FONT_MAN 1
 #if (DEBUG_FONT_MAN==1)
 #define DEBUG_FONT_MAN_LOG_FILE "data/data/org.readera/files/fontmanlog.log"
 #endif
@@ -1177,6 +1178,12 @@ public:
                     return NULL;
             } else {
                 // Fallback
+                CRLog::error("fallback.getting glyph");
+
+                if (fallback->getGlyph(ch, def_char)->ch)
+                {
+
+                }
                 return fallback->getGlyph(ch, def_char);
             }
         }
@@ -1815,6 +1822,16 @@ private:
     FILE * _log;
     #endif
 public:
+    lString8    _fallbackFontFaceArray[FALLBACK_FONT_ARRAY_SIZE];
+
+    int fallbackFontFaceArrayLength;
+
+    virtual void SetFallbackFace(int index)
+    {
+
+        CRLog::error("Setting new fallbackfontface!");
+        _fallbackFontFace = _fallbackFontFaceArray[index];
+    }
 
     /// get hash of installed fonts and fallback font
     virtual lUInt32 GetFontListHash(int documentId) {
@@ -1828,14 +1845,41 @@ public:
             CRLog::trace("Looking for fallback font %s", face.c_str());
             LVFontCacheItem * item = _cache.findFallback( face, -1 );
             if (!item)
+            {
+             CRLog::error("Face %s not found", face.c_str());
                 face.clear();
+            }
             _fallbackFontFace = face;
+        }
+        return !_fallbackFontFace.empty();
+    }
+
+
+    /// set fallback font array element
+    virtual bool SetFallbackFontFaceInArray(lString8 face, int index)
+    {
+        if (face != _fallbackFontFace)
+        {
+            _cache.clearFallbackFonts();
+            CRLog::trace("Looking for fallback font %s", face.c_str());
+            LVFontCacheItem *item = _cache.findFallback(face, -1);
+            fallbackFontFaceArrayLength++;
+            if (!item)
+            {
+                CRLog::error("Face %s not found", face.c_str());
+                face.clear();
+                return false;
+            }
+            _fallbackFontFaceArray[index] = face;
         }
         return !_fallbackFontFace.empty();
     }
 
     /// get fallback font face (returns empty string if no fallback font is set)
     virtual lString8 GetFallbackFontFace() { return _fallbackFontFace; }
+
+    /// get fallback font face from array element (returns empty string if no fallback font is set)
+    virtual lString8 GetFallbackFontFaceFromArray(int index) { return _fallbackFontFaceArray[index]; }
 
     /// returns fallback font for specified size
     virtual LVFontRef GetFallbackFont(int size) {
@@ -2201,7 +2245,7 @@ public:
             if (ch_glyph_index == 0) {
                 //CRLog::trace("Required char (%04x) not found in font %s", ch, face->family_name);
                 // No required char
-                return false;
+               // return false;
             }
         }
         return true;
@@ -2661,6 +2705,7 @@ LVFontCacheItem * LVFontCache::findFallback( lString8 face, int size )
     }
     for (i=0; i<_registered_list.length(); i++)
     {
+        //CRLog::error("Typeface %d =%s",i,_registered_list[i]->_def.getTypeFace().c_str());
         int match = _registered_list[i]->_def.CalcFallbackMatch( face, size );
         if (match > best_match)
         {
@@ -2702,6 +2747,7 @@ LVFontCacheItem * LVFontCache::find( const LVFontDef * fntdef )
         }
         for (i=0; i<_registered_list.length(); i++)
         {
+         //CRLog::error("regtypeface #%d :%s",i,_registered_list[i]->_def.getTypeFace().c_str());
             int match = _registered_list[i]->_def.CalcMatch( def );
             if (match > best_match)
             {

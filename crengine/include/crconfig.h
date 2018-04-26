@@ -9,5 +9,5 @@
 #define FIRSTPAGE_BLOCKS_MAX_CHM 5
 
 #define MOBI_TO_EPUB_FILEPATH "/data/data/org.readera/files/temp.epub"
-
+#define FALLBACK_FONT_ARRAY_SIZE 100
 #endif //CRCONFIG_H
