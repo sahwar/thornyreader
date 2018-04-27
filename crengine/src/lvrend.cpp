@@ -17,8 +17,9 @@
 
 //#define DEBUG_TREE_DRAW 3
 // define to non-zero (1..5) to see block bounds
+//#define DEBUG_TREE_DRAW 1
 #define DEBUG_TREE_DRAW 0
-
+//#define DEBUG_DUMP_ENABLED
 #ifdef DEBUG_DUMP_ENABLED
 class simpleLogFile
 {
@@ -43,7 +44,7 @@ public:
     }
     simpleLogFile & operator << ( const lString16 &str ) { return operator << (str.c_str()); }
 };
-simpleLogFile logfile("/tmp/logfile.log");
+simpleLogFile logfile("data/data/org.readera/files/renderlogfile.log");
 #else //DEBUG_DUMP_ENABLED
 // stubs
 class simpleLogFile
@@ -1140,7 +1141,7 @@ void renderFinalBlock( ldomNode * enode, LFormattedText * txform, RenderRectAcce
         enode->getAbsRect( rect );
         logfile << "<" << enode->getNodeName() << ">     flags( "
             << baseflags << "-> " << flags << ")  rect( "
-            << rect.left << rect.top << rect.right << rect.bottom << ")\n";
+            << "left:" << rect.left << "top:" << rect.top << "right:" << rect.right << "bottom:" << rect.bottom << ")\n";
 #endif
 
         // restore flags
@@ -1609,7 +1610,7 @@ void DrawDocument( LVDrawBuf & drawbuf, ldomNode * enode, int x0, int y0, int dx
         int padding_left = !draw_padding_bg ? 0 : lengthToPx( enode->getStyle()->padding[0], width, em ) + DEBUG_TREE_DRAW;
         int padding_right = !draw_padding_bg ? 0 : lengthToPx( enode->getStyle()->padding[1], width, em ) + DEBUG_TREE_DRAW;
         int padding_top = !draw_padding_bg ? 0 : lengthToPx( enode->getStyle()->padding[2], width, em ) + DEBUG_TREE_DRAW;
-        //int padding_bottom = !draw_padding_bg ? 0 : lengthToPx( enode->getStyle()->padding[3], width, em ) + DEBUG_TREE_DRAW;
+        int padding_bottom = !draw_padding_bg ? 0 : lengthToPx( enode->getStyle()->padding[3], width, em ) + DEBUG_TREE_DRAW;
         if ( (doc_y + height <= 0 || doc_y > 0 + dy)
             && (
                enode->getRendMethod()!=erm_table_row
@@ -1699,6 +1700,7 @@ void DrawDocument( LVDrawBuf & drawbuf, ldomNode * enode, int x0, int y0, int dx
                     if (nbookmarks)
                         delete nbookmarks;
                 }
+
 #if (DEBUG_TREE_DRAW!=0)
                 drawbuf.FillRect( doc_x+x0, doc_y+y0, doc_x+x0+fmt.getWidth(), doc_y+y0+1, color );
                 drawbuf.FillRect( doc_x+x0, doc_y+y0, doc_x+x0+1, doc_y+y0+fmt.getHeight(), color );

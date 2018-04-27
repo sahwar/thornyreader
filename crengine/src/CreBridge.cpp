@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "include/thornyreader.h"
-#include "include/StProtocol.h"
-#include "include/StSocket.h"
+#include "thornyreader/include/thornyreader.h"
+#include "thornyreader/include/StProtocol.h"
+#include "thornyreader/include/StSocket.h"
 #include "include/CreBridge.h"
 
 static inline int CeilToEvenInt(int n)
@@ -171,6 +171,15 @@ void CreBridge::processFonts(CmdRequest& request, CmdResponse& response)
             fontMan->RegisterFont(UnicodeToUtf8(font));
         }
     }
+    lString16 fallback;
+    lString16 fallback1;
+
+    //fallback.append("/sdcard/arialuni.ttf");
+    fallback.append("/system/fonts/NotoSansCJK-Regular.ttc");
+    fontMan->RegisterFont(UnicodeToUtf8(fallback));
+
+    fallback1.append("/system/fonts/NotoNaskhArabicUI-Regular.ttf");
+    fontMan->RegisterFont(UnicodeToUtf8(fallback1));
 }
 
 void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
@@ -244,6 +253,30 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
             doc_view_->UpdatePageMargins();
         } else if (key == CONFIG_CRE_FONT_FACE_MAIN) {
             doc_view_->cfg_font_face_ = UnicodeToUtf8(lString16(val));
+
+            lString16Collection collection;
+            lString16 a,b,c,d;
+            c.append("Noto Sans Mono CJK KR");
+            d.append("Noto Sans Mono CJK TC");
+            b.append("Noto Naskh Arabic UI");
+            a.append("Noto Sans Mono CJK SC");
+            collection.add(c);
+            collection.add(d);
+            collection.add(b);
+            collection.add(a);
+
+            lString8 fallbackstr;
+            if (collection.length()>0)
+            {
+                fontMan->FallbackArrayRestart();
+                for (int i = 0; i < collection.length(); ++i)
+                {
+                    fallbackstr.append((LCSTR(collection.at(i).c_str())));
+                    fontMan->SetFallbackFontFaceInArray(fallbackstr, i);
+                    fallbackstr.clear();
+                }
+                fontMan->SetFallbackFontFace(fontMan->GetFallbackFontFaceFromArray(0));// initialize. Don't deletre this line!
+            }
             doc_view_->UpdatePageMargins();
             doc_view_->RequestRender();
         } else if (key == CONFIG_CRE_FONT_FACE_FALLBACK) {
@@ -256,6 +289,7 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
             int_val = GetClosestValueInArray(ALLOWED_FONT_SIZES, array_lenght, int_val);
             if (doc_view_->cfg_font_size_ != int_val) {
                 doc_view_->cfg_font_size_ = int_val;
+                fontMan->font_size_ = int_val;
                 doc_view_->UpdatePageMargins();
                 doc_view_->RequestRender();
             }

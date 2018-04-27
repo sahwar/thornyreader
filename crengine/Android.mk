@@ -5,7 +5,7 @@ LOCAL_CFLAGS    := $(APP_CFLAGS)
 LOCAL_CPPFLAGS  := $(APP_CPPFLAGS)
 LOCAL_ARM_MODE := $(APP_ARM_MODE)
 
-LOCAL_STATIC_LIBRARIES  := thornyreader
+LOCAL_STATIC_LIBRARIES  := thornyreader libmobi
 LOCAL_LDLIBS            += -llog -lz
 LOCAL_CPP_FEATURES      += exceptions
 
@@ -17,7 +17,7 @@ LOCAL_CFLAGS            += -DCR3_ANTIWORD_PATCH=1
 LOCAL_CFLAGS            += -DENABLE_ANTIWORD=1
 
 LOCAL_C_INCLUDES := \
-    $(LOCAL_PATH)/../thornyreader \
+    $(LOCAL_PATH)/../ \
     $(LOCAL_PATH)/libpng \
     $(LOCAL_PATH)/freetype/include
 
@@ -53,7 +53,8 @@ LOCAL_SRC_FILES := \
     src/props.cpp \
     src/rtfimp.cpp \
     src/txtselector.cpp \
-    src/wordfmt.cpp
+    src/wordfmt.cpp \
+    src/mobihandler.cpp
 
 LOCAL_SRC_FILES += \
     libpng/pngerror.c  \
