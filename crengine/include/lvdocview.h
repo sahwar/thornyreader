@@ -223,8 +223,6 @@ public:
                              bool smart_archive);
     LVDocView();
     ~LVDocView();
-    // returns 1 if mobi, 2 if epub, 0 if failed
-    int MobiOrEpub(const char *absolute_path); // returns 1 if mobi, 2 if epub, 0 if failed
 };
 
 #endif //__LV_TEXT_VIEW_H_INCLUDED__

@@ -11,7 +11,7 @@
 
  *******************************************************/
 
-#include "include/thornyreader.h"
+#include "thornyreader/include/thornyreader.h"
 #include "include/lvdocview.h"
 #include "include/CreBridge.h"
 #include "include/rtfimp.h"
@@ -446,42 +446,12 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream, const char *absolute
             {CRLog::error("pdb_format != doc_format_mobi");
             }return false;
         } */
-
-		if (MobiOrEpub(absolute_path)==0)
-		{
-			//unrecognized file
-			CRLog::error("Unrecognized file: not mobi or epub. Abort.");
-			return false;
-		}
-		else if (MobiOrEpub(absolute_path)==2) //epub
-		{
-			doc_format = DOC_FORMAT_EPUB;
-		}
-		else //if (MobiOrEpub(absolute_path)==1)  // definitely a mobi
-		{
-			if (got_save_location_command)
-			{
-				if (ImportMOBIDocNew(absolute_path, savelocation))  //where to open, where to put converted file
-				{
-					doc_format = DOC_FORMAT_EPUB;
-					mobi_converted = true;
-				}
-			}
-			else
-			{
-				if (ImportMOBIDocNew(absolute_path, MOBI_TO_EPUB_FILEPATH))  //where to open, where to put converted file
-				{
-					doc_format = DOC_FORMAT_EPUB;
-					mobi_converted = true;
-				}
-			}
-		}
 	}
     if (doc_format == DOC_FORMAT_EPUB)
     {
 	    if (mobi_converted)
 	    {   CRLog::error("Reading converted mobi from epub container");
-		    stream_=ThResolveStream(DOC_FORMAT_EPUB,MOBI_TO_EPUB_FILEPATH,compressed_size,smart_archive);
+		    stream_=ThResolveStream(DOC_FORMAT_EPUB, MOBI_TO_EPUB_FILEPATH,compressed_size,smart_archive);
 	    }
         if (!DetectEpubFormat(stream_))
         {
@@ -2503,37 +2473,4 @@ bool LVDocView::NeedCheckImage()
         return true;
     }
     return false;
-}
-
-int LVDocView::MobiOrEpub(const char* absolute_path) // returns 1 if mobi, 2 if epub, 0 if failed
-{
-	if (DetectEpubFormat(stream_))
-	{
-		return 2;   // file is epub
-	}
-
-	MOBI_RET mobi_ret;
-	MOBIData *m = mobi_init();
-	if (m == NULL)
-	{
-		CRLog::error("Memory allocation failed\n");
-		return 0;
-	}
-	mobi_parse_kf7(m);
-	FILE *file = fopen(absolute_path, "rb");
-	if (file == NULL)
-	{
-		CRLog::error("Error opening file: %s", absolute_path);
-		mobi_free(m);
-		return 0;
-	}
-	mobi_ret = mobi_load_file(m, file);
-	fclose(file);
-	if (mobi_ret != MOBI_SUCCESS) {
-		CRLog::error("mobi_ret != MOBI_SUCCESS");
-		mobi_free(m);
-		return 0;
-	}
-	mobi_free(m);
-	return 1; // file is mobi
 }

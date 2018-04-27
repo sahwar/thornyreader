@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include "include/mobihandler.h"
 #include "thornyreader/include/thornyreader.h"
 #include "thornyreader/include/StProtocol.h"
 #include "thornyreader/include/StSocket.h"
@@ -136,7 +137,8 @@ void CreBridge::processConvert(CmdRequest& request, CmdResponse& response)
     const char* src_path = reinterpret_cast<const char*>(src_path_arg);
     const char* dst_path = reinterpret_cast<const char*>(dst_path_arg);
     bool convert = true;
-    if (!convert) {
+    if (!ImportMOBIDocNew(src_path, dst_path))
+    {
         response.result = RES_INTERNAL_ERROR;
     }
 }

@@ -337,4 +337,31 @@ LVStreamRef GetMobiCoverPageToStream(const char *fullpath) {
     return LVStreamRef();
 }
 
+bool IsMobiDoc(const char* absolute_path)
+{
+    MOBI_RET mobi_ret;
+    MOBIData *m = mobi_init();
+    if (m == NULL)
+    {
+        CRLog::error("Memory allocation failed\n");
+        return false;
+    }
+    mobi_parse_kf7(m);
+    FILE *file = fopen(absolute_path, "rb");
+    if (file == NULL)
+    {
+        CRLog::error("Error opening file: %s", absolute_path);
+        mobi_free(m);
+        return false;
+    }
+    mobi_ret = mobi_load_file(m, file);
+    fclose(file);
+    if (mobi_ret != MOBI_SUCCESS) {
+        CRLog::error("mobi_ret != MOBI_SUCCESS");
+        mobi_free(m);
+        return false;
+    }
+    mobi_free(m);
+    return true; // file is mobi
+}
 

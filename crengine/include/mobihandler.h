@@ -44,3 +44,4 @@ mobiresponse GetMobiMetaSummary(const MOBIData *m);
 mobiresponse GetMobiMetaFromFile(const char *fullpath);
 int GetMobiCoverPageFile(const MOBIRawml *rawml, const char *fullpath);
 LVStreamRef GetMobiCoverPageToStream(const char *fullpath);
+bool IsMobiDoc(const char *absolute_path);
