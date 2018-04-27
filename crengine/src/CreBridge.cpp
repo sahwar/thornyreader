@@ -256,19 +256,19 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
 
             lString16Collection collection;
             lString16 a,b,c,d;
-            a.append("Noto Sans Mono CJK SC");
             c.append("Noto Sans Mono CJK KR");
             d.append("Noto Sans Mono CJK TC");
             b.append("Noto Naskh Arabic UI");
-            collection.add(a);
+            a.append("Noto Sans Mono CJK SC");
             collection.add(c);
             collection.add(d);
             collection.add(b);
+            collection.add(a);
 
             lString8 fallbackstr;
             if (collection.length()>0)
             {
-                fontMan->ClearFallbackArrayLength();
+                fontMan->FallbackArrayRestart();
                 for (int i = 0; i < collection.length(); ++i)
                 {
                     fallbackstr.append((LCSTR(collection.at(i).c_str())));
@@ -277,16 +277,6 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
                 }
                 fontMan->SetFallbackFontFace(fontMan->GetFallbackFontFaceFromArray(0));// initialize. Don't deletre this line!
             }
-            /*else
-            {
-                fallbackstr.append("Noto Arial Unicode MS");
-                fontMan->SetFallbackFontFace(fallbackstr);
-            }*/
-
-            //fallback.append("Arial Unicode MS");//"AR PL ShanHeiSun Uni" chinese
-            //fallback.append("Noto Sans");//"AR PL ShanHeiSun Uni" chinese
-            //fontMan->SetFallbackFontFace(fallback);
-
             doc_view_->UpdatePageMargins();
             doc_view_->RequestRender();
         } else if (key == CONFIG_CRE_FONT_FACE_FALLBACK) {
