@@ -409,11 +409,11 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
     //cfg_firstpage_thumb_ = true; //for debug
     if (cfg_firstpage_thumb_)
     {
-        CRLog::trace("LoadDoc: Thumbpage creation required. Generating.");
+        CRLog::trace("LoadDoc: Firstpage thumb generation");
     }
     else
     {
-        CRLog::trace("LoadDoc: Thumbpage exists. Skipping");
+        CRLog::trace("LoadDoc: Reading");
     }
     stream_ = stream;
 	doc_format_ = doc_format;
@@ -447,13 +447,13 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 		cr_dom_->setProps(doc_props_);
 		if (pdb_format != doc_format_mobi)
 		{
-			CRLog::error("pdb_format != doc_format_mobi");
+			CRLog::warn("pdb_format != doc_format_mobi");
 		}
 		if (!ImportMOBIDoc(stream_, cr_dom_, pdb_format, cfg_firstpage_thumb_))
 		{
 			if (pdb_format != doc_format_mobi)
 			{
-				CRLog::error("pdb_format != doc_format_mobi");
+				CRLog::warn("pdb_format != doc_format_mobi");
 			}
 			return false;
 		}
@@ -488,13 +488,13 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 	{
 		if (!DetectCHMFormat(stream_))
 		{
-            CRLog::error("!detectCHM");
+            CRLog::warn("!detectCHM");
 			return false;
 		}
 		cr_dom_->setProps(doc_props_);
 		if (!ImportCHMDocument(stream_, cr_dom_, cfg_firstpage_thumb_))
 		{
-            CRLog::error("!importCHM");
+            CRLog::warn("!importCHM");
 			return false;
 		}
 	}
@@ -509,27 +509,27 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 		parser = new LvHtmlParser(stream_, &writer);
 	}
 	if (parser)
-	{CRLog::error("parser");
+	{
 		if (!parser->CheckFormat())
 		{
-            CRLog::trace("!parser->CheckFormat()");
+            CRLog::warn("!parser->CheckFormat()");
 			delete parser;
 			return false;
 		}
 		if (!parser->Parse())
 		{
-            CRLog::trace("!parser->Parse()");
+            CRLog::warn("!parser->Parse()");
             delete parser;
             return false;
         }
         if (NeedCheckImage() && CheckImage())
         {
-            CRLog::error("Image found in shortened tree. Regenerating full tree.");
+            CRLog::warn("Image found in shortened tree. Regenerating full tree.");
             cr_dom_->clear();
             parser->FullDom();
             if (!parser->Parse())
             {
-                CRLog::trace("!parser->Parse()");
+                CRLog::warn("!parser->Parse()");
                 delete parser;
                 return false;
             }
