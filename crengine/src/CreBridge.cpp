@@ -268,6 +268,7 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
             lString8 fallbackstr;
             if (collection.length()>0)
             {
+                fontMan->ClearFallbackArrayLength();
                 for (int i = 0; i < collection.length(); ++i)
                 {
                     fallbackstr.append((LCSTR(collection.at(i).c_str())));
@@ -298,6 +299,7 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
             int_val = GetClosestValueInArray(ALLOWED_FONT_SIZES, array_lenght, int_val);
             if (doc_view_->cfg_font_size_ != int_val) {
                 doc_view_->cfg_font_size_ = int_val;
+                fontMan->font_size_ = int_val;
                 doc_view_->UpdatePageMargins();
                 doc_view_->RequestRender();
             }

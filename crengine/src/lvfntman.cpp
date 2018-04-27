@@ -732,8 +732,9 @@ public:
     }
 
     LVFont *nextFallbackFont()
-    {
+    {   _size = fontMan->font_size_;
         fontMan->FallbackFontFaceNext();
+
         _fallbackFontIsSet = false;
         return getFallbackFont();
     }
@@ -768,6 +769,7 @@ public:
 			  _allowKerning(false),
 			  _hintingMode(HINTING_MODE_AUTOHINT),
 			  _fallbackFontIsSet(false) {
+        _size = fontMan->font_size_;
         _matrix.xx = 0x10000;
         _matrix.yy = 0x10000;
         _matrix.xy = 0;
@@ -1180,7 +1182,7 @@ public:
         \param code is unicode character
         \return glyph pointer if glyph was found, NULL otherwise
     */
-    virtual LVFontGlyphCacheItem *getGlyph (lUInt16 ch, lChar16 def_char=0)
+    virtual LVFontGlyphCacheItem *getGlyph(lUInt16 ch, lChar16 def_char=0)
     {
         FT_UInt ch_glyph_index = getCharIndex(ch, 0);
         if (ch_glyph_index != 0)
@@ -1200,45 +1202,52 @@ public:
         {
             return fallback->GetGlyphItem(ch, ch_glyph_index);
         }
-
-
-
-        CRLog::error("AAAAAAAAAAAAAAAA");
-        bool breakflag = false;
+        CRLog::trace("_");
+        CRLog::error("######################");
         lString8 nextface;
         previousFallbackFont();
         lString8 curface = fontMan->GetFallbackFontFace();
+        CRLog::error("Cycle begin!");
         CRLog::error("Starting from %s",LCSTR(Utf8ToUnicode(curface)) );
-        while (!breakflag)
+        //CRLog::error("def_char = %lc:%lu ",def_char,def_char);
+        int debugcounter=0;
+        fontMan->GetFallbackFontArraySize();
+        while (true)
         {
-            CRLog::error("Cycle!");
-            nextFallbackFont();
+            CRLog::error(" Iteration %d", debugcounter);
+            debugcounter++;
+            fallback = nextFallbackFont();
+
             nextface = fontMan->GetFallbackFontFace();
-            fontMan->SetFallbackFontFace(nextface);
-            CRLog::error("Now it is = %s",LCSTR(Utf8ToUnicode(nextface)));
-            if (curface.compare(nextface)==0)
+            CRLog::error("Now it is = %s", LCSTR(Utf8ToUnicode(nextface)));
+            if(nextface.empty())
             {
-                CRLog::error("Start face %s == %s end face", LCSTR(Utf8ToUnicode(curface)),LCSTR(Utf8ToUnicode(nextface)));
-                CRLog::error("break!");
-                breakflag = true;
+                CRLog::error("NEXTFACE IS EMPTY");
+                break;
             }
-            //CRLog::error("GLYPH_INDEX = %d , facename = %s", ch_glyph_index, LCSTR(Utf8ToUnicode(curface)));
-            //if (ch_glyph_index != 0)
-            /*if (false)
+            ch_glyph_index = fallback->getCharIndex(ch, def_char);
+            if (curface.compare(nextface) == 0)
             {
-                CRLog::error("char = %lc:%lu , GLYPH_INDEX = %lu , facename = %s",ch,ch ,ch_glyph_index, LCSTR(Utf8ToUnicode(nextface)));
+                CRLog::error(" %s == %s ", LCSTR(Utf8ToUnicode(curface)), LCSTR(Utf8ToUnicode(nextface)));
+                CRLog::error("break!");
+                break;
+            }
+            if (ch_glyph_index != def_char && ch_glyph_index!= 63070)   // 63070 is unknown glyph index, dunno why it keeps adding it
+                                                                        //if there's no glyph in fallback font
+            {
+                CRLog::error("1) char = %lc:%lu , GLYPH_INDEX = %lu , facename = %s", ch, ch, ch_glyph_index, LCSTR(Utf8ToUnicode(nextface)));
                 return fallback->GetGlyphItem(ch, ch_glyph_index);
-            }*/
+            }
         }
         //CRLog::error("No chars found in fallback fonts!");
-        CRLog::error("BBBBB");
+        CRLog::error("Cycle end!");
 
-        ch_glyph_index = fallback->getCharIndex(ch, 0);
 
         curface = fontMan->GetFallbackFontFace();
-        ch_glyph_index = getCharIndex(ch, def_char);
-        CRLog::error("char = %lc:%lu , GLYPH_INDEX = %lu , facename = %s",ch,ch ,ch_glyph_index, LCSTR(Utf8ToUnicode(curface)));
 
+        CRLog::error("2) char = %lc:%lu , GLYPH_INDEX = %lu , in facename = %s",ch,ch ,ch_glyph_index, LCSTR(Utf8ToUnicode(curface)));
+        ch_glyph_index = fallback->getCharIndex(ch, def_char);
+        //ch_glyph_index = getCharIndex(ch, def_char);
         return fallback->GetGlyphItem(ch, ch_glyph_index);
     }
 
@@ -1935,22 +1944,24 @@ public:
     /// set fallback font array element
     virtual bool SetFallbackFontFaceInArray(lString8 face, int index)
     {
-        if (face != _fallbackFontFace)
+        _cache.clearFallbackFonts();
+        CRLog::trace("Looking for fallback font %s", face.c_str());
+        LVFontCacheItem *item = _cache.findFallback(face, -1);
+        _fallbackFontFaceArrayLength++;
+        if (!item)
         {
-            _cache.clearFallbackFonts();
-            CRLog::trace("Looking for fallback font %s", face.c_str());
-            LVFontCacheItem *item = _cache.findFallback(face, -1);
-            _fallbackFontFaceArrayLength++;
-            if (!item)
-            {
-                CRLog::error("Face %s not found", face.c_str());
-                face.clear();
-                return false;
-            }
-            _fallbackFontFaceArray[index] = face;
+            CRLog::error("Face %s not found", face.c_str());
+            face.clear();
+            return false;
         }
+        _fallbackFontFaceArray[index] = face;
         return !_fallbackFontFace.empty();
     }
+
+    virtual void ClearFallbackArrayLength()
+    {
+        _fallbackFontFaceArrayLength =0;
+    };
 
     /// get fallback font face (returns empty string if no fallback font is set)
     virtual lString8 GetFallbackFontFace() { return _fallbackFontFace; }

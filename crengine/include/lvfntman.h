@@ -297,9 +297,9 @@ protected:
     bool _allowKerning;
     hinting_mode_t _hintingMode;
 public:
+    int font_size_;
     virtual void FallbackFontFaceNext() { return;};
     virtual void FallbackFontFacePrevious() { return;};
-
     virtual int GetFallbackFontArraySize() { return 0 ;};
 
 
@@ -313,6 +313,7 @@ public:
     /// set fallback font face (returns true if specified font is found)
     virtual bool SetFallbackFontFaceInArray( lString8 face ,int index) { CR_UNUSED(face); return false; }
 
+    virtual void ClearFallbackArrayLength(){ return;};
     /// get fallback font face (returns empty string if no fallback font is set)
     virtual lString8 GetFallbackFontFace() { return lString8::empty_str; }
 
