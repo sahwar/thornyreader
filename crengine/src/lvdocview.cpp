@@ -195,6 +195,7 @@ void LVDocView::UpdatePageMargins()
 	{
 		int align = 0;
 		base_font_ = fontMan->GetFont(cfg_font_size_, 400, false, DEF_FONT_FAMILY, cfg_font_face_);
+		base_font_->setFallbackFont(fontMan->GetFallbackFont(cfg_font_size_));
 		align = base_font_->getVisualAligmentWidth() / 2;
 		if (align > new_margin_right)
 		{
