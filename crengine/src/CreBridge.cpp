@@ -136,9 +136,7 @@ void CreBridge::processConvert(CmdRequest& request, CmdResponse& response)
     }
     const char* src_path = reinterpret_cast<const char*>(src_path_arg);
     const char* dst_path = reinterpret_cast<const char*>(dst_path_arg);
-    bool convert = true;
-    if (!ImportMOBIDocNew(src_path, dst_path))
-    {
+    if (!ImportMOBIDocNew(src_path, dst_path)) {
         response.result = RES_INTERNAL_ERROR;
     }
 }
@@ -173,15 +171,15 @@ void CreBridge::processFonts(CmdRequest& request, CmdResponse& response)
             fontMan->RegisterFont(UnicodeToUtf8(font));
         }
     }
+#ifdef TRDEBUG
     lString16 fallback;
     lString16 fallback1;
-
     //fallback.append("/sdcard/arialuni.ttf");
     fallback.append("/system/fonts/NotoSansCJK-Regular.ttc");
     fontMan->RegisterFont(UnicodeToUtf8(fallback));
-
     fallback1.append("/system/fonts/NotoNaskhArabicUI-Regular.ttf");
     fontMan->RegisterFont(UnicodeToUtf8(fallback1));
+#endif
 }
 
 void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
@@ -255,18 +253,12 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
             doc_view_->UpdatePageMargins();
         } else if (key == CONFIG_CRE_FONT_FACE_MAIN) {
             doc_view_->cfg_font_face_ = UnicodeToUtf8(lString16(val));
-
+#ifdef TRDEBUG
             lString16Collection collection;
-            lString16 a,b,c,d;
-            c.append("Noto Sans Mono CJK KR");
-            d.append("Noto Sans Mono CJK TC");
-            b.append("Noto Naskh Arabic UI");
-            a.append("Noto Sans Mono CJK SC");
-            collection.add(c);
-            collection.add(d);
-            collection.add(b);
-            collection.add(a);
-
+            collection.add(lString16("Noto Sans Mono CJK KR"));
+            collection.add(lString16("Noto Sans Mono CJK TC"));
+            collection.add(lString16("Noto Naskh Arabic UI"));
+            collection.add(lString16("Noto Sans Mono CJK SC"));
             lString8 fallbackstr;
             if (collection.length()>0)
             {
@@ -277,8 +269,10 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
                     fontMan->SetFallbackFontFaceInArray(fallbackstr, i);
                     fallbackstr.clear();
                 }
-                fontMan->SetFallbackFontFace(fontMan->GetFallbackFontFaceFromArray(0));// initialize. Don't deletre this line!
+                // Initialize. Don't deletre this line!
+                fontMan->SetFallbackFontFace(fontMan->GetFallbackFontFaceFromArray(0));
             }
+#endif
             doc_view_->UpdatePageMargins();
             doc_view_->RequestRender();
         } else if (key == CONFIG_CRE_FONT_FACE_FALLBACK) {
@@ -424,7 +418,6 @@ void CreBridge::processOpen(CmdRequest& request, CmdResponse& response)
 
 void CreBridge::processPageRender(CmdRequest& request, CmdResponse& response)
 {
-    //CRLog::trace("processPageRender START");
     response.cmd = CMD_RES_PAGE_RENDER;
     CmdDataIterator iter(request.first);
     uint32_t page;
@@ -454,7 +447,6 @@ void CreBridge::processPageRender(CmdRequest& request, CmdResponse& response)
     convertBitmap(buf);
     delete buf;
     response.addData(resp);
-    //CRLog::trace("processPageRender END");
 }
 
 void CreBridge::processPage(CmdRequest& request, CmdResponse& response)
