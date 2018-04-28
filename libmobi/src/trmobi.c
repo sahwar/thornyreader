@@ -1,17 +1,11 @@
 #include <string.h>
 #include <stdlib.h>
-#ifdef _WIN32
-#include <direct.h>
-#include "win32/getopt.h"
-#else
 #include <unistd.h>
-#endif
 #include <ctype.h>
 #include <time.h>
 #include <errno.h>
 
 #include "trmobi.h"
-
 /* miniz file is needed for EPUB creation */
 #define USE_XMLWRITER
 #ifdef USE_XMLWRITER
@@ -19,29 +13,6 @@
 #define MINIZ_NO_ZLIB_COMPATIBLE_NAMES
 #include "miniz.c"
 #include "meta.h"
-#endif
-
-#ifdef HAVE_SYS_RESOURCE_H
-/* rusage */
-# include <sys/resource.h>
-# define PRINT_RUSAGE_ARG "u"
-#else
-# define PRINT_RUSAGE_ARG ""
-#endif
-/* encryption */
-#ifdef USE_ENCRYPTION
-# define PRINT_ENC_USG " [-p pid] [-P serial]"
-# define PRINT_ENC_ARG "p:P:"
-#else
-# define PRINT_ENC_USG ""
-# define PRINT_ENC_ARG ""
-#endif
-/* xmlwriter */
-
-#ifdef USE_XMLWRITER
-# define PRINT_EPUB_ARG "e"
-#else
-# define PRINT_EPUB_ARG ""
 #endif
 
 #define EPUB_CONTAINER "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
@@ -52,29 +23,8 @@
 </container>"
 #define EPUB_MIMETYPE "application/epub+zip"
 
-/* command line options */
-int dump_rawml_opt = 0;
-int create_epub_opt = 0;
-int print_extended_meta_opt = 0;
-int print_rec_meta_opt = 0;
-int dump_rec_opt = 0;
-int parse_kf7_opt = 0;
-int dump_parts_opt = 0;
-int print_rusage_opt = 0;
-int outdir_opt = 0;
-int extract_source_opt = 0;
-#ifdef USE_ENCRYPTION
-int setpid_opt = 0;
-int setserial_opt = 0;
-#endif
-
 /* options values */
 char outdir[FILENAME_MAX];
-#ifdef USE_ENCRYPTION
-char *pid = NULL;
-char *serial = NULL;
-#endif
-
 
 #include <android/log.h>
 void printlogcat(const char* msg, ...)
@@ -85,7 +35,6 @@ void printlogcat(const char* msg, ...)
     va_end(args);
 }
 
-#ifdef USE_XMLWRITER
 /**
  @brief Bundle recreated source files into EPUB container
 
@@ -106,11 +55,7 @@ bool create_epub(const MOBIRawml *rawml, const char *fullpath) {
     char basename[FILENAME_MAX];
     split_fullpath(fullpath, dirname, basename);
     char zipfile[FILENAME_MAX];
-    if (outdir_opt) {
-        snprintf(zipfile, sizeof(zipfile), "%s%s", outdir, basename);
-    } else {
-        snprintf(zipfile, sizeof(zipfile), "%s%s", dirname, basename);
-    }
+    snprintf(zipfile, sizeof(zipfile), "%s%s", outdir, basename);
 
     printlogcat("Saving EPUB to %s\n", zipfile);
     /* create zip (epub) archive */
@@ -207,62 +152,4 @@ bool create_epub(const MOBIRawml *rawml, const char *fullpath) {
     }
     printlogcat("Create_epub: done!");
     return true;
-}
-#endif
-/**
- @brief get coverpage or cover thumbnail offsets from EXTH headers
- @param[in] m MOBIData structure
- @Returns -1 if found none, image offset if found cover
- */
-
-/*      https://wiki.mobileread.com/wiki/MOBI#Image_Records
-        201	4	coveroffset	Add to first image field in Mobi Header to find PDB record containing the cover image	<EmbeddedCover>
-        202	4	thumboffset	Add to first image field in Mobi Header to find PDB record containing the thumbnail cover image
- */
-
-int GetExthCoverOffset(const MOBIData *m) {
-    if (m->eh == NULL) {
-        return -1;
-    }
-    /* Linked list of MOBIExthHeader structures holds EXTH records */
-    const MOBIExthHeader *curr = m->eh;
-    if (curr != NULL) {
-        printlogcat("EXTH records:");
-    }
-    uint32_t val32;
-    while (curr != NULL) {
-        MOBIExthMeta tag = mobi_get_exthtagmeta_by_tag(curr->tag);
-        if (tag.tag != 0) {
-            size_t size = curr->size;
-            unsigned char *data = curr->data;
-            val32 = mobi_decode_exthvalue(data, size);
-
-            if (tag.type == EXTH_COVEROFFSET)
-            {
-                printlogcat("COVEROFFSET FOUND 1!");
-                return val32;
-            }
-            else if (tag.type == EXTH_THUMBOFFSET)
-            {
-                printlogcat("THUMBNAIL COVER OFFSET FOUND 1!");
-                return val32;
-            }
-            else if (tag.type == EXTH_NUMERIC) //check all tags again
-            {
-                // printlogcat("%s (%i): %u\n", tag.name, tag.tag, val32);
-                if (tag.tag == 202)
-                {
-                    printlogcat("COVEROFFSET FOUND 2!");
-                    return val32;
-                }
-                if (tag.tag == 201)
-                {
-                    printlogcat("THUMBNAIL COVER OFFSET FOUND 2!");
-                    return val32;
-                }
-            }
-        }
-        curr = curr->next;
-    }
-    return -1;
 }
