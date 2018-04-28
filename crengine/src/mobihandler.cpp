@@ -3,8 +3,13 @@
 //
 
 #include "include/mobihandler.h"
-#include "libmobi/src/opf.h"
 #include "include/crconfig.h"
+
+#include <cctype>
+#include <iostream>
+#include <string>
+#include <locale>
+#include <codecvt>
 
 bool ImportMOBIDocNew(const char *absolute_path,const char* epubnewpath)
 {
@@ -61,7 +66,6 @@ bool ImportMOBIDocNew(const char *absolute_path,const char* epubnewpath)
     fclose(filedump);
     //int a = dump_rawml_parts(rawml, FULL_PATH);
 #endif
-
     ConvertMOBIDocToEpub(rawml,epubnewpath);
     return true;
 }
@@ -80,12 +84,11 @@ bool ConvertMOBIDocToEpub(MOBIRawml* rawml, const char* epubnewpath)
 
 void FreeMOBIStructures(MOBIRawml* rawml, MOBIData* m)
 {
-/* Free MOBIRawml structure */
+    /* Free MOBIRawml structure */
     mobi_free_rawml(rawml);
-
-/* Free MOBIData structure */
+    /* Free MOBIData structure */
     mobi_free(m);
-    return; // SUCCESS;
+    return;
 }
 
 mobiresponse GetMobiMetaFromFile(const char *fullpath)
@@ -119,6 +122,113 @@ mobiresponse GetMobiMetaFromFile(const char *fullpath)
     return a;
 }
 
+mobiresponse GetMobiMetaSummary(const MOBIData *m) {
+    mobiresponse ret;
+    char *title = mobi_meta_get_title(m);
+    if (title) {
+        ret.title.append(Utf8ToUnicode(title));
+        CRLog::trace("Title %s",title);
+        free(title);
+    }
+    char *author = mobi_meta_get_author(m);
+    if (author) {
+        ret.author.append(Utf8ToUnicode(author));
+        CRLog::trace("Author: %s\n", author);
+        //free(author);
+    }
+    char *language = mobi_meta_get_language(m);
+    if (language) {
+        ret.language.append(Utf8ToUnicode(language));
+        CRLog::trace("Language: %s", language);
+        //free(language);
+    }
+    return ret;
+}
+
+LVStreamRef GetMobiCoverPageToStream(const char *fullpath) {
+    MOBIData *m = mobi_init();
+    if (m == NULL) {
+        CRLog::error("m == NULL");
+        return LVStreamRef();
+    }
+/* Open file for reading */
+    FILE *file = fopen(fullpath, "rb");
+    if (file == NULL) {
+        mobi_free(m);
+        CRLog::error("file == NULL, fullpath = %s",fullpath);
+        return LVStreamRef();
+    }
+    MOBI_RET mobi_ret = mobi_load_file(m, file);
+    fclose(file);
+    if (mobi_ret != MOBI_SUCCESS) {
+        CRLog::error("mobi_ret != MOBI_SUCCESS");
+        mobi_free(m);
+        return LVStreamRef();
+    }
+    MOBIRawml *rawml = mobi_init_rawml(m);
+    if (rawml == NULL) {
+        CRLog::error("rawml == NULL");
+        mobi_free(m);
+        return LVStreamRef();
+    }
+    mobi_ret = mobi_parse_rawml(rawml, m);
+    if (mobi_ret != MOBI_SUCCESS) {
+        CRLog::error("mobi_ret != MOBI_SUCCESS");
+        mobi_free(m);
+        mobi_free_rawml(rawml);
+        return LVStreamRef();
+    }
+    if (rawml->resources != NULL)
+    {   MOBIPart *last = nullptr;
+        MOBIPart *curr = rawml->resources;
+        while (curr != NULL)
+        { MOBIFileMeta file_meta = mobi_get_filemeta_by_type(curr->type);
+            if (curr->size > 0)
+            { if (file_meta.type == T_GIF || file_meta.type == T_JPG || file_meta.type == T_BMP
+                  || file_meta.type == T_PNG)
+                {
+                    last=curr;
+                }
+            }
+            curr = curr->next;
+        }
+        if (!last) {
+            return LVStreamRef();
+        }
+        LVStreamRef img;
+        LVStreamRef res = LVCreateMemoryStream(last->data, static_cast<int>(last->size));
+        return res;
+    }
+    return LVStreamRef();
+}
+
+bool IsMobiDoc(const char* absolute_path)
+{
+    MOBI_RET mobi_ret;
+    MOBIData *m = mobi_init();
+    if (m == NULL)
+    {
+        CRLog::error("Memory allocation failed");
+        return false;
+    }
+    mobi_parse_kf7(m);
+    FILE *file = fopen(absolute_path, "rb");
+    if (file == NULL)
+    {
+        CRLog::error("Error opening file: %s", absolute_path);
+        mobi_free(m);
+        return false;
+    }
+    mobi_ret = mobi_load_file(m, file);
+    fclose(file);
+    if (mobi_ret != MOBI_SUCCESS) {
+        CRLog::error("mobi_ret != MOBI_SUCCESS");
+        mobi_free(m);
+        return false;
+    }
+    mobi_free(m);
+    return true;
+}
 
 /**
  @brief Print all loaded headers meta information
@@ -251,117 +361,3 @@ void GetMobiMeta(const MOBIData *m) {
         if(m->mh->unknown20) { CRLog::error("unknown: %u", *m->mh->unknown20); }
     }
 }
-
-mobiresponse GetMobiMetaSummary(const MOBIData *m) {
-
-    mobiresponse ret;
-    char *title = mobi_meta_get_title(m);
-    if (title) {
-        ret.title.append(Utf8ToUnicode(title));
-        CRLog::trace("Title %s",title);
-        free(title);
-    }
-    char *author = mobi_meta_get_author(m);
-    if (author) {
-        ret.author.append(Utf8ToUnicode(author));
-        CRLog::trace("Author: %s\n", author);
-        //free(author);
-    }
-    char *language = mobi_meta_get_language(m);
-    if (language) {
-        ret.language.append(Utf8ToUnicode(language));
-        CRLog::trace("Language: %s", language);
-        //free(language);
-    }
-    return ret;
-}
-
-
-LVStreamRef GetMobiCoverPageToStream(const char *fullpath) {
-    MOBIData *m = mobi_init();
-    if (m == NULL) {
-        CRLog::error("m == NULL");
-        return LVStreamRef();
-    }
-/* Open file for reading */
-    FILE *file = fopen(fullpath, "rb");
-    if (file == NULL) {
-        mobi_free(m);
-        CRLog::error("file == NULL, fullpath = %s",fullpath);
-        return LVStreamRef();
-    }
-    MOBI_RET mobi_ret = mobi_load_file(m, file);
-    fclose(file);
-    if (mobi_ret != MOBI_SUCCESS) {
-        CRLog::error("mobi_ret != MOBI_SUCCESS");
-        mobi_free(m);
-        return LVStreamRef();
-    }
-    MOBIRawml *rawml = mobi_init_rawml(m);
-    if (rawml == NULL) {
-        CRLog::error("rawml == NULL");
-        mobi_free(m);
-        return LVStreamRef();
-    }
-    mobi_ret = mobi_parse_rawml(rawml, m);
-    if (mobi_ret != MOBI_SUCCESS) {
-        CRLog::error("mobi_ret != MOBI_SUCCESS");
-        mobi_free(m);
-        mobi_free_rawml(rawml);
-        return LVStreamRef();
-    }
-    if (rawml == NULL) {
-        printf("Rawml structure not initialized\n");
-        return LVStreamRef();
-    }
-    if (rawml->resources != NULL)
-    {   MOBIPart *last = nullptr;
-        MOBIPart *curr = rawml->resources;
-        while (curr != NULL)
-        { MOBIFileMeta file_meta = mobi_get_filemeta_by_type(curr->type);
-            if (curr->size > 0)
-            { if (file_meta.type == T_GIF || file_meta.type == T_JPG || file_meta.type == T_BMP || file_meta.type == T_PNG)
-                {
-                    last=curr;
-                }
-            }
-            curr = curr->next;
-        }
-        if (!last) {
-            return LVStreamRef();
-        }
-        LVStreamRef img;
-        LVStreamRef res = LVCreateMemoryStream(last->data, static_cast<int>(last->size));
-        return res;
-    }
-    return LVStreamRef();
-}
-
-bool IsMobiDoc(const char* absolute_path)
-{
-    MOBI_RET mobi_ret;
-    MOBIData *m = mobi_init();
-    if (m == NULL)
-    {
-        CRLog::error("Memory allocation failed\n");
-        return false;
-    }
-    mobi_parse_kf7(m);
-    FILE *file = fopen(absolute_path, "rb");
-    if (file == NULL)
-    {
-        CRLog::error("Error opening file: %s", absolute_path);
-        mobi_free(m);
-        return false;
-    }
-    mobi_ret = mobi_load_file(m, file);
-    fclose(file);
-    if (mobi_ret != MOBI_SUCCESS) {
-        CRLog::error("mobi_ret != MOBI_SUCCESS");
-        mobi_free(m);
-        return false;
-    }
-    mobi_free(m);
-    return true; // file is mobi
-}
-

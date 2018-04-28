@@ -23,7 +23,6 @@
 #include <errno.h>
 #include <string.h>
 #include <mobi.h>
-#include "src/mobi.h"
 
 #include "common.h"
 #ifdef HAVE_CONFIG_H

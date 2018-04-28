@@ -9,24 +9,16 @@
 #include <ctype.h>
 #include <time.h>
 #include <errno.h>
-/* include libmobi header */
-#include <mobi.h>
 
+#include "trmobi.h"
 
-#include "common.h"
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
 /* miniz file is needed for EPUB creation */
 #define USE_XMLWRITER
 #ifdef USE_XMLWRITER
-# define MINIZ_HEADER_FILE_ONLY
-# define MINIZ_NO_ZLIB_COMPATIBLE_NAMES
-# include "miniz.c"
-#include "../tools/common.h"
-#include "mobi.h"
+#define MINIZ_HEADER_FILE_ONLY
+#define MINIZ_NO_ZLIB_COMPATIBLE_NAMES
+#include "miniz.c"
 #include "meta.h"
-
 #endif
 
 #ifdef HAVE_SYS_RESOURCE_H

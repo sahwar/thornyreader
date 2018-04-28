@@ -1,12 +1,12 @@
 LOCAL_PATH:= $(call my-dir)
-
 include $(CLEAR_VARS)
-
 LOCAL_MODULE := libmobi
+LOCAL_CFLAGS := $(APP_CFLAGS)
+LOCAL_CPPFLAGS := $(APP_CPPFLAGS)
 
 LOCAL_STATIC_LIBRARIES  := thornyreader
 
-#LOCAL_CFLAGS             += -lmobi
+LOCAL_CFLAGS            += -DUSE_XMLWRITER
 
 LOCAL_C_INCLUDES := \
     $(LOCAL_PATH)/../thornyreader \
@@ -14,7 +14,6 @@ LOCAL_C_INCLUDES := \
     $(LOCAL_PATH)/tools
 
 LOCAL_SRC_FILES := \
-    src/epubcreator.c \
 	src/buffer.c \
     src/compression.c \
     src/debug.c \
@@ -22,7 +21,6 @@ LOCAL_SRC_FILES := \
     src/index.c \
     src/memory.c \
     src/meta.c \
-    src/miniz.c \
     src/opf.c \
     src/parse_rawml.c \
     src/read.c \
@@ -30,14 +28,10 @@ LOCAL_SRC_FILES := \
     src/structure.c \
     src/util.c \
     src/write.c \
-    src/xmlwriter.c
-
-
-    LOCAL_SRC_FILES += \
+    src/xmlwriter.c \
+    src/miniz.c \
     tools/common.c \
-    tools/mobimeta.c \
-    tools/win32/getopt.c\
-
+    src/trmobi.c
 
 LOCAL_ARM_MODE := $(APP_ARM_MODE)
 

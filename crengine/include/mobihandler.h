@@ -2,28 +2,8 @@
 // Created by Admin on 13/4/2018.
 //
 
-#include <cctype>
-#include <iostream>
-#include <string>
-#include <locale>
-#include <codecvt>
-
 #include "lvtinydom.h"
-#include "trlog.h"
-#include "lvxml.h"
-
-#include "libmobi/src/mobi.h"
-#include "libmobi/tools/common.h"
-//#include "libmobi/src/meta.h"
-
-#define EPUB_CONTAINER "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
-<container version=\"1.0\" xmlns=\"urn:oasis:names:tc:opendocument:xmlns:container\">\n\
-  <rootfiles>\n\
-    <rootfile full-path=\"OEBPS/content.opf\" media-type=\"application/oebps-package+xml\"/>\n\
-  </rootfiles>\n\
-</container>"
-#define EPUB_MIMETYPE "application/epub+zip"
-
+#include "libmobi/src/trmobi.h"
 
 struct mobiresponse
 {
@@ -34,14 +14,14 @@ struct mobiresponse
     lString16 language;
 };
 
-#define FULLNAME_MAX 1024
-
+// Main interface
 bool ImportMOBIDocNew(const char *absolute_path,const char *epubnewpath);
+mobiresponse GetMobiMetaFromFile(const char *fullpath);
+LVStreamRef GetMobiCoverPageToStream(const char *fullpath);
+bool IsMobiDoc(const char *absolute_path);
+// Local helpers
 bool ConvertMOBIDocToEpub(MOBIRawml* rawml, const char* epubnewpath);
 void FreeMOBIStructures(MOBIRawml* rawml, MOBIData* m);
 void GetMobiMeta(const MOBIData *m);
 mobiresponse GetMobiMetaSummary(const MOBIData *m);
-mobiresponse GetMobiMetaFromFile(const char *fullpath);
 int GetMobiCoverPageFile(const MOBIRawml *rawml, const char *fullpath);
-LVStreamRef GetMobiCoverPageToStream(const char *fullpath);
-bool IsMobiDoc(const char *absolute_path);

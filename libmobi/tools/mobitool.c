@@ -30,12 +30,10 @@
 # include "../config.h"
 #endif
 /* miniz file is needed for EPUB creation */
-//#define USE_XMLWRITER
 #ifdef USE_XMLWRITER
 # define MINIZ_HEADER_FILE_ONLY
 # define MINIZ_NO_ZLIB_COMPATIBLE_NAMES
 # include "../src/miniz.c"
-#include "../src/meta.h"
 #endif
 
 #ifdef HAVE_SYS_RESOURCE_H
@@ -502,7 +500,7 @@ int dump_rawml_parts(const MOBIRawml *rawml, const char *fullpath) {
  
  @param[in] rawml MOBIRawml structure holding parsed records
  @param[in] fullpath File path will be parsed to build basenames of dumped records
-/*
+ */
 int create_epub(const MOBIRawml *rawml, const char *fullpath) {
     if (rawml == NULL) {
         printf("Rawml structure not initialized\n");
@@ -608,7 +606,6 @@ int create_epub(const MOBIRawml *rawml, const char *fullpath) {
     }
     return SUCCESS;
 }
-*/
 #endif
 
 /**
