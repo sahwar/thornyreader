@@ -389,30 +389,27 @@ static LVStreamRef ThResolveStream(int doc_format, const char *absolute_path_cha
 bool LVDocView::LoadDoc(int doc_format, const char *absolute_path,
                         uint32_t compressed_size, bool smart_archive)
 {
-	LVStreamRef stream = ThResolveStream(doc_format, absolute_path, compressed_size, smart_archive);
-	if (!stream)
-	{
-		return false;
-	}
-	if (LoadDoc(doc_format, stream, absolute_path, compressed_size, smart_archive))
-	{
-		stream_.Clear();
-		return true;
-	}
-	else
-	{
-		CreateEmptyDom();
-		CRLog::error("Doc stream parsing fail");
-		return false;
-	}
+    CRLog::trace("LoadDoc open file %s %d", LCSTR(lString16(absolute_path)), doc_format);
+    LVStreamRef stream = ThResolveStream(doc_format, absolute_path, compressed_size, smart_archive);
+    if (!stream)
+    {
+        return false;
+    }
+    if (LoadDoc(doc_format, stream))
+    {
+        stream_.Clear();
+        return true;
+    }
+    else
+    {
+        CreateEmptyDom();
+        CRLog::error("Doc stream parsing fail");
+        return false;
+    }
 }
 
-bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream, const char *absolute_path, uint32_t compressed_size, bool smart_archive) //,const char* savelocation)
+bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 {
-	bool mobi_converted = false;
-	bool got_save_location_command = false;
-	char* savelocation;
-
     //cfg_firstpage_thumb_ = true; //for debug
     if (cfg_firstpage_thumb_)
     {
@@ -431,58 +428,40 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream, const char *absolute
 		LvDomWriter writer(cr_dom_);
 		parser = new LvXmlParser(stream_, &writer, false, true, cfg_firstpage_thumb_);
 	}
-	else if (doc_format == DOC_FORMAT_MOBI || doc_format == DOC_FORMAT_EPUB)
+	else if (doc_format == DOC_FORMAT_EPUB)
 	{
-        /* OLD CALL
+		if (!DetectEpubFormat(stream_))
+		{
+			return false;
+		}
+		cr_dom_->setProps(doc_props_);
+		if (!ImportEpubDocument(stream_, cr_dom_, cfg_firstpage_thumb_))
+		{
+			return false;
+		}
+		doc_props_ = cr_dom_->getProps();
+	}
+	else if (doc_format == DOC_FORMAT_MOBI)
+	{
 		doc_format_t pdb_format = doc_format_none;
 		if (!DetectMOBIFormat(stream_, pdb_format))
-		{return false;}
-        cr_dom_->setProps(doc_props_);
-		if (pdb_format != doc_format_mobi)
-		{CRLog::error("pdb_format != doc_format_mobi");
+		{
+			return false;
 		}
-		if (!ImportMOBIDoc(stream_, cr_dom_, pdb_format, cfg_firstpage_thumb_)) //old call
-        {if (pdb_format != doc_format_mobi)
-            {CRLog::error("pdb_format != doc_format_mobi");
-            }return false;
-        } */
+		cr_dom_->setProps(doc_props_);
+		if (pdb_format != doc_format_mobi)
+		{
+			CRLog::error("pdb_format != doc_format_mobi");
+		}
+		if (!ImportMOBIDoc(stream_, cr_dom_, pdb_format, cfg_firstpage_thumb_))
+		{
+			if (pdb_format != doc_format_mobi)
+			{
+				CRLog::error("pdb_format != doc_format_mobi");
+			}
+			return false;
+		}
 	}
-    if (doc_format == DOC_FORMAT_EPUB)
-    {
-	    if (mobi_converted)
-	    {   CRLog::error("Reading converted mobi from epub container");
-		    stream_=ThResolveStream(DOC_FORMAT_EPUB, MOBI_TO_EPUB_FILEPATH,compressed_size,smart_archive);
-	    }
-        if (!DetectEpubFormat(stream_))
-        {
-            return false;
-        }
-        cr_dom_->setProps(doc_props_);
-        if (!ImportEpubDocument(stream_, cr_dom_, cfg_firstpage_thumb_))
-        {
-            return false;
-        }
-        doc_props_ = cr_dom_->getProps();
-        if (mobi_converted)
-        {   if(got_save_location_command)
-	        {
-		        //saving to cache, no need to remove anything
-		        mobi_converted = false;
-	        }
-	        else
-	        {
-		        if (remove(MOBI_TO_EPUB_FILEPATH) != 0)
-		        {
-			        CRLog::error("Error deleting mobi to epub converted file");
-		        }
-		        else
-		        {
-			        CRLog::trace("Mobi to epub converted file successfully deleted");
-		        }
-		        mobi_converted = false;
-	        }
-        }
-    }
 	else if (doc_format == DOC_FORMAT_DOC)
 	{
 #if ENABLE_ANTIWORD == 1

@@ -8,23 +8,23 @@
 
 bool ImportMOBIDocNew(const char *absolute_path,const char* epubnewpath)
 {
-    CRLog::error("ImportMobiDocNew start");
+    CRLog::trace("ImportMobiDocNew start");
     /* Initialize main MOBIData structure */
-/* Must be deallocated with mobi_free() when not needed */
+    /* Must be deallocated with mobi_free() when not needed */
     MOBIData *m = mobi_init();
     if (m == NULL) {
         CRLog::error("m == NULL");
         return false;
     }
-/* Open file for reading */
+    /* Open file for reading */
     FILE *file = fopen(absolute_path, "rb");
     if (file == NULL) {
         mobi_free(m);
         CRLog::error("file == NULL, fullpath = %s",absolute_path);
         return false;
     }
-/* Load file into MOBIData structure */
-/* This structure will hold raw data/metadata from mobi document */
+    /* Load file into MOBIData structure */
+    /* This structure will hold raw data/metadata from mobi document */
     MOBI_RET mobi_ret = mobi_load_file(m, file);
     fclose(file);
     if (mobi_ret != MOBI_SUCCESS) {
@@ -32,17 +32,17 @@ bool ImportMOBIDocNew(const char *absolute_path,const char* epubnewpath)
         mobi_free(m);
         return false;
     }
-/* Initialize MOBIRawml structure */
-/* Must be deallocated with mobi_free_rawml() when not needed */
-/* In the next step this structure will be filled with parsed data */
+    /* Initialize MOBIRawml structure */
+    /* Must be deallocated with mobi_free_rawml() when not needed */
+    /* In the next step this structure will be filled with parsed data */
     MOBIRawml *rawml = mobi_init_rawml(m);
     if (rawml == NULL) {
         CRLog::error("rawml == NULL");
         mobi_free(m);
         return false;
     }
-/* Raw data from MOBIData will be converted to html, css, fonts, media resources */
-/* Parsed data will be available in MOBIRawml structure */
+    /* Raw data from MOBIData will be converted to html, css, fonts, media resources */
+    /* Parsed data will be available in MOBIRawml structure */
     mobi_ret = mobi_parse_rawml(rawml, m);
     if (mobi_ret != MOBI_SUCCESS) {
         CRLog::error("mobi_ret != MOBI_SUCCESS");
