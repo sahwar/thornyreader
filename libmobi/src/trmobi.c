@@ -12,19 +12,15 @@
 #define MINIZ_HEADER_FILE_ONLY
 #define MINIZ_NO_ZLIB_COMPATIBLE_NAMES
 #include "miniz.c"
-#include "meta.h"
 #endif
 
 #define EPUB_CONTAINER "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
 <container version=\"1.0\" xmlns=\"urn:oasis:names:tc:opendocument:xmlns:container\">\n\
   <rootfiles>\n\
-    <rootfile full-path=\"OEBPS/content.opf\" media-type=\"application/oebps-package+xml\" />\n\
+    <rootfile full-path=\"OEBPS/content.opf\" media-type=\"application/oebps-package+xml\"/>\n\
   </rootfiles>\n\
 </container>"
 #define EPUB_MIMETYPE "application/epub+zip"
-
-/* options values */
-char outdir[FILENAME_MAX];
 
 #include <android/log.h>
 void printlogcat(const char* msg, ...)
@@ -55,7 +51,7 @@ bool create_epub(const MOBIRawml *rawml, const char *fullpath) {
     char basename[FILENAME_MAX];
     split_fullpath(fullpath, dirname, basename);
     char zipfile[FILENAME_MAX];
-    snprintf(zipfile, sizeof(zipfile), "%s%s", outdir, basename);
+    snprintf(zipfile, sizeof(zipfile), "%s%s", dirname, basename);
 
     printlogcat("Saving EPUB to %s\n", zipfile);
     /* create zip (epub) archive */
@@ -118,14 +114,10 @@ bool create_epub(const MOBIRawml *rawml, const char *fullpath) {
         /* jpg, gif, png, bmp, font, audio, video, also opf, ncx */
         while (curr != NULL) {
             MOBIFileMeta file_meta = mobi_get_filemeta_by_type(curr->type);
-            //CRLog::error("extension == %s",file_meta.extension);
             if (curr->size > 0) {
-                //printlogcat("file.meta.type = %d", file_meta.type);
-                if (file_meta.type == T_OPF)
-                { //printlogcat("file.meta.type = T_OPF. Printing opf into file");
+                if (file_meta.type == T_OPF) {
                     snprintf(partname, sizeof(partname), "OEBPS/content.opf");
-                }
-                else {
+                } else {
                     snprintf(partname, sizeof(partname), "OEBPS/resource%05zu.%s", curr->uid, file_meta.extension);
                 }
                 mz_ret = mz_zip_writer_add_mem(&zip, partname, curr->data, curr->size, (mz_uint) MZ_DEFAULT_COMPRESSION);

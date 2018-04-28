@@ -102,7 +102,7 @@ mobiresponse GetMobiMetaFromFile(const char *fullpath)
         CRLog::error("Memory allocation failed\n");
         return a;
     }
-        mobi_parse_kf7(m);
+    mobi_parse_kf7(m);
     FILE *file = fopen(fullpath, "rb");
     if (file == NULL)
     {
@@ -179,7 +179,8 @@ LVStreamRef GetMobiCoverPageToStream(const char *fullpath) {
         return LVStreamRef();
     }
     if (rawml->resources != NULL)
-    {   MOBIPart *last = nullptr;
+    {
+        MOBIPart *last = nullptr;
         MOBIPart *curr = rawml->resources;
         while (curr != NULL)
         {
