@@ -115,9 +115,9 @@ bool create_epub(const MOBIRawml *rawml, const char *fullpath) {
     split_fullpath(fullpath, dirname, basename);
     char zipfile[FILENAME_MAX];
     if (outdir_opt) {
-        snprintf(zipfile, sizeof(zipfile), "%s%s.epub", outdir, basename);
+        snprintf(zipfile, sizeof(zipfile), "%s%s", outdir, basename);
     } else {
-        snprintf(zipfile, sizeof(zipfile), "%s%s.epub", dirname, basename);
+        snprintf(zipfile, sizeof(zipfile), "%s%s", dirname, basename);
     }
 
     printlogcat("Saving EPUB to %s\n", zipfile);
