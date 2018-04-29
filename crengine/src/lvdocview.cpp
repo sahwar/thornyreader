@@ -27,9 +27,7 @@
 // Yep, twice include single header with different define.
 // Probably should be last in include list, to don't mess up with other includes.
 #include "include/fb2def.h"
-
 #define XS_IMPLEMENT_SCHEME 1
-
 #include "include/fb2def.h"
 //#undef XS_IMPLEMENT_SCHEME
 
@@ -381,7 +379,8 @@ static LVStreamRef ThResolveStream(int doc_format, const char *absolute_path_cha
 	}
 	else
 	{
-		CRLog::error("ThResolveStream smart_archive collision fail %s %d", LCSTR(absolute_path), found_count);
+		CRLog::error("ThResolveStream smart_archive collision fail %s %d",
+                     LCSTR(absolute_path), found_count);
 		return LVStreamRef();
 	}
 }
@@ -389,7 +388,17 @@ static LVStreamRef ThResolveStream(int doc_format, const char *absolute_path_cha
 bool LVDocView::LoadDoc(int doc_format, const char *absolute_path,
                         uint32_t compressed_size, bool smart_archive)
 {
-    CRLog::trace("LoadDoc open file %s %d", LCSTR(lString16(absolute_path)), doc_format);
+#ifdef TRDEBUG
+	//cfg_firstpage_thumb_ = true;
+	if (cfg_firstpage_thumb_)
+	{
+		CRLog::trace("LoadDoc: Partial parsing: %s %d", LCSTR(lString16(absolute_path)), doc_format);
+	}
+	else
+	{
+		CRLog::trace("LoadDoc: Full parsing: %s %d", LCSTR(lString16(absolute_path)), doc_format);
+	}
+#endif
     LVStreamRef stream = ThResolveStream(doc_format, absolute_path, compressed_size, smart_archive);
     if (!stream)
     {
@@ -410,15 +419,6 @@ bool LVDocView::LoadDoc(int doc_format, const char *absolute_path,
 
 bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 {
-    //cfg_firstpage_thumb_ = true; //for debug
-    if (cfg_firstpage_thumb_)
-    {
-        CRLog::trace("LoadDoc: Partial parsing, need only first page");
-    }
-    else
-    {
-        CRLog::trace("LoadDoc: Full parsing, need all pages");
-    }
     stream_ = stream;
 	doc_format_ = doc_format;
 	CheckRenderProps(0, 0);
@@ -2201,8 +2201,6 @@ ldomWordEx *LVPageWordSelector::ReducePattern()
 	return res;
 }
 
-//TODO
-
 void CreBridge::processMetadata(CmdRequest &request, CmdResponse &response)
 {
 	response.cmd = CMD_RES_CRE_METADATA;
@@ -2236,15 +2234,12 @@ void CreBridge::processMetadata(CmdRequest &request, CmdResponse &response)
 		}
 		return;
 	}
-
 	LVStreamRef thumb_stream;
 	lString16 title;
 	lString16 authors;
 	lString16 series;
 	int series_number = 0;
 	lString16 lang;
-    //lString16 coverimage;
-
 	if (doc_format == DOC_FORMAT_EPUB)
 	{
 		LVContainerRef container = LVOpenArchive(stream);
@@ -2317,10 +2312,10 @@ void CreBridge::processMetadata(CmdRequest &request, CmdResponse &response)
 					thumb_stream = container->OpenStream(thumbnail_file_name.c_str(), LVOM_READ);
 				}
 				href = DecodeHTMLUrlString(href);
-                if(id.endsWith("cover.jpg")||id.endsWith("cover.jpeg")||href.endsWith("cover.jpg")||href.endsWith("cover.jpeg"))
+                if(id.endsWith("cover.jpg") || id.endsWith("cover.jpeg")
+                   || href.endsWith("cover.jpg") || href.endsWith("cover.jpeg"))
 				{
 					CRLog::trace("EPUB structure is malformed...BUT Found coverpage image! Yay!");
-					// coverpage file
                     lString16 thumbnail_file_name = code_base + href;
 					CRLog::trace("_______EPUB coverpage file: %s", LCSTR(thumbnail_file_name));
                     thumb_stream = container->OpenStream(thumbnail_file_name.c_str(), LVOM_READ);
@@ -2396,7 +2391,6 @@ void CreBridge::processMetadata(CmdRequest &request, CmdResponse &response)
             series_number = 0;
         }
     }
-
 	CmdData *doc_thumb = new CmdData();
 	int thumb_width = 0;
 	int thumb_height = 0;
@@ -2432,9 +2426,11 @@ bool LVDocView::CheckImage()
     ldomXPointer b = cr_dom_->createXPointer(L"/FictionBook/body/image");
     ldomXPointer c = cr_dom_->createXPointer(L"/FictionBook/body/section/image");
     ldomXPointer d = cr_dom_->createXPointer(L"/FictionBook/body/section/img");
-    if(a.isNull() && b.isNull() && c.isNull() && d.isNull())
-    {return false;}
-    return true;  //returns true if image is found
+    if (a.isNull() && b.isNull() && c.isNull() && d.isNull())
+    {
+        return false;
+    }
+    return true; //returns true if image is found
 
 }
 bool LVDocView::NeedCheckImage()

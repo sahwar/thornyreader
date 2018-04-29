@@ -4,35 +4,8 @@
 #define H_LINE_SIZE 5
 #define LINE_MARGIN 20
 #define WHITE_THRESHOLD 0.005
-#define COLUMN_WIDTH 5
 #define MAX(a,b) (((a) > (b)) ? (a) : (b))
 #define MIN(a,b) (((a) < (b)) ? (a) : (b))
-
-static int CalcAvgLum(
-        uint8_t* pixels,
-        int width,
-        int height,
-        int sub_x,
-        int sub_y,
-        int sub_w,
-        int sub_h)
-{
-    int i;
-    int midBright = 0;
-
-    int x, y;
-    for (y = 0; y < sub_h; y++) {
-        for (x = 0; x < sub_w; x++) {
-            i = ((y + sub_y) * width + sub_x + x) * 4;
-            midBright += (MIN(pixels[i+2], MIN(pixels[i + 1],pixels[i]))
-                    + MAX(pixels[i+2], MAX(pixels[i + 1],pixels[i])))
-                    / 2;
-        }
-    }
-    midBright /= (sub_w * sub_h);
-
-    return midBright;
-}
 
 static int IsRectWhite(
         uint8_t* pixels,
@@ -45,7 +18,6 @@ static int IsRectWhite(
         int avg_lum)
 {
     int count = 0;
-
     int x, y;
     for (y = 0; y < sub_h; y++) {
         for (x = 0; x < sub_w; x++) {
@@ -67,7 +39,6 @@ static float GetLeftCropBound(uint8_t* pixels, int width, int height, int avg_lu
     int w = width / 3;
     int whiteCount = 0;
     int x = 0;
-
     for (x = 0; x < w; x += V_LINE_SIZE) {
         int white = IsRectWhite(
                 pixels,
@@ -95,7 +66,6 @@ static float GetTopCropBound(uint8_t* pixels, int width, int height, int avg_lum
     int h = height / 3;
     int whiteCount = 0;
     int y = 0;
-
     for (y = 0; y < h; y += H_LINE_SIZE) {
         int white = IsRectWhite(
                 pixels,
@@ -123,7 +93,6 @@ static float GetRightCropBound(uint8_t* pixels, int width, int height, int avg_l
     int w = width / 3;
     int whiteCount = 0;
     int x = 0;
-
     for (x = width - V_LINE_SIZE; x > width - w; x -= V_LINE_SIZE) {
         int white = IsRectWhite(
                 pixels,
@@ -171,6 +140,30 @@ static float GetBottomCropBound(uint8_t* pixels, int width, int height, int avg_
         }
     }
     return whiteCount > 0 ? (float) (MIN(height, y + 2 * H_LINE_SIZE)) / height : 1;
+}
+
+static int CalcAvgLum(
+        uint8_t* pixels,
+        int width,
+        int height,
+        int sub_x,
+        int sub_y,
+        int sub_w,
+        int sub_h)
+{
+    int i;
+    int midBright = 0;
+    int x, y;
+    for (y = 0; y < sub_h; y++) {
+        for (x = 0; x < sub_w; x++) {
+            i = ((y + sub_y) * width + sub_x + x) * 4;
+            midBright += (MIN(pixels[i+2], MIN(pixels[i + 1], pixels[i]))
+                          + MAX(pixels[i+2], MAX(pixels[i + 1], pixels[i])))
+                         / 2;
+        }
+    }
+    midBright /= (sub_w * sub_h);
+    return midBright;
 }
 
 void CalcBitmapSmartCrop(float* smart_crop, uint8_t* pixels, int width, int height,
