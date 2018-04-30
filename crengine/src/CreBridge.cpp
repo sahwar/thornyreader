@@ -5,6 +5,18 @@
 #include "thornyreader/include/StProtocol.h"
 #include "thornyreader/include/StSocket.h"
 #include "include/CreBridge.h"
+#include <sys/types.h>
+#include <dirent.h>
+
+void ReadDirectory(const char *name, lString16Collection& list)
+{
+    DIR* dirp = opendir(name);
+    struct dirent * dp;
+    while ((dp = readdir(dirp)) != NULL) {
+        list.add(dp->d_name);
+    }
+    closedir(dirp);
+}
 
 static inline int CeilToEvenInt(int n)
 {
@@ -618,6 +630,23 @@ void CreBridge::processOutline(CmdRequest& request, CmdResponse& response)
 
 void CreBridge::processQuit(CmdRequest& request, CmdResponse& response)
 {
+    lString16Collection list;
+    ReadDirectory("/system/fonts/", list);
+    //list.erase(0,2);
+    for (int i = 0; i < list.length() ; ++i)
+    {
+        if (!(list[i].endsWith(".ttf") || list[i].endsWith(".ttc")))
+        {
+            list.erase(i,1);
+        }
+        //if ((list[i].endsWith())
+       // {            list.erase(i,1); }
+    }
+    for (int i = 0; i < list.length() ; ++i)
+    {
+        CRLog::error("%d font %s",i ,LCSTR(list[i]));
+    }
+
     response.cmd = CMD_RES_QUIT;
 }
 
