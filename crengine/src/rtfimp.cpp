@@ -477,7 +477,8 @@ bool LVRtfParser::Parse()
     txtfstart = 0;
     char cwname[33];
     int fragments_counter=0;
-    //need_coverpage; //debug
+    bool in_body_flag = false;
+    //need_coverpage_ = true ; //debug
     while ( !Eof() && !errorFlag && !m_stopped ) {
         // load next portion of data if necessary
         if ( m_buf_len - m_buf_pos < MIN_BUF_DATA_SIZE ) {
@@ -550,7 +551,17 @@ bool LVRtfParser::Parse()
                     // usual control word
                     OnControlWord( cwname, param, asteriskFlag );
                 }
-                fragments_counter++;
+                if (need_coverpage_)
+                {
+                    if(cwname[0] == 'i' && cwname[1] == 'n' && cwname[2] == 'f' && cwname[3] == 'o' )
+                    {
+                        in_body_flag = true;
+                    }
+                }
+                if (in_body_flag)
+                {
+                    fragments_counter++;
+                }
                 if(need_coverpage_)
                 {
                     if(fragments_counter>=FIRSTPAGE_BLOCKS_MAX_RTF)
