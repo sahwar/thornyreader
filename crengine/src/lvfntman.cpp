@@ -26,7 +26,7 @@
 // freetype font glyph buffer size, in bytes
 // 0x20000 (_WIN32, LBOOK), 0x40000 (LINUX)
 #define GLYPH_CACHE_SIZE 0x40000
-#define DEBUG_FONT_MAN 1
+#define DEBUG_FONT_MAN 0
 #if (DEBUG_FONT_MAN==1)
 #define DEBUG_FONT_MAN_LOG_FILE "data/data/org.readera/files/fontmanlog.log"
 #endif
@@ -1860,16 +1860,12 @@ public:
 
     virtual void FallbackFontFaceNext()
     {
-        CRLog::error("_fallbackIndex CURRENT =%d",_fallbackIndex);
         _fallbackIndex++;
-        CRLog::error("_fallbackIndex AFTER INCREMENTION =%d",_fallbackIndex);
         if (_fallbackIndex>_fallbackFontFaceArrayLength-1)
         {
             _fallbackIndex=0;
-            CRLog::error("_fallbackIndex>_fallbackFontFaceArrayLength-1");
         }
         _fallbackFontFace = _fallbackFontFaceArray[_fallbackIndex];
-        CRLog::error("_fallbackFontFace = %s",_fallbackFontFace.c_str());
     }
 
     virtual void FallbackFontFacePrevious()
@@ -1903,7 +1899,7 @@ public:
     virtual bool SetFallbackFontFace( lString8 face ) {
         if ( face!=_fallbackFontFace ) {
             _cache.clearFallbackFonts();
-            CRLog::trace("Looking for fallback font %s", face.c_str());
+          //  CRLog::trace("Looking for fallback font %s", face.c_str());
             LVFontCacheItem * item = _cache.findFallback( face, -1 );
             if (!item)
             {
