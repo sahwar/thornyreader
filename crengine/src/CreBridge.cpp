@@ -186,11 +186,15 @@ void CreBridge::processFonts(CmdRequest& request, CmdResponse& response)
 #ifdef TRDEBUG
     lString16 fallback;
     lString16 fallback1;
+    lString16 fallback2;
     //fallback.append("/sdcard/arialuni.ttf");
     fallback.append("/system/fonts/NotoSansCJK-Regular.ttc");
     fontMan->RegisterFont(UnicodeToUtf8(fallback));
     fallback1.append("/system/fonts/NotoNaskhArabicUI-Regular.ttf");
     fontMan->RegisterFont(UnicodeToUtf8(fallback1));
+    fallback2.append("/system/fonts/NotoSansArmenian-Regular.ttf");
+    fontMan->RegisterFont(UnicodeToUtf8(fallback2));
+
 #endif
 }
 
@@ -265,12 +269,14 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
             doc_view_->UpdatePageMargins();
         } else if (key == CONFIG_CRE_FONT_FACE_MAIN) {
             doc_view_->cfg_font_face_ = UnicodeToUtf8(lString16(val));
-#ifdef TRDEBUG
+//#ifdef TRDEBUG
+#if 1
             lString16Collection collection;
             collection.add(lString16("Noto Sans Mono CJK KR"));
             collection.add(lString16("Noto Sans Mono CJK TC"));
             collection.add(lString16("Noto Naskh Arabic UI"));
             collection.add(lString16("Noto Sans Mono CJK SC"));
+            collection.add(lString16("Noto Sans Armenian"));
             lString8 fallbackstr;
             if (collection.length()>0)
             {

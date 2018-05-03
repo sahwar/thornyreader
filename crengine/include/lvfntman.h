@@ -139,7 +139,7 @@ public:
     };
 
     virtual unsigned int getCharIndex( lChar16 code, lChar16 def_char ) { return 0;};
-    virtual LVFontGlyphCacheItem * GetGlyphItem(lUInt16 ch,unsigned int ch_glyph_index ){return NULL;};
+    virtual LVFontGlyphCacheItem * GetGlyphItem(lUInt16 ch,unsigned int ch_glyph_index ) {return NULL;};
     /// hyphenation character
     virtual lChar16 getHyphChar() { return UNICODE_SOFT_HYPHEN_CODE; }
 
@@ -156,6 +156,9 @@ public:
         \return true if glyh was found 
     */
     virtual bool getGlyphInfo(lUInt16 code, glyph_info_t* glyph, lChar16 def_char=0) = 0;
+
+    virtual bool getGlyphInfoItem(int glyph_index, glyph_info_t * glyph) { return false;};
+
 
     /** \brief measure text
         \param text is text string pointer

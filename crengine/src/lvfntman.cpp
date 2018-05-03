@@ -723,8 +723,11 @@ public:
 
     /// get fallback font for this font
     LVFont * getFallbackFont() {
+        CRLog::error("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
         if ( _fallbackFontIsSet )
-            return _fallbackFont.get();
+        {return _fallbackFont.get();}
+
+        CRLog::error("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB");
         if ( fontMan->GetFallbackFontFace()!=_faceName ) // to avoid circular link, disable fallback for fallback font
             _fallbackFont = fontMan->GetFallbackFont(_size);
         _fallbackFontIsSet = true;
@@ -737,6 +740,7 @@ public:
         fontMan->FallbackFontFaceNext();
 
         _fallbackFontIsSet = false;
+        CRLog::error("nextfallbackfont getfallbackfont");
         return getFallbackFont();
     }
 
@@ -970,19 +974,56 @@ public:
     virtual bool getGlyphInfo(lUInt16 code, glyph_info_t * glyph, lChar16 def_char=0)
     {
         //FONT_GUARD
-        int glyph_index = getCharIndex( code, 0 );
-        if ( glyph_index==0 ) {
-            LVFont * fallback = getFallbackFont();
-            if ( !fallback ) {
-                // No fallback
-                glyph_index = getCharIndex( code, def_char );
-                if ( glyph_index==0 )
-                    return false;
-            } else {
-                // Fallback
-                return fallback->getGlyphInfo(code, glyph, def_char);
+        int glyph_index = getCharIndex(code, 0);
+
+        if (glyph_index != 0)
+        {
+            return getGlyphInfoItem(glyph_index, glyph);
+        }
+
+        CRLog::error("getglyphinfo getfallbackfont");
+        // LVFont *fallback = getFallbackFont();
+
+
+        LVFont *fallback = getFallbackFont();
+        if (!fallback)
+        {
+            // No fallback
+            CRLog::error("Fallback is not set!");
+            return false;
+        }
+        glyph_index = fallback->getCharIndex(code, 0);
+
+        if (glyph_index != 0)
+        {
+            return fallback->getGlyphInfoItem(glyph_index, glyph);
+        }
+        lString8 nextface;
+        lString8 curface = fontMan->GetFallbackFontFace();
+        fontMan->GetFallbackFontArraySize();
+        CRLog::error("Starting from : %s", curface.c_str());
+        while (true)
+        {   CRLog::error("Cycle!");
+
+            fallback = nextFallbackFont();
+            nextface = fontMan->GetFallbackFontFace();
+
+            CRLog::error("Now it's : %s", nextface.c_str());
+            glyph_index = fallback->getCharIndex(code, 0);
+            if (curface.compare(nextface) == 0)
+            {
+                break;
+            }
+            if (glyph_index != 0)
+            {
+                return fallback->getGlyphInfoItem(glyph_index, glyph);
             }
         }
+        return false;
+    }
+
+    virtual bool getGlyphInfoItem(int glyph_index, glyph_info_t * glyph)
+    {
         int flags = FT_LOAD_DEFAULT;
         flags |= (!_drawMonochrome ? FT_LOAD_TARGET_NORMAL : FT_LOAD_TARGET_MONO);
         if (_hintingMode == HINTING_MODE_AUTOHINT)
@@ -1183,6 +1224,7 @@ public:
         {
             return GetGlyphItem(ch, ch_glyph_index);
         }
+        CRLog::error("getglyph getfallbackfont");
         LVFont *fallback = getFallbackFont();
         if (!fallback)
         {
@@ -1199,11 +1241,14 @@ public:
         lString8 nextface;
         lString8 curface = fontMan->GetFallbackFontFace();
         fontMan->GetFallbackFontArraySize();
+        CRLog::error("Starting from : %s", curface.c_str());
         while (true)
-        {
+        {   CRLog::error("Cycle!");
+
             fallback = nextFallbackFont();
             nextface = fontMan->GetFallbackFontFace();
 
+            CRLog::error("Now it's : %s", nextface.c_str());
             ch_glyph_index = fallback->getCharIndex(ch, 0);
             if (curface.compare(nextface) == 0)
             {
