@@ -723,11 +723,9 @@ public:
 
     /// get fallback font for this font
     LVFont * getFallbackFont() {
-        CRLog::error("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
         if ( _fallbackFontIsSet )
         {return _fallbackFont.get();}
 
-        CRLog::error("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB");
         if ( fontMan->GetFallbackFontFace()!=_faceName ) // to avoid circular link, disable fallback for fallback font
             _fallbackFont = fontMan->GetFallbackFont(_size);
         _fallbackFontIsSet = true;
@@ -740,7 +738,6 @@ public:
         fontMan->FallbackFontFaceNext();
 
         _fallbackFontIsSet = false;
-        CRLog::error("nextfallbackfont getfallbackfont");
         return getFallbackFont();
     }
 
@@ -981,7 +978,6 @@ public:
             return getGlyphInfoItem(glyph_index, glyph);
         }
 
-        CRLog::error("getglyphinfo getfallbackfont");
         // LVFont *fallback = getFallbackFont();
 
 
@@ -1224,7 +1220,6 @@ public:
         {
             return GetGlyphItem(ch, ch_glyph_index);
         }
-        CRLog::error("getglyph getfallbackfont");
         LVFont *fallback = getFallbackFont();
         if (!fallback)
         {
