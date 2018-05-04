@@ -26,7 +26,7 @@
 // freetype font glyph buffer size, in bytes
 // 0x20000 (_WIN32, LBOOK), 0x40000 (LINUX)
 #define GLYPH_CACHE_SIZE 0x40000
-#define DEBUG_FONT_MAN 0
+#define DEBUG_FONT_MAN 1
 #if (DEBUG_FONT_MAN==1)
 #define DEBUG_FONT_MAN_LOG_FILE "data/data/org.readera/files/fontmanlog.log"
 #endif
@@ -1895,6 +1895,7 @@ private:
     #endif
     lString8    _fallbackFontFaceArray[FALLBACK_FONT_ARRAY_SIZE];
     int         _fallbackFontFaceArrayLength;
+    int         _fallbackFontFaceArrayIterator=0;
     int         _fallbackIndex=0;
 public:
 
@@ -1953,26 +1954,37 @@ public:
 
 
     /// set fallback font array element
-    virtual bool SetFallbackFontFaceInArray(lString8 face, int index)
+    virtual bool AddFallbackFontFaceIntoArray(lString8 face)
     {
-        _cache.clearFallbackFonts();
+        if (face.empty())
+        {
+            return false;
+        }
+        if (face.pos("Mono")!=-1 || face.pos("Coming Soon")!=-1)
+        {
+            return false;
+        }
+        _cache.clearFallbackFonts(); //TODO why we need it here idunno
         CRLog::trace("Looking for fallback font %s", face.c_str());
         LVFontCacheItem *item = _cache.findFallback(face, -1);
-        _fallbackFontFaceArrayLength++;
+
         if (!item)
         {
             CRLog::error("Face %s not found", face.c_str());
             face.clear();
             return false;
         }
-        _fallbackFontFaceArray[index] = face;
-        return !_fallbackFontFace.empty();
+        _fallbackFontFaceArray[_fallbackFontFaceArrayIterator] = face;
+        _fallbackFontFaceArrayLength++;
+        _fallbackFontFaceArrayIterator++;
+        return true;
     }
 
     virtual void FallbackArrayRestart()
     {
         _fallbackIndex=0;
         _fallbackFontFaceArrayLength =0;
+        _fallbackFontFaceArrayIterator=0;
     };
 
     /// get fallback font face (returns empty string if no fallback font is set)
@@ -2582,8 +2594,9 @@ public:
         return res;
 	}
 
-    virtual bool RegisterFont( lString8 name )
+    virtual lString8Collection RegisterFont( lString8 name )
     {
+        lString8Collection collection;
         lString8 fname = makeFontFileName( name );
         //CRLog::trace("font file name : %s", fname.c_str());
 #if (DEBUG_FONT_MAN == 1)
@@ -2669,7 +2682,8 @@ public:
 
 			if ( _cache.findDuplicate( &def ) ) {
                 CRLog::info("Font definition is duplicate %s", def.getName().c_str());
-                return false;
+                lString8Collection empty;
+                return empty;
             }
             _cache.update( &def, LVFontRef(NULL) );
             if (scal && !def.getItalic()) {
@@ -2679,12 +2693,13 @@ public:
                     _cache.update(&newDef, LVFontRef(NULL));
             }
             res = true;
+            collection.add(def.getTypeFace());
 
             if ( index>=num_faces-1 )
                 break;
         }
 
-        return res;
+        return collection;
     }
 
     virtual bool Init(lString8 path)

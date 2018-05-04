@@ -314,7 +314,7 @@ public:
     virtual bool SetFallbackFontFace( lString8 face ) { CR_UNUSED(face); return false; }
 
     /// set fallback font face (returns true if specified font is found)
-    virtual bool SetFallbackFontFaceInArray( lString8 face ,int index) { CR_UNUSED(face); return false; }
+    virtual bool AddFallbackFontFaceIntoArray(lString8 face) { CR_UNUSED(face); return false; }
 
     virtual void FallbackArrayRestart(){ return;};
     /// get fallback font face (returns empty string if no fallback font is set)
@@ -330,7 +330,7 @@ public:
     /// returns fallback font for specified size
     virtual LVFontRef GetFallbackFont(int /*size*/) { return LVFontRef(); }
     /// registers font by name
-    virtual bool RegisterFont( lString8 name ) = 0;
+    virtual lString8Collection RegisterFont( lString8 name ) = 0;
     /// registers font by name and face
     virtual bool RegisterExternalFont(lString16 /*name*/, lString8 /*face*/, bool /*bold*/, bool /*italic*/) { return false; }
     /// registers document font
