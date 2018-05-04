@@ -2097,19 +2097,17 @@ public:
         faces.add(lString8("Roboto"));//default
         for (int i = 0; i < fonts.length(); ++i)
         {
-            faces.addAll(fontMan->RegisterFont(fonts.at(i)));
+            faces.addAll(RegisterFont(fonts.at(i)));
         }
-
 
         for (int i = 0; i < faces.length(); ++i)
         {
-            //CRLog::error("FACES %d:%s",i,faces.at(i).c_str());
-            fontMan->AddFallbackFontFaceIntoArray(faces.at(i));
+            AddFallbackFontFaceIntoArray(faces.at(i));
         }
-        // Initialize. Don't delete this line!
+
         if (_fallbackFontFaceArrayLength > 0)
         {
-            fontMan->SetFallbackFontFace(fontMan->GetFallbackFontFaceFromArray(0));
+            SetFallbackFontFace(GetFallbackFontFaceFromArray(0));
         }
         _fallbackFontsInitalized = true;
     }
