@@ -30,7 +30,7 @@
 // freetype font glyph buffer size, in bytes
 // 0x20000 (_WIN32, LBOOK), 0x40000 (LINUX)
 #define GLYPH_CACHE_SIZE 0x40000
-#define DEBUG_FONT_MAN 1
+#define DEBUG_FONT_MAN 0
 #if (DEBUG_FONT_MAN==1)
 #define DEBUG_FONT_MAN_LOG_FILE "data/data/org.readera/files/fontmanlog.log"
 #endif
@@ -1009,12 +1009,13 @@ public:
         lString8 curface = fontMan->GetFallbackFontFace();
         fontMan->GetFallbackFontArraySize();
         while (fontMan->AllowFallbackCycle())
-        {   CRLog::error("Cycle!");
+        {
+            //CRLog::error("Cycle!");
 
             fallback = nextFallbackFont();
             nextface = fontMan->GetFallbackFontFace();
 
-            CRLog::error("Now it's : %s", nextface.c_str());
+            //CRLog::error("Now it's : %s", nextface.c_str());
             glyph_index = fallback->getCharIndex(code, 0);
             if (curface.compare(nextface) == 0)
             {
@@ -1254,15 +1255,14 @@ public:
         lString8 nextface;
         lString8 curface = fontMan->GetFallbackFontFace();
         fontMan->GetFallbackFontArraySize();
-        CRLog::error("Starting from : %s", curface.c_str());
         while (fontMan->AllowFallbackCycle())
         {
-            CRLog::error("Cycle!");
+            //CRLog::error("Cycle!");
 
             fallback = nextFallbackFont();
             nextface = fontMan->GetFallbackFontFace();
 
-            CRLog::error("Now it's : %s", nextface.c_str());
+            //CRLog::error("Now it's : %s", nextface.c_str());
             ch_glyph_index = fallback->getCharIndex(ch, 0);
             if (curface.compare(nextface) == 0)
             {
@@ -2000,7 +2000,9 @@ public:
             return false;
         }
         _cache.clearFallbackFonts(); //TODO why we need it here idunno
+#if (DEBUG_FONT_MAN == 1)
         CRLog::trace("Looking for fallback font %s", face.c_str());
+#endif
         LVFontCacheItem *item = _cache.findFallback(face, -1);
 
         if (!item)
@@ -2091,46 +2093,32 @@ public:
 
     virtual void InitFallbackFonts()
     {
-#ifdef TRDEBUG
         if (_fallbackFontsInitalized)
         {
             return;
         }
-        CRLog::error("____________________________________________________________InitFallbackFonts() start");
         lString8Collection fonts;
         lString8Collection faces;
 
-        fonts.add("/system/fonts/Roboto-Thin.ttf");
-
-        fonts.add("/system/fonts/NotoSansCJK-Regular.ttc");
-        //fonts.add("/system/fonts/NotoNaskhArabicUI-Regular.ttf");
-
         GetSystemFallbackFontsList(fonts);
+        faces.add(lString8("Roboto"));//default
         for (int i = 0; i < fonts.length(); ++i)
-        {
-            CRLog::error("asjkdhaksjd %i:%s",i,fonts.at(i).c_str());
-        }
-        faces.add(lString8("Roboto"));
-        for (int i = 0; i <fonts.length() ; ++i)
         {
             faces.addAll(fontMan->RegisterFont(fonts.at(i)));
         }
 
-        //fontMan->SetFallbackFontFace(lString8("Roboto")); //default
         fontMan->FallbackArrayRestart();
         for (int i = 0; i < faces.length(); ++i)
         {
             //CRLog::error("FACES %d:%s",i,faces.at(i).c_str());
             fontMan->AddFallbackFontFaceIntoArray(faces.at(i));
         }
-        // Initialize. Don't deletre this line!
-        if (_fallbackFontFaceArrayLength>0)
+        // Initialize. Don't delete this line!
+        if (_fallbackFontFaceArrayLength > 0)
         {
             fontMan->SetFallbackFontFace(fontMan->GetFallbackFontFaceFromArray(0));
         }
         _fallbackFontsInitalized = true;
-        CRLog::error("____________________________________________________________InitFallbackFonts() stop");
-#endif
     }
 
     bool isBitmapModeForSize( int size )

@@ -591,23 +591,6 @@ void CreBridge::processOutline(CmdRequest& request, CmdResponse& response)
 
 void CreBridge::processQuit(CmdRequest& request, CmdResponse& response)
 {
-   /* lString16Collection list;
-    ReadDirectory("/system/fonts/", list);
-    //list.erase(0,2);
-    for (int i = 0; i < list.length() ; ++i)
-    {
-        if (!(list[i].endsWith(".ttf") || list[i].endsWith(".ttc")))
-        {
-            list.erase(i,1);
-        }
-        //if ((list[i].endsWith())
-       // {            list.erase(i,1); }
-    }
-    for (int i = 0; i < list.length() ; ++i)
-    {
-        CRLog::error("%d font %s",i ,LCSTR(list[i]));
-    }
-*/
     response.cmd = CMD_RES_QUIT;
 }
 
