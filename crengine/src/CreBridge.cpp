@@ -626,7 +626,6 @@ CreBridge::CreBridge() : StBridge(THORNYREADER_LOG_TAG)
     fontMan->SetHintingMode(HINTING_MODE_BYTECODE_INTERPRETOR);
     fontMan->setKerning(true);
 
-    fontMan->InitFallbackFonts();
     HyphMan::init();
 }
 

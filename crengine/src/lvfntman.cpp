@@ -974,7 +974,6 @@ public:
     */
     virtual bool getGlyphInfo(lUInt16 code, glyph_info_t * glyph, lChar16 def_char=0)
     {
-        //FONT_GUARD
         int glyph_index = getCharIndex(code, 0);
 
         if (glyph_index != 0)
@@ -982,8 +981,13 @@ public:
             return getGlyphInfoItem(glyph_index, glyph);
         }
 
-        // LVFont *fallback = getFallbackFont();
-
+        //removing those symbols because of alignment width check
+        if ((code == 65292) || (code == 13058) || (code == 65281))
+        {
+            glyph_index = getCharIndex(code, def_char);
+            return getGlyphInfoItem(glyph_index, glyph);
+        }
+        fontMan->InitFallbackFonts();
         LVFont *fallback = getFallbackFont();
         if (!fallback)
         {
@@ -1004,7 +1008,6 @@ public:
         lString8 nextface;
         lString8 curface = fontMan->GetFallbackFontFace();
         fontMan->GetFallbackFontArraySize();
-        CRLog::error("Getglyphinfo Starting from : %s", curface.c_str());
         while (fontMan->AllowFallbackCycle())
         {   CRLog::error("Cycle!");
 
@@ -1224,6 +1227,8 @@ public:
     */
     virtual LVFontGlyphCacheItem *getGlyph(lUInt16 ch, lChar16 def_char=0)
     {
+        //this function is being called AFTER GetGlyphInfo,
+        //so we don't need to initialize fallback fonts here
         FT_UInt ch_glyph_index = getCharIndex(ch, 0);
         if (ch_glyph_index != 0)
         {
