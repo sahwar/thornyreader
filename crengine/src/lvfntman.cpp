@@ -980,12 +980,15 @@ public:
 
         // LVFont *fallback = getFallbackFont();
 
-
         LVFont *fallback = getFallbackFont();
         if (!fallback)
         {
             // No fallback
-            CRLog::error("Fallback is not set!");
+            if (!fontMan->FallbackIsSet())
+            {
+                glyph_index = getCharIndex(code, def_char);
+                return getGlyphInfoItem( glyph_index, glyph);
+            }
             return false;
         }
         glyph_index = fallback->getCharIndex(code, 0);
@@ -997,8 +1000,8 @@ public:
         lString8 nextface;
         lString8 curface = fontMan->GetFallbackFontFace();
         fontMan->GetFallbackFontArraySize();
-        CRLog::error("Starting from : %s", curface.c_str());
-        while (true)
+        CRLog::error("Getglyphinfo Starting from : %s", curface.c_str());
+        while (fontMan->AllowFallbackCycle())
         {   CRLog::error("Cycle!");
 
             fallback = nextFallbackFont();
@@ -1008,6 +1011,7 @@ public:
             glyph_index = fallback->getCharIndex(code, 0);
             if (curface.compare(nextface) == 0)
             {
+                fontMan->CycleCounterIncr();
                 break;
             }
             if (glyph_index != 0)
@@ -1015,7 +1019,8 @@ public:
                 return fallback->getGlyphInfoItem(glyph_index, glyph);
             }
         }
-        return false;
+        glyph_index = fallback->getCharIndex(code, def_char);
+        return fallback->getGlyphInfoItem( glyph_index, glyph);
     }
 
     virtual bool getGlyphInfoItem(int glyph_index, glyph_info_t * glyph)
@@ -1224,7 +1229,11 @@ public:
         if (!fallback)
         {
             // No fallback
-            CRLog::error("Fallback is not set!");
+            if (!fontMan->FallbackIsSet())
+            {
+                ch_glyph_index = getCharIndex(ch, def_char);
+                return GetGlyphItem(ch, ch_glyph_index);
+            }
             return NULL;
         }
         ch_glyph_index = fallback->getCharIndex(ch, 0);
@@ -1237,8 +1246,9 @@ public:
         lString8 curface = fontMan->GetFallbackFontFace();
         fontMan->GetFallbackFontArraySize();
         CRLog::error("Starting from : %s", curface.c_str());
-        while (true)
-        {   CRLog::error("Cycle!");
+        while (fontMan->AllowFallbackCycle())
+        {
+            CRLog::error("Cycle!");
 
             fallback = nextFallbackFont();
             nextface = fontMan->GetFallbackFontFace();
@@ -1247,6 +1257,7 @@ public:
             ch_glyph_index = fallback->getCharIndex(ch, 0);
             if (curface.compare(nextface) == 0)
             {
+                fontMan->CycleCounterIncr();
                 break;
             }
             if (ch_glyph_index != 0)
@@ -1895,8 +1906,9 @@ private:
     #endif
     lString8    _fallbackFontFaceArray[FALLBACK_FONT_ARRAY_SIZE];
     int         _fallbackFontFaceArrayLength;
-    int         _fallbackFontFaceArrayIterator=0;
-    int         _fallbackIndex=0;
+    int         _fallbackFontFaceArrayIterator = 0;
+    int         _fallbackIndex = 0;
+    int         _cycleCounter = 0;
 public:
 
     virtual void FallbackFontFaceNext()
@@ -1931,6 +1943,19 @@ public:
         _fallbackFontFace = _fallbackFontFaceArray[index];
     }
 
+    virtual void CycleCounterIncr()
+    {
+        _cycleCounter++;
+    }
+
+    virtual bool AllowFallbackCycle()
+    {
+        if(_cycleCounter>FALLBACK_CYCLE_MAX)
+        {
+            return false;
+        }
+        return true;
+    };
     /// get hash of installed fonts and fallback font
     virtual lUInt32 GetFontListHash(int documentId) {
         return _cache.GetFontListHash(documentId) * 75 + _fallbackFontFace.getHash();
@@ -1993,6 +2018,14 @@ public:
     /// get fallback font face from array element (returns empty string if no fallback font is set)
     virtual lString8 GetFallbackFontFaceFromArray(int index) { return _fallbackFontFaceArray[index]; }
 
+    virtual bool FallbackIsSet()
+    {
+        if (_fallbackFontFace.empty())
+        {
+            return false;
+        }
+        return true;
+    }
     /// returns fallback font for specified size
     virtual LVFontRef GetFallbackFont(int size) {
         if ( _fallbackFontFace.empty() )

@@ -305,6 +305,9 @@ public:
     virtual void FallbackFontFacePrevious() { return;};
     virtual int GetFallbackFontArraySize() { return 0 ;};
 
+    virtual void CycleCounterIncr() =0;
+
+    virtual bool AllowFallbackCycle() {return false;};
 
     /// garbage collector frees unused fonts
     virtual void gc() = 0;
@@ -326,6 +329,8 @@ public:
     virtual bool SetFallBackFace(int index) { return false;};
 
     virtual bool ResetFallBackFace() { return false;};
+
+    virtual bool FallbackIsSet(){ return false;};
 
     /// returns fallback font for specified size
     virtual LVFontRef GetFallbackFont(int /*size*/) { return LVFontRef(); }

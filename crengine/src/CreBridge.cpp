@@ -658,42 +658,35 @@ void GetSystemFallbackFontsList(lString8Collection& list)
     }
     closedir(dirp);
 }
-CreBridge::CreBridge() : StBridge(THORNYREADER_LOG_TAG)
-{
-    doc_view_ = NULL;
-#ifdef TRDEBUG
-    CRLog::setLevel(CRLog::TRACE);
-#else
-    CRLog::setLevel(CRLog::FATAL);
-#endif
-    InitFontManager(lString8::empty_str);
-    // 0 - disabled, 1 - bytecode, 2 - auto
-    fontMan->SetHintingMode(HINTING_MODE_BYTECODE_INTERPRETOR);
-    fontMan->setKerning(true);
 
+void InitFallbackFonts()
+{
 #ifdef TRDEBUG
     lString8Collection fonts;
     lString8Collection faces;
-   /*
-    lString16 fallback;
-    lString16 fallback1;
-    lString16 fallback2;
-    //fallback.append("/sdcard/arialuni.ttf");
-    fallback.append("/system/fonts/NotoSansCJK-Regular.ttc");
-    fontMan->RegisterFont(UnicodeToUtf8(fallback));
-    fallback1.append("/system/fonts/NotoNaskhArabicUI-Regular.ttf");
-    fontMan->RegisterFont(UnicodeToUtf8(fallback1));
-    fallback2.append("/system/fonts/NotoSansArmenian-Regular.ttf");
-    fontMan->RegisterFont(UnicodeToUtf8(fallback2));
-    */
+    /*
+     lString16 fallback;
+     lString16 fallback1;
+     lString16 fallback2;
+     //fallback.append("/sdcard/arialuni.ttf");
+     fallback.append("/system/fonts/NotoSansCJK-Regular.ttc");
+     fontMan->RegisterFont(UnicodeToUtf8(fallback));
+     fallback1.append("/system/fonts/NotoNaskhArabicUI-Regular.ttf");
+     fontMan->RegisterFont(UnicodeToUtf8(fallback1));
+     fallback2.append("/system/fonts/NotoSansArmenian-Regular.ttf");
+     fontMan->RegisterFont(UnicodeToUtf8(fallback2));
+     */
     fonts.add("/system/fonts/Roboto-Thin.ttf");
 
+    fonts.add("/system/fonts/NotoSansCJK-Regular.ttc");
+    //fonts.add("/system/fonts/NotoNaskhArabicUI-Regular.ttf");
 
     GetSystemFallbackFontsList(fonts);
     for (int i = 0; i < fonts.length(); ++i)
     {
         CRLog::error("asjkdhaksjd %i:%s",i,fonts.at(i).c_str());
     }
+    faces.add(lString8("Roboto"));
     for (int i = 0; i <fonts.length() ; ++i)
     {
         faces.addAll(fontMan->RegisterFont(fonts.at(i)));
@@ -709,7 +702,22 @@ CreBridge::CreBridge() : StBridge(THORNYREADER_LOG_TAG)
     // Initialize. Don't deletre this line!
     fontMan->SetFallbackFontFace(fontMan->GetFallbackFontFaceFromArray(0));
 #endif
+}
 
+CreBridge::CreBridge() : StBridge(THORNYREADER_LOG_TAG)
+{
+    doc_view_ = NULL;
+#ifdef TRDEBUG
+    CRLog::setLevel(CRLog::TRACE);
+#else
+    CRLog::setLevel(CRLog::FATAL);
+#endif
+    InitFontManager(lString8::empty_str);
+    // 0 - disabled, 1 - bytecode, 2 - auto
+    fontMan->SetHintingMode(HINTING_MODE_BYTECODE_INTERPRETOR);
+    fontMan->setKerning(true);
+
+    InitFallbackFonts();
     HyphMan::init();
 }
 

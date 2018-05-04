@@ -9,5 +9,6 @@
 #define FIRSTPAGE_BLOCKS_MAX_CHM 5
 
 #define FALLBACK_FONT_ARRAY_SIZE 500
+#define FALLBACK_CYCLE_MAX 5
 #define FONT_FOLDER "/system/fonts/"
 #endif //CRCONFIG_H
