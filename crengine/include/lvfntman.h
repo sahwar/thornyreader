@@ -332,6 +332,10 @@ public:
 
     virtual bool FallbackIsSet(){ return false;};
 
+    virtual void GetSystemFallbackFontsList(lString8Collection& list) = 0;
+
+    virtual void InitFallbackFonts() =0;
+
     /// returns fallback font for specified size
     virtual LVFontRef GetFallbackFont(int /*size*/) { return LVFontRef(); }
     /// registers font by name

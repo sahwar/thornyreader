@@ -1,24 +1,12 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <sys/types.h>
-#include <dirent.h>
+
 
 #include "include/mobihandler.h"
 #include "thornyreader/include/thornyreader.h"
 #include "thornyreader/include/StProtocol.h"
 #include "thornyreader/include/StSocket.h"
 #include "include/CreBridge.h"
-#include "include/crconfig.h"
-
-void ReadDirectory(const char *name, lString16Collection& list)
-{
-    DIR* dirp = opendir(name);
-    struct dirent * dp;
-    while ((dp = readdir(dirp)) != NULL) {
-        list.add(dp->d_name);
-    }
-    closedir(dirp);
-}
 
 static inline int CeilToEvenInt(int n)
 {
@@ -623,86 +611,7 @@ void CreBridge::processQuit(CmdRequest& request, CmdResponse& response)
     response.cmd = CMD_RES_QUIT;
 }
 
-void GetSystemFallbackFontsList(lString8Collection& list)
-{
-    DIR* dirp = opendir(FONT_FOLDER);
-    struct dirent * dp;
-    lString8 temp;
-    while ((dp = readdir(dirp)) != NULL) {
-        temp.clear();
-        temp.append(FONT_FOLDER);
-        temp.append(dp->d_name);
-        if (!(temp.endsWith(".ttf") || temp.endsWith(".ttc")))
-        { continue;}
-        if (temp.endsWith("Bold.ttf")||temp.endsWith("Bold.ttc"))
-        {continue;}
-        if (temp.endsWith("Italic.ttf")||temp.endsWith("Italic.ttc"))
-        {continue;}
-        if (temp.endsWith("Black.ttf")||temp.endsWith("Black.ttc"))
-        {continue;}
-        if (temp.endsWith("Light.ttf")||temp.endsWith("Light.ttc"))
-        {continue;}
-        if (temp.endsWith("Medium.ttf")||temp.endsWith("Medium.ttc"))
-        {continue;}
-        if (temp.endsWith("Thin.ttf")||temp.endsWith("Thin.ttc"))
-        {continue;}
-        if (temp.pos("Serif")!=-1)
-        {continue;}
-        if (temp.pos("UI")!=-1)
-        {continue;}
-        if (temp.pos("Emoji")!=-1)
-        {continue;}
-        if (temp.pos("Noto")==-1)
-        {continue;}
-        list.add(temp);
-    }
-    closedir(dirp);
-}
 
-void InitFallbackFonts()
-{
-#ifdef TRDEBUG
-    lString8Collection fonts;
-    lString8Collection faces;
-    /*
-     lString16 fallback;
-     lString16 fallback1;
-     lString16 fallback2;
-     //fallback.append("/sdcard/arialuni.ttf");
-     fallback.append("/system/fonts/NotoSansCJK-Regular.ttc");
-     fontMan->RegisterFont(UnicodeToUtf8(fallback));
-     fallback1.append("/system/fonts/NotoNaskhArabicUI-Regular.ttf");
-     fontMan->RegisterFont(UnicodeToUtf8(fallback1));
-     fallback2.append("/system/fonts/NotoSansArmenian-Regular.ttf");
-     fontMan->RegisterFont(UnicodeToUtf8(fallback2));
-     */
-    fonts.add("/system/fonts/Roboto-Thin.ttf");
-
-    fonts.add("/system/fonts/NotoSansCJK-Regular.ttc");
-    //fonts.add("/system/fonts/NotoNaskhArabicUI-Regular.ttf");
-
-    GetSystemFallbackFontsList(fonts);
-    for (int i = 0; i < fonts.length(); ++i)
-    {
-        CRLog::error("asjkdhaksjd %i:%s",i,fonts.at(i).c_str());
-    }
-    faces.add(lString8("Roboto"));
-    for (int i = 0; i <fonts.length() ; ++i)
-    {
-        faces.addAll(fontMan->RegisterFont(fonts.at(i)));
-    }
-
-    //fontMan->SetFallbackFontFace(lString8("Roboto")); //default
-    fontMan->FallbackArrayRestart();
-    for (int i = 0; i < faces.length(); ++i)
-    {
-        //CRLog::error("FACES %d:%s",i,faces.at(i).c_str());
-        fontMan->AddFallbackFontFaceIntoArray(faces.at(i));
-    }
-    // Initialize. Don't deletre this line!
-    fontMan->SetFallbackFontFace(fontMan->GetFallbackFontFaceFromArray(0));
-#endif
-}
 
 CreBridge::CreBridge() : StBridge(THORNYREADER_LOG_TAG)
 {
@@ -717,7 +626,7 @@ CreBridge::CreBridge() : StBridge(THORNYREADER_LOG_TAG)
     fontMan->SetHintingMode(HINTING_MODE_BYTECODE_INTERPRETOR);
     fontMan->setKerning(true);
 
-    InitFallbackFonts();
+    fontMan->InitFallbackFonts();
     HyphMan::init();
 }
 

@@ -13,6 +13,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <sys/types.h>
+#include <dirent.h>
+#include "include/crconfig.h"
+
 #include "include/lvfntman.h"
 #include "include/lvstyles.h"
 #define GAMMA_TABLES_IMPL
@@ -1909,6 +1913,7 @@ private:
     int         _fallbackFontFaceArrayIterator = 0;
     int         _fallbackIndex = 0;
     int         _cycleCounter = 0;
+    bool        _fallbackFontsInitalized = false;
 public:
 
     virtual void FallbackFontFaceNext()
@@ -2041,6 +2046,86 @@ public:
         if ( !item->getFont().isNull() )
             return item->getFont();
         return GetFont(size, 400, false, css_ff_sans_serif, _fallbackFontFace, -1);
+    }
+
+    virtual void GetSystemFallbackFontsList(lString8Collection& list)
+    {
+        DIR* dirp = opendir(FONT_FOLDER);
+        struct dirent * dp;
+        lString8 temp;
+        while ((dp = readdir(dirp)) != NULL) {
+            temp.clear();
+            temp.append(FONT_FOLDER);
+            temp.append(dp->d_name);
+            if (!(temp.endsWith(".ttf") || temp.endsWith(".ttc")))
+            { continue;}
+            if (temp.endsWith("Bold.ttf")||temp.endsWith("Bold.ttc"))
+            {continue;}
+            if (temp.endsWith("Italic.ttf")||temp.endsWith("Italic.ttc"))
+            {continue;}
+            if (temp.endsWith("Black.ttf")||temp.endsWith("Black.ttc"))
+            {continue;}
+            if (temp.endsWith("Light.ttf")||temp.endsWith("Light.ttc"))
+            {continue;}
+            if (temp.endsWith("Medium.ttf")||temp.endsWith("Medium.ttc"))
+            {continue;}
+            if (temp.endsWith("Thin.ttf")||temp.endsWith("Thin.ttc"))
+            {continue;}
+            if (temp.pos("Serif")!=-1)
+            {continue;}
+            if (temp.pos("UI")!=-1)
+            {continue;}
+            if (temp.pos("Emoji")!=-1)
+            {continue;}
+            if (temp.pos("Noto")==-1)
+            {continue;}
+            list.add(temp);
+        }
+        closedir(dirp);
+    }
+
+    virtual void InitFallbackFonts()
+    {
+#ifdef TRDEBUG
+        if (_fallbackFontsInitalized)
+        {
+            return;
+        }
+        CRLog::error("____________________________________________________________InitFallbackFonts() start");
+        lString8Collection fonts;
+        lString8Collection faces;
+
+        fonts.add("/system/fonts/Roboto-Thin.ttf");
+
+        fonts.add("/system/fonts/NotoSansCJK-Regular.ttc");
+        //fonts.add("/system/fonts/NotoNaskhArabicUI-Regular.ttf");
+
+        GetSystemFallbackFontsList(fonts);
+        for (int i = 0; i < fonts.length(); ++i)
+        {
+            CRLog::error("asjkdhaksjd %i:%s",i,fonts.at(i).c_str());
+        }
+        faces.add(lString8("Roboto"));
+        for (int i = 0; i <fonts.length() ; ++i)
+        {
+            faces.addAll(fontMan->RegisterFont(fonts.at(i)));
+        }
+
+        //fontMan->SetFallbackFontFace(lString8("Roboto")); //default
+        fontMan->FallbackArrayRestart();
+        for (int i = 0; i < faces.length(); ++i)
+        {
+            //CRLog::error("FACES %d:%s",i,faces.at(i).c_str());
+            fontMan->AddFallbackFontFaceIntoArray(faces.at(i));
+        }
+        // Initialize. Don't deletre this line!
+        if (_fallbackFontFaceArrayLength>0)
+        {
+            fontMan->SetFallbackFontFace(fontMan->GetFallbackFontFaceFromArray(0));
+        }
+        _fallbackFontsInitalized = true;
+        CRLog::error("____________________________________________________________InitFallbackFonts() stop");
+#endif
     }
 
     bool isBitmapModeForSize( int size )
