@@ -300,7 +300,7 @@ protected:
     bool _allowKerning;
     hinting_mode_t _hintingMode;
 public:
-    int font_size_;
+    int font_size_=24;
     virtual void FallbackFontFaceNext() { return;};
     virtual void FallbackFontFacePrevious() { return;};
     virtual int GetFallbackFontArraySize() { return 0 ;};
