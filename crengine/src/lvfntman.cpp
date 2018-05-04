@@ -2017,13 +2017,6 @@ public:
         return true;
     }
 
-    virtual void FallbackArrayRestart()
-    {
-        _fallbackIndex=0;
-        _fallbackFontFaceArrayLength =0;
-        _fallbackFontFaceArrayIterator=0;
-    };
-
     /// get fallback font face (returns empty string if no fallback font is set)
     virtual lString8 GetFallbackFontFace() { return _fallbackFontFace; }
 
@@ -2107,7 +2100,7 @@ public:
             faces.addAll(fontMan->RegisterFont(fonts.at(i)));
         }
 
-        fontMan->FallbackArrayRestart();
+
         for (int i = 0; i < faces.length(); ++i)
         {
             //CRLog::error("FACES %d:%s",i,faces.at(i).c_str());

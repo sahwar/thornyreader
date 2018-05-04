@@ -319,7 +319,6 @@ public:
     /// set fallback font face (returns true if specified font is found)
     virtual bool AddFallbackFontFaceIntoArray(lString8 face) { CR_UNUSED(face); return false; }
 
-    virtual void FallbackArrayRestart(){ return;};
     /// get fallback font face (returns empty string if no fallback font is set)
     virtual lString8 GetFallbackFontFace() { return lString8::empty_str; }
 
