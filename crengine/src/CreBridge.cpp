@@ -635,6 +635,8 @@ CreBridge::CreBridge() : StBridge(THORNYREADER_LOG_TAG)
     fontMan->setKerning(true);
 
 #ifdef TRDEBUG
+    lString16Collection fonts;
+   /*
     lString16 fallback;
     lString16 fallback1;
     lString16 fallback2;
@@ -645,6 +647,15 @@ CreBridge::CreBridge() : StBridge(THORNYREADER_LOG_TAG)
     fontMan->RegisterFont(UnicodeToUtf8(fallback1));
     fallback2.append("/system/fonts/NotoSansArmenian-Regular.ttf");
     fontMan->RegisterFont(UnicodeToUtf8(fallback2));
+    */
+    fonts.add("/system/fonts/NotoSansCJK-Regular.ttc");
+    fonts.add("/system/fonts/NotoNaskhArabicUI-Regular.ttf");
+    fonts.add("/system/fonts/NotoSansArmenian-Regular.ttf");
+    for (int i = 0; i <fonts.length() ; ++i)
+    {
+        fontMan->RegisterFont(UnicodeToUtf8((fonts.at(i))));
+    }
+
     lString16Collection collection;
     collection.add(lString16("Noto Sans Mono CJK KR"));
     collection.add(lString16("Noto Sans Mono CJK TC"));
