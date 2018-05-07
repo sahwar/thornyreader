@@ -3559,8 +3559,9 @@ LvHtmlParser::LvHtmlParser(LVStreamRef stream, LvXMLParserCallback* callback)
 }
 
 LvHtmlParser::LvHtmlParser(LVStreamRef stream, LvXMLParserCallback* callback , bool need_coverpage)
-		: LvXmlParser(stream, callback) {
+		: LvXmlParser(stream, callback , true, false, need_coverpage) {
 	possible_capitalized_tags_ = true;
+    this-> need_coverpage_ = need_coverpage ;
 }
 LvHtmlParser::~LvHtmlParser()
 {

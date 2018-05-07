@@ -346,6 +346,7 @@ public:
     virtual bool Parse();
     LvHtmlParser(LVStreamRef stream, LvXMLParserCallback * callback);
     LvHtmlParser(LVStreamRef stream, LvXMLParserCallback * callback, bool need_coverpage);
+    bool need_coverpage_;
     virtual ~LvHtmlParser();
 };
 

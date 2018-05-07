@@ -541,11 +541,12 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
     }
     delete parser;
 #ifdef TRDEBUG
-#if 0
-	CRLog::error("dumping domtree");
+if (DUMP_DOMTREE == 1)
+{
+    CRLog::error("dumping domtree");
     LVStreamRef out = LVOpenFileStream("/data/data/org.readera/files/temp.xml", LVOM_WRITE);
     cr_dom_->saveToStream(out, NULL, true);
-#endif
+}
 #if 0
     lString16 stylesheet = cr_dom_->createXPointer(L"/FictionBook/stylesheet").getText();
     if (!stylesheet.empty() && cfg_embeded_styles_) {
@@ -2401,13 +2402,19 @@ void CreBridge::processMetadata(CmdRequest &request, CmdResponse &response)
 		if (!thumb_image.isNull() && thumb_image->GetWidth() > 0 && thumb_image->GetHeight() > 0)
 		{
 			thumb_width = thumb_image->GetWidth();
-			thumb_height = thumb_image->GetHeight();
-			unsigned char *pixels = doc_thumb->newByteArray(thumb_width * thumb_height * 4);
-			LVColorDrawBuf *buf = new LVColorDrawBuf(thumb_width, thumb_height, pixels, 32);
-			buf->Draw(thumb_image, 0, 0, thumb_width, thumb_height, false);
-			convertBitmap(buf);
-			delete buf;
-			thumb_image.Clear();
+            thumb_height = thumb_image->GetHeight();
+            if(thumb_height > thumb_width)
+            {
+                if(thumb_height >= 200 && thumb_width >= 140)
+                {
+                    unsigned char *pixels = doc_thumb->newByteArray(thumb_width * thumb_height * 4);
+                    LVColorDrawBuf *buf = new LVColorDrawBuf(thumb_width, thumb_height, pixels, 32);
+                    buf->Draw(thumb_image, 0, 0, thumb_width, thumb_height, false);
+                    convertBitmap(buf);
+                    delete buf;
+                    thumb_image.Clear();
+                }
+            }
 		}
 	}
 	response.addData(doc_thumb);
