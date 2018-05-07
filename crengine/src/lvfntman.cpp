@@ -2077,8 +2077,11 @@ public:
             {continue;}
             if (temp.pos("Emoji")!=-1)
             {continue;}
-            if (temp.pos("Noto")==-1)
-            {continue;}
+            /*if (temp.pos("Noto")!=-1)  // Noto family is preferred
+            {
+                list.add(temp);
+                continue;
+            }*/
             list.add(temp);
         }
         closedir(dirp);
