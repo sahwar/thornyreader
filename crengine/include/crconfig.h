@@ -11,4 +11,6 @@
 #define FALLBACK_FONT_ARRAY_SIZE 500
 #define FALLBACK_CYCLE_MAX 5
 #define FONT_FOLDER "/system/fonts/"
+#define FALLBACK_FONTS_ENABLE 1
+
 #endif //CRCONFIG_H

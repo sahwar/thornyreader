@@ -325,12 +325,6 @@ public:
     /// get fallback font face (returns empty string if no fallback font is set)
     virtual lString8 GetFallbackFontFaceFromArray(int index) { return lString8::empty_str; }
 
-    virtual bool SetFallBackFace(int index) { return false;};
-
-    virtual bool ResetFallBackFace() { return false;};
-
-    virtual bool FallbackIsSet(){ return false;};
-
     virtual void GetSystemFallbackFontsList(lString8Collection& list) = 0;
 
     virtual void InitFallbackFonts() =0;

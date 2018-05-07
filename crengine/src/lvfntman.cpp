@@ -987,17 +987,15 @@ public:
             glyph_index = getCharIndex(code, def_char);
             return getGlyphInfoItem(glyph_index, glyph);
         }
-        fontMan->InitFallbackFonts();
-        LVFont *fallback = getFallbackFont();
-        if (!fallback)
+        if  (FALLBACK_FONTS_ENABLE)
         {
-            // No fallback
-            if (!fontMan->FallbackIsSet())
-            {
-                glyph_index = getCharIndex(code, def_char);
-                return getGlyphInfoItem( glyph_index, glyph);
-            }
-            return false;
+            fontMan->InitFallbackFonts();
+        }
+        LVFont *fallback = getFallbackFont();
+        if (!fallback) // Fallback not initialized
+        {
+            glyph_index = getCharIndex(code, def_char);
+            return getGlyphInfoItem( glyph_index, glyph);
         }
         glyph_index = fallback->getCharIndex(code, 0);
 
@@ -1236,15 +1234,10 @@ public:
             return GetGlyphItem(ch, ch_glyph_index);
         }
         LVFont *fallback = getFallbackFont();
-        if (!fallback)
+        if (!fallback) // Fallback not initialized
         {
-            // No fallback
-            if (!fontMan->FallbackIsSet())
-            {
-                ch_glyph_index = getCharIndex(ch, def_char);
-                return GetGlyphItem(ch, ch_glyph_index);
-            }
-            return NULL;
+            ch_glyph_index = getCharIndex(ch, def_char);
+            return GetGlyphItem(ch, ch_glyph_index);
         }
         ch_glyph_index = fallback->getCharIndex(ch, 0);
 
