@@ -67,6 +67,8 @@ bool ImportMOBIDocNew(const char *absolute_path,const char* epubnewpath)
     //int a = dump_rawml_parts(rawml, FULL_PATH);
 #endif
     ConvertMOBIDocToEpub(rawml,epubnewpath);
+    mobi_free_rawml(rawml);
+    mobi_free(m);
     return true;
 }
 
@@ -119,6 +121,7 @@ mobiresponse GetMobiMetaFromFile(const char *fullpath)
     }
     //GetMobiMeta(m);
     a = GetMobiMetaSummary(m);
+    mobi_free(m);
     return a;
 }
 
@@ -198,12 +201,18 @@ LVStreamRef GetMobiCoverPageToStream(const char *fullpath) {
             curr = curr->next;
         }
         if (!last) {
+            mobi_free_rawml(rawml);
+            mobi_free(m);
             return LVStreamRef();
         }
         LVStreamRef img;
         LVStreamRef res = LVCreateMemoryStream(last->data, static_cast<int>(last->size));
+        mobi_free_rawml(rawml);
+        mobi_free(m);
         return res;
     }
+    mobi_free_rawml(rawml);
+    mobi_free(m);
     return LVStreamRef();
 }
 
