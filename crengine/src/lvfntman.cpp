@@ -1022,6 +1022,7 @@ public:
             }
             if (glyph_index != 0)
             {
+                CRLog::trace("Fallback face: %s", nextface.c_str());
                 return fallback->getGlyphInfoItem(glyph_index, glyph);
             }
         }
@@ -1264,6 +1265,7 @@ public:
             }
             if (ch_glyph_index != 0)
             {
+                CRLog::trace("Fallback face: %s", nextface.c_str());
                 return fallback->GetGlyphItem(ch, ch_glyph_index);
             }
         }
@@ -2086,6 +2088,7 @@ public:
         {
             return;
         }
+        CRLog::trace("Fallback fonts initialisation...");
         lString8Collection fonts;
         lString8Collection faces;
 
@@ -2103,7 +2106,13 @@ public:
 
         if (_fallbackFontFaceArrayLength > 0)
         {
-            SetFallbackFontFace(GetFallbackFontFaceFromArray(0));
+            lString8 fallbackface = GetFallbackFontFaceFromArray(0);
+            SetFallbackFontFace(fallbackface);
+            CRLog::trace("Fallback face: %s",fallbackface.c_str());
+        }
+        else
+        {
+            CRLog::error("No fallback faces found!");
         }
         _fallbackFontsInitalized = true;
     }
