@@ -178,6 +178,7 @@ tt, samp, kbd {
 
 blockquote {
   display: block;
+  font-style: italic;
   margin-left: 1.5em;
   margin-right: 1.5em;
   margin-top: 0.5em;
@@ -357,5 +358,10 @@ document-info, publish-info, custom-info {
 
 head, style, form, script {
   display: none;
+}
+
+pagebreak {
+  page-break-after: always;
+  height: 0;
 }
 )delimiter";
