@@ -2854,7 +2854,7 @@ bool LvXmlParser::Parse()
 
 	        if(need_coverpage_)
 			{
-                CRLog::trace("LvXmlParser: text fragments read : %d", fragments_counter);
+                //CRLog::trace("LvXmlParser: text fragments read : %d", fragments_counter);
 				if (fragments_counter >= FIRSTPAGE_BLOCKS_MAX)
 				{
 					firstpage_thumb_num_reached = true;
