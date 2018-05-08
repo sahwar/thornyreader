@@ -145,3 +145,22 @@ bool create_epub(const MOBIRawml *rawml, const char *fullpath) {
     printlogcat("Create_epub: done!");
     return true;
 }
+
+int MOBIGetCoverImageId(MOBIData *m)
+{
+    if (m->eh == NULL) {
+        return -2;
+    }
+    const MOBIExthHeader *exth = m->eh;
+    while (exth != NULL)
+    {
+        //mobi_opf_copy_meta(const MOBIData *m, const MOBIExthHeader *exth, OPFmeta **meta, const char *name) {
+        MOBIExthMeta exth_tag = mobi_get_exthtagmeta_by_tag(exth->tag);
+        if (exth_tag.tag == EXTH_COVEROFFSET)
+        {
+            const uint32_t val32 = mobi_decode_exthvalue(exth->data, exth->size);
+            return val32;
+        }
+        exth = exth->next;
+    }
+}

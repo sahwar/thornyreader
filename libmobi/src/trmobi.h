@@ -17,6 +17,7 @@ extern "C"
 {
 #endif
     MOBI_EXPORT bool create_epub(const MOBIRawml *rawml, const char *fullpath);
+    MOBI_EXPORT int MOBIGetCoverImageId(MOBIData *m);
 #ifdef __cplusplus
 }
 #endif

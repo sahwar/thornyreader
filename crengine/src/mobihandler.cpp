@@ -181,9 +181,10 @@ LVStreamRef GetMobiCoverPageToStream(const char *fullpath) {
         mobi_free_rawml(rawml);
         return LVStreamRef();
     }
+    int coverimageid = MOBIGetCoverImageId(m);
     if (rawml->resources != NULL)
     {
-        MOBIPart *last = nullptr;
+        MOBIPart *result = nullptr;
         MOBIPart *curr = rawml->resources;
         while (curr != NULL)
         {
@@ -195,18 +196,15 @@ LVStreamRef GetMobiCoverPageToStream(const char *fullpath) {
                     || file_meta.type == T_BMP
                     || file_meta.type == T_PNG)
                 {
-                    last = curr;
+                    if (curr->uid == coverimageid)
+                    {
+                        result = curr;
+                    }
                 }
             }
             curr = curr->next;
         }
-        if (!last) {
-            mobi_free_rawml(rawml);
-            mobi_free(m);
-            return LVStreamRef();
-        }
-        LVStreamRef img;
-        LVStreamRef res = LVCreateMemoryStream(last->data, static_cast<int>(last->size));
+        LVStreamRef res = LVCreateMemoryStream(result->data, static_cast<int>(result->size));
         mobi_free_rawml(rawml);
         mobi_free(m);
         return res;
@@ -375,3 +373,4 @@ void GetMobiMeta(const MOBIData *m) {
         if(m->mh->unknown20) { CRLog::trace("unknown: %u", *m->mh->unknown20); }
     }
 }
+
