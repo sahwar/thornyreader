@@ -13,6 +13,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <sys/types.h>
+#include <dirent.h>
+#include "include/crconfig.h"
+
 #include "include/lvfntman.h"
 #include "include/lvstyles.h"
 #define GAMMA_TABLES_IMPL
@@ -26,7 +30,7 @@
 // freetype font glyph buffer size, in bytes
 // 0x20000 (_WIN32, LBOOK), 0x40000 (LINUX)
 #define GLYPH_CACHE_SIZE 0x40000
-#define DEBUG_FONT_MAN 1
+#define DEBUG_FONT_MAN 0
 #if (DEBUG_FONT_MAN==1)
 #define DEBUG_FONT_MAN_LOG_FILE "data/data/org.readera/files/fontmanlog.log"
 #endif
@@ -724,7 +728,8 @@ public:
     /// get fallback font for this font
     LVFont * getFallbackFont() {
         if ( _fallbackFontIsSet )
-            return _fallbackFont.get();
+        {return _fallbackFont.get();}
+
         if ( fontMan->GetFallbackFontFace()!=_faceName ) // to avoid circular link, disable fallback for fallback font
             _fallbackFont = fontMan->GetFallbackFont(_size);
         _fallbackFontIsSet = true;
@@ -969,20 +974,64 @@ public:
     */
     virtual bool getGlyphInfo(lUInt16 code, glyph_info_t * glyph, lChar16 def_char=0)
     {
-        //FONT_GUARD
-        int glyph_index = getCharIndex( code, 0 );
-        if ( glyph_index==0 ) {
-            LVFont * fallback = getFallbackFont();
-            if ( !fallback ) {
-                // No fallback
-                glyph_index = getCharIndex( code, def_char );
-                if ( glyph_index==0 )
-                    return false;
-            } else {
-                // Fallback
-                return fallback->getGlyphInfo(code, glyph, def_char);
+        int glyph_index = getCharIndex(code, 0);
+
+        if (glyph_index != 0)
+        {
+            return getGlyphInfoItem(glyph_index, glyph);
+        }
+
+        //removing those symbols because of alignment width check
+        if ((code == 65292) || (code == 13058) || (code == 65281))
+        {
+            glyph_index = getCharIndex(code, def_char);
+            return getGlyphInfoItem(glyph_index, glyph);
+        }
+        if  (FALLBACK_FONTS_ENABLE)
+        {
+            fontMan->InitFallbackFonts();
+        }
+        LVFont *fallback = getFallbackFont();
+        if (!fallback) // Fallback not initialized
+        {
+            glyph_index = getCharIndex(code, def_char);
+            return getGlyphInfoItem( glyph_index, glyph);
+        }
+        glyph_index = fallback->getCharIndex(code, 0);
+
+        if (glyph_index != 0)
+        {
+            return fallback->getGlyphInfoItem(glyph_index, glyph);
+        }
+        lString8 nextface;
+        lString8 curface = fontMan->GetFallbackFontFace();
+        fontMan->GetFallbackFontArraySize();
+        while (fontMan->AllowFallbackCycle())
+        {
+            //CRLog::error("Cycle!");
+
+            fallback = nextFallbackFont();
+            nextface = fontMan->GetFallbackFontFace();
+
+            //CRLog::error("Now it's : %s", nextface.c_str());
+            glyph_index = fallback->getCharIndex(code, 0);
+            if (curface.compare(nextface) == 0)
+            {
+                fontMan->CycleCounterIncr();
+                break;
+            }
+            if (glyph_index != 0)
+            {
+                CRLog::trace("Fallback face: %s", nextface.c_str());
+                return fallback->getGlyphInfoItem(glyph_index, glyph);
             }
         }
+        glyph_index = fallback->getCharIndex(code, def_char);
+        return fallback->getGlyphInfoItem( glyph_index, glyph);
+    }
+
+    virtual bool getGlyphInfoItem(int glyph_index, glyph_info_t * glyph)
+    {
         int flags = FT_LOAD_DEFAULT;
         flags |= (!_drawMonochrome ? FT_LOAD_TARGET_NORMAL : FT_LOAD_TARGET_MONO);
         if (_hintingMode == HINTING_MODE_AUTOHINT)
@@ -1178,17 +1227,18 @@ public:
     */
     virtual LVFontGlyphCacheItem *getGlyph(lUInt16 ch, lChar16 def_char=0)
     {
+        //this function is being called AFTER GetGlyphInfo,
+        //so we don't need to initialize fallback fonts here
         FT_UInt ch_glyph_index = getCharIndex(ch, 0);
         if (ch_glyph_index != 0)
         {
             return GetGlyphItem(ch, ch_glyph_index);
         }
         LVFont *fallback = getFallbackFont();
-        if (!fallback)
+        if (!fallback) // Fallback not initialized
         {
-            // No fallback
-            CRLog::error("Fallback is not set!");
-            return NULL;
+            ch_glyph_index = getCharIndex(ch, def_char);
+            return GetGlyphItem(ch, ch_glyph_index);
         }
         ch_glyph_index = fallback->getCharIndex(ch, 0);
 
@@ -1199,18 +1249,23 @@ public:
         lString8 nextface;
         lString8 curface = fontMan->GetFallbackFontFace();
         fontMan->GetFallbackFontArraySize();
-        while (true)
+        while (fontMan->AllowFallbackCycle())
         {
+            //CRLog::error("Cycle!");
+
             fallback = nextFallbackFont();
             nextface = fontMan->GetFallbackFontFace();
 
+            //CRLog::error("Now it's : %s", nextface.c_str());
             ch_glyph_index = fallback->getCharIndex(ch, 0);
             if (curface.compare(nextface) == 0)
             {
+                fontMan->CycleCounterIncr();
                 break;
             }
             if (ch_glyph_index != 0)
             {
+                CRLog::trace("Fallback face: %s", nextface.c_str());
                 return fallback->GetGlyphItem(ch, ch_glyph_index);
             }
         }
@@ -1855,21 +1910,20 @@ private:
     #endif
     lString8    _fallbackFontFaceArray[FALLBACK_FONT_ARRAY_SIZE];
     int         _fallbackFontFaceArrayLength;
-    int         _fallbackIndex=0;
+    int         _fallbackFontFaceArrayIterator = 0;
+    int         _fallbackIndex = 0;
+    int         _cycleCounter = 0;
+    bool        _fallbackFontsInitalized = false;
 public:
 
     virtual void FallbackFontFaceNext()
     {
-        CRLog::error("_fallbackIndex CURRENT =%d",_fallbackIndex);
         _fallbackIndex++;
-        CRLog::error("_fallbackIndex AFTER INCREMENTION =%d",_fallbackIndex);
         if (_fallbackIndex>_fallbackFontFaceArrayLength-1)
         {
             _fallbackIndex=0;
-            CRLog::error("_fallbackIndex>_fallbackFontFaceArrayLength-1");
         }
         _fallbackFontFace = _fallbackFontFaceArray[_fallbackIndex];
-        CRLog::error("_fallbackFontFace = %s",_fallbackFontFace.c_str());
     }
 
     virtual void FallbackFontFacePrevious()
@@ -1894,6 +1948,19 @@ public:
         _fallbackFontFace = _fallbackFontFaceArray[index];
     }
 
+    virtual void CycleCounterIncr()
+    {
+        _cycleCounter++;
+    }
+
+    virtual bool AllowFallbackCycle()
+    {
+        if(_cycleCounter>FALLBACK_CYCLE_MAX)
+        {
+            return false;
+        }
+        return true;
+    };
     /// get hash of installed fonts and fallback font
     virtual lUInt32 GetFontListHash(int documentId) {
         return _cache.GetFontListHash(documentId) * 75 + _fallbackFontFace.getHash();
@@ -1903,7 +1970,7 @@ public:
     virtual bool SetFallbackFontFace( lString8 face ) {
         if ( face!=_fallbackFontFace ) {
             _cache.clearFallbackFonts();
-            CRLog::trace("Looking for fallback font %s", face.c_str());
+          //  CRLog::trace("Looking for fallback font %s", face.c_str());
             LVFontCacheItem * item = _cache.findFallback( face, -1 );
             if (!item)
             {
@@ -1917,27 +1984,33 @@ public:
 
 
     /// set fallback font array element
-    virtual bool SetFallbackFontFaceInArray(lString8 face, int index)
+    virtual bool AddFallbackFontFaceIntoArray(lString8 face)
     {
-        _cache.clearFallbackFonts();
+        if (face.empty())
+        {
+            return false;
+        }
+        if (face.pos("Mono")!=-1 || face.pos("Coming Soon")!=-1)
+        {
+            return false;
+        }
+        _cache.clearFallbackFonts(); //TODO why we need it here idunno
+#if (DEBUG_FONT_MAN == 1)
         CRLog::trace("Looking for fallback font %s", face.c_str());
+#endif
         LVFontCacheItem *item = _cache.findFallback(face, -1);
-        _fallbackFontFaceArrayLength++;
+
         if (!item)
         {
             CRLog::error("Face %s not found", face.c_str());
             face.clear();
             return false;
         }
-        _fallbackFontFaceArray[index] = face;
-        return !_fallbackFontFace.empty();
+        _fallbackFontFaceArray[_fallbackFontFaceArrayIterator] = face;
+        _fallbackFontFaceArrayLength++;
+        _fallbackFontFaceArrayIterator++;
+        return true;
     }
-
-    virtual void FallbackArrayRestart()
-    {
-        _fallbackIndex=0;
-        _fallbackFontFaceArrayLength =0;
-    };
 
     /// get fallback font face (returns empty string if no fallback font is set)
     virtual lString8 GetFallbackFontFace() { return _fallbackFontFace; }
@@ -1945,6 +2018,14 @@ public:
     /// get fallback font face from array element (returns empty string if no fallback font is set)
     virtual lString8 GetFallbackFontFaceFromArray(int index) { return _fallbackFontFaceArray[index]; }
 
+    virtual bool FallbackIsSet()
+    {
+        if (_fallbackFontFace.empty())
+        {
+            return false;
+        }
+        return true;
+    }
     /// returns fallback font for specified size
     virtual LVFontRef GetFallbackFont(int size) {
         if ( _fallbackFontFace.empty() )
@@ -1960,6 +2041,80 @@ public:
         if ( !item->getFont().isNull() )
             return item->getFont();
         return GetFont(size, 400, false, css_ff_sans_serif, _fallbackFontFace, -1);
+    }
+
+    virtual void GetSystemFallbackFontsList(lString8Collection& list)
+    {
+        DIR* dirp = opendir(FONT_FOLDER);
+        struct dirent * dp;
+        lString8 temp;
+        while ((dp = readdir(dirp)) != NULL) {
+            temp.clear();
+            temp.append(FONT_FOLDER);
+            temp.append(dp->d_name);
+            if (!(temp.endsWith(".ttf") || temp.endsWith(".ttc")))
+            { continue;}
+            if (temp.endsWith("Bold.ttf")||temp.endsWith("Bold.ttc"))
+            {continue;}
+            if (temp.endsWith("Italic.ttf")||temp.endsWith("Italic.ttc"))
+            {continue;}
+            if (temp.endsWith("Black.ttf")||temp.endsWith("Black.ttc"))
+            {continue;}
+            if (temp.endsWith("Light.ttf")||temp.endsWith("Light.ttc"))
+            {continue;}
+            if (temp.endsWith("Medium.ttf")||temp.endsWith("Medium.ttc"))
+            {continue;}
+            if (temp.endsWith("Thin.ttf")||temp.endsWith("Thin.ttc"))
+            {continue;}
+            if (temp.pos("Serif")!=-1)
+            {continue;}
+            if (temp.pos("UI")!=-1)
+            {continue;}
+            if (temp.pos("Emoji")!=-1)
+            {continue;}
+            /*if (temp.pos("Noto")!=-1)  // Noto family is preferred
+            {
+                list.add(temp);
+                continue;
+            }*/
+            list.add(temp);
+        }
+        closedir(dirp);
+    }
+
+    virtual void InitFallbackFonts()
+    {
+        if (_fallbackFontsInitalized)
+        {
+            return;
+        }
+        CRLog::trace("Fallback fonts initialisation...");
+        lString8Collection fonts;
+        lString8Collection faces;
+
+        GetSystemFallbackFontsList(fonts);
+        faces.add(lString8("Roboto"));//default
+        for (int i = 0; i < fonts.length(); ++i)
+        {
+            faces.addAll(RegisterFont(fonts.at(i)));
+        }
+
+        for (int i = 0; i < faces.length(); ++i)
+        {
+            AddFallbackFontFaceIntoArray(faces.at(i));
+        }
+
+        if (_fallbackFontFaceArrayLength > 0)
+        {
+            lString8 fallbackface = GetFallbackFontFaceFromArray(0);
+            SetFallbackFontFace(fallbackface);
+            CRLog::trace("Fallback face: %s",fallbackface.c_str());
+        }
+        else
+        {
+            CRLog::error("No fallback faces found!");
+        }
+        _fallbackFontsInitalized = true;
     }
 
     bool isBitmapModeForSize( int size )
@@ -2546,8 +2701,9 @@ public:
         return res;
 	}
 
-    virtual bool RegisterFont( lString8 name )
+    virtual lString8Collection RegisterFont( lString8 name )
     {
+        lString8Collection collection;
         lString8 fname = makeFontFileName( name );
         //CRLog::trace("font file name : %s", fname.c_str());
 #if (DEBUG_FONT_MAN == 1)
@@ -2633,7 +2789,8 @@ public:
 
 			if ( _cache.findDuplicate( &def ) ) {
                 CRLog::info("Font definition is duplicate %s", def.getName().c_str());
-                return false;
+                lString8Collection empty;
+                return empty;
             }
             _cache.update( &def, LVFontRef(NULL) );
             if (scal && !def.getItalic()) {
@@ -2643,12 +2800,13 @@ public:
                     _cache.update(&newDef, LVFontRef(NULL));
             }
             res = true;
+            collection.add(def.getTypeFace());
 
             if ( index>=num_faces-1 )
                 break;
         }
 
-        return res;
+        return collection;
     }
 
     virtual bool Init(lString8 path)

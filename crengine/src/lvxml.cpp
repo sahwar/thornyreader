@@ -2595,6 +2595,7 @@ bool LvXmlParser::Parse()
     bool close_flag = false;
     bool q_flag = false;
     bool body_started = false;
+    bool in_blockquote = false;
 	bool firstpage_thumb_num_reached = false;
     int fragments_counter = 0;
     lString16 tagname;
@@ -2690,6 +2691,45 @@ bool LvXmlParser::Parse()
                     //}}
                 }
 
+                if(tagname=="blockquote")
+                {
+                    if (!in_blockquote && !close_flag)
+                    {
+                        in_blockquote = true;
+                    }
+                    else if (in_blockquote && !close_flag)
+                    {
+                        if (SkipTillChar('>'))
+                        {
+                            m_state = ps_text;
+                            ReadCharFromBuffer();
+                        }
+                        break;
+                    }
+                    else if (in_blockquote && close_flag)
+                    {
+                        in_blockquote = false;
+                    }
+                    else if (!in_blockquote && close_flag)
+                    {
+                        if (SkipTillChar('>'))
+                        {
+                            m_state = ps_text;
+                            ReadCharFromBuffer();
+                        }
+                        break;
+                    }
+                }
+
+                if(tagname=="pagebreak")
+                {
+                    tagns = "";
+                    if (close_flag)
+                    {
+                        callback_->OnText(L"\u200B", 1, flags);
+                    }
+                }
+
                 if (close_flag)
                 {
                     callback_->OnTagClose(tagns.c_str(), tagname.c_str());
@@ -2709,7 +2749,7 @@ bool LvXmlParser::Parse()
                     in_xml_tag = false;
                 }
                 callback_->OnTagOpen(tagns.c_str(), tagname.c_str());
-                //CRLog::trace("OnTagOpen %s", LCSTR(tagname));
+                //CRLog::trace("<%s>", LCSTR(tagname));
 
                 m_state = ps_attr;
                 //CRLog::trace("LvXmlParser::Parse() ps_lt ret");
@@ -3559,8 +3599,9 @@ LvHtmlParser::LvHtmlParser(LVStreamRef stream, LvXMLParserCallback* callback)
 }
 
 LvHtmlParser::LvHtmlParser(LVStreamRef stream, LvXMLParserCallback* callback , bool need_coverpage)
-		: LvXmlParser(stream, callback) {
+		: LvXmlParser(stream, callback , true, false, need_coverpage) {
 	possible_capitalized_tags_ = true;
+    this-> need_coverpage_ = need_coverpage ;
 }
 LvHtmlParser::~LvHtmlParser()
 {

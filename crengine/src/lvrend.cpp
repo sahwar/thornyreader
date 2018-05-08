@@ -1108,7 +1108,7 @@ void renderFinalBlock( ldomNode * enode, LFormattedText * txform, RenderRectAcce
         {
             int cnt = enode->getChildCount();
 #ifdef DEBUG_DUMP_ENABLED
-            logfile << "+BLOCK [" << cnt << "]";
+            logfile << "+BLOCK [" << cnt << "]\n";
 #endif
             // usual elements
             bool thisIsRunIn = enode->getStyle()->display==css_d_run_in;

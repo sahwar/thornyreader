@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
+
+
 #include "include/mobihandler.h"
 #include "thornyreader/include/thornyreader.h"
 #include "thornyreader/include/StProtocol.h"
@@ -171,15 +173,6 @@ void CreBridge::processFonts(CmdRequest& request, CmdResponse& response)
             fontMan->RegisterFont(UnicodeToUtf8(font));
         }
     }
-#ifdef TRDEBUG
-    lString16 fallback;
-    lString16 fallback1;
-    //fallback.append("/sdcard/arialuni.ttf");
-    fallback.append("/system/fonts/NotoSansCJK-Regular.ttc");
-    fontMan->RegisterFont(UnicodeToUtf8(fallback));
-    fallback1.append("/system/fonts/NotoNaskhArabicUI-Regular.ttf");
-    fontMan->RegisterFont(UnicodeToUtf8(fallback1));
-#endif
 }
 
 void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
@@ -253,26 +246,6 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
             doc_view_->UpdatePageMargins();
         } else if (key == CONFIG_CRE_FONT_FACE_MAIN) {
             doc_view_->cfg_font_face_ = UnicodeToUtf8(lString16(val));
-#ifdef TRDEBUG
-            lString16Collection collection;
-            collection.add(lString16("Noto Sans Mono CJK KR"));
-            collection.add(lString16("Noto Sans Mono CJK TC"));
-            collection.add(lString16("Noto Naskh Arabic UI"));
-            collection.add(lString16("Noto Sans Mono CJK SC"));
-            lString8 fallbackstr;
-            if (collection.length()>0)
-            {
-                fontMan->FallbackArrayRestart();
-                for (int i = 0; i < collection.length(); ++i)
-                {
-                    fallbackstr.append((LCSTR(collection.at(i).c_str())));
-                    fontMan->SetFallbackFontFaceInArray(fallbackstr, i);
-                    fallbackstr.clear();
-                }
-                // Initialize. Don't deletre this line!
-                fontMan->SetFallbackFontFace(fontMan->GetFallbackFontFaceFromArray(0));
-            }
-#endif
             doc_view_->UpdatePageMargins();
             doc_view_->RequestRender();
         } else if (key == CONFIG_CRE_FONT_FACE_FALLBACK) {
@@ -621,6 +594,8 @@ void CreBridge::processQuit(CmdRequest& request, CmdResponse& response)
     response.cmd = CMD_RES_QUIT;
 }
 
+
+
 CreBridge::CreBridge() : StBridge(THORNYREADER_LOG_TAG)
 {
     doc_view_ = NULL;
@@ -633,6 +608,7 @@ CreBridge::CreBridge() : StBridge(THORNYREADER_LOG_TAG)
     // 0 - disabled, 1 - bytecode, 2 - auto
     fontMan->SetHintingMode(HINTING_MODE_BYTECODE_INTERPRETOR);
     fontMan->setKerning(true);
+
     HyphMan::init();
 }
 

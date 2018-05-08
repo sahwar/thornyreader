@@ -161,7 +161,7 @@ h4 > p, h5 > p, h6 > p, subtitle > p,
 }
 
 pre, code, .code {
-  display: block;
+  display: inline;
   white-space: pre;
   text-align: left;
   text-indent: 0em;
@@ -169,15 +169,16 @@ pre, code, .code {
   margin-bottom: 0em;
   margin-left: 0em;
   margin-right: 0em;
-  font-family: "Droid Sans Mono", monospace;
+  font-family: "Roboto Mono", monospace;
 }
 tt, samp, kbd {
   display: inline;
-  font-family: "Droid Sans Mono", monospace;
+  font-family: "Roboto Mono", monospace;
 }
 
 blockquote {
   display: block;
+  font-style: italic;
   margin-left: 1.5em;
   margin-right: 1.5em;
   margin-top: 0.5em;
@@ -200,7 +201,7 @@ ol, ul {
   margin-bottom: 1em;
   margin-left: 0em;
   margin-right: 0em;
-  padding-left: 40px;
+  padding-left: 20px;
 }
 ol {
   list-style-type: decimal;
@@ -357,5 +358,10 @@ document-info, publish-info, custom-info {
 
 head, style, form, script {
   display: none;
+}
+
+pagebreak {
+  page-break-after: always;
+  height: 0;
 }
 )delimiter";
