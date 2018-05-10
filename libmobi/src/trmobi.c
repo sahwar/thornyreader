@@ -12,6 +12,7 @@
 #define MINIZ_HEADER_FILE_ONLY
 #define MINIZ_NO_ZLIB_COMPATIBLE_NAMES
 #include "miniz.c"
+#include "mobi.h"
 #endif
 
 #define EPUB_CONTAINER "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
@@ -151,16 +152,11 @@ int MOBIGetCoverImageId(MOBIData *m)
     if (m->eh == NULL) {
         return -2;
     }
-    const MOBIExthHeader *exth = m->eh;
-    while (exth != NULL)
-    {
-        //mobi_opf_copy_meta(const MOBIData *m, const MOBIExthHeader *exth, OPFmeta **meta, const char *name) {
-        MOBIExthMeta exth_tag = mobi_get_exthtagmeta_by_tag(exth->tag);
-        if (exth_tag.tag == EXTH_COVEROFFSET)
-        {
-            const uint32_t val32 = mobi_decode_exthvalue(exth->data, exth->size);
-            return val32;
-        }
-        exth = exth->next;
-    }
+    MOBIExthHeader *hdr = mobi_get_exthrecord_by_tag(m, EXTH_COVEROFFSET);
+    uint32_t exthId = mobi_decode_exthvalue(hdr->data, hdr->size);
+    return exthId;
+
+    //uint32_t first_img_index = *m->mh->image_index;
+    //uint32_t result = first_img_index + exthId;
+    //return result;
 }
