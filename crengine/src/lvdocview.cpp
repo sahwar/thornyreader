@@ -2401,21 +2401,15 @@ void CreBridge::processMetadata(CmdRequest &request, CmdResponse &response)
 		LVImageSourceRef thumb_image = LVCreateStreamCopyImageSource(thumb_stream);
 		if (!thumb_image.isNull() && thumb_image->GetWidth() > 0 && thumb_image->GetHeight() > 0)
 		{
-			thumb_width = thumb_image->GetWidth();
+            thumb_width = thumb_image->GetWidth();
             thumb_height = thumb_image->GetHeight();
-            if(thumb_height > thumb_width)
-            {
-                if(thumb_height >= 200 && thumb_width >= 140)
-                {
-                    unsigned char *pixels = doc_thumb->newByteArray(thumb_width * thumb_height * 4);
-                    LVColorDrawBuf *buf = new LVColorDrawBuf(thumb_width, thumb_height, pixels, 32);
-                    buf->Draw(thumb_image, 0, 0, thumb_width, thumb_height, false);
-                    convertBitmap(buf);
-                    delete buf;
-                    thumb_image.Clear();
-                }
-            }
-		}
+            unsigned char *pixels = doc_thumb->newByteArray(thumb_width * thumb_height * 4);
+            LVColorDrawBuf *buf = new LVColorDrawBuf(thumb_width, thumb_height, pixels, 32);
+            buf->Draw(thumb_image, 0, 0, thumb_width, thumb_height, false);
+            convertBitmap(buf);
+            delete buf;
+            thumb_image.Clear();
+        }
 	}
 	response.addData(doc_thumb);
 	response.addInt((uint32_t) thumb_width);

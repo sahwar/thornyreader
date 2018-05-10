@@ -204,9 +204,14 @@ LVStreamRef GetMobiCoverPageToStream(const char *fullpath) {
             }
             curr = curr->next;
         }
+        if (!result) {
+            mobi_free_rawml(rawml);
+            mobi_free(m);
+            return LVStreamRef();
+        }
         LVStreamRef res = LVCreateMemoryStream(result->data, static_cast<int>(result->size));
-        mobi_free_rawml(rawml);
-        mobi_free(m);
+        //mobi_free_rawml(rawml);
+        //mobi_free(m);
         return res;
     }
     mobi_free_rawml(rawml);
