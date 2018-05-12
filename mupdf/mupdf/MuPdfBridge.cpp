@@ -153,7 +153,7 @@ void MuPdfBridge::process(CmdRequest& request, CmdResponse& response)
         response.cmd = CMD_RES_ALIVE;
         break;
     case CMD_REQ_VERSION:
-        ThornyReaderVersion(THORNYREADER_VERSION, response);
+        ThornyVersionResporse(THORNYREADER_BASE_VERSION, response);
         break;
     default:
         ERROR_L(LCTX, "Unknown request: %d", request.cmd);

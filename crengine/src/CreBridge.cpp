@@ -679,7 +679,7 @@ void CreBridge::process(CmdRequest& request, CmdResponse& response)
             processQuit(request, response);
             break;
         case CMD_REQ_VERSION:
-            ThornyReaderVersion(THORNYREADER_VERSION, response);
+            ThornyVersionResporse(THORNYREADER_BASE_VERSION, response);
             break;
         default:
             CRLog::error("Unknown request: %d", request.cmd);

@@ -19,11 +19,14 @@
 
 #include "thornyreader_version.h"
 #include "StProtocol.h"
+#include <string>
+
 #define THORNYREADER_LOG_TAG "thornyreader"
 
-const bool ThornyReaderIsDebugBuild();
-void ThornyReaderStart(const char* name);
-void ThornyReaderVersion(const char* version, CmdResponse& response);
+const bool ThornyBuildDebug();
+std::string ThornyVersion(std::string base_version);
+void ThornyStart(const char* name);
+void ThornyVersionResporse(const char* base_version, CmdResponse& response);
 
 #define DOC_FORMAT_NULL 0
 #define DOC_FORMAT_EPUB 1

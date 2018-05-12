@@ -16,46 +16,46 @@
 
 #include <android/log.h>
 #include "thornyreader.h"
-#include "StProtocol.h"
 
-const bool ThornyReaderIsDebugBuild() {
-#if !defined(NDEBUG) || defined(TRDEBUG) || defined(DEBUG) || defined(_DEBUG)
+const bool ThornyBuildDebug() {
+#if !defined(NDEBUG) || defined(DEBUG) || defined(_DEBUG) || defined(TRDEBUG)
     return true;
 #else
     return false;
 #endif
 }
 
-void ThornyReaderStart(const char *name) {
-    __android_log_print(ANDROID_LOG_INFO,
-                        THORNYREADER_LOG_TAG,
-                        "Start %s v%s%s",
-                        name,
-                        THORNYREADER_VERSION,
-                        ThornyReaderIsDebugBuild() ? "-DEBUG" : "");
-    if (ThornyReaderIsDebugBuild()) {
-        const char *ndebug;
-#ifdef NDEBUG
-        ndebug = "NDEBUG=def";
-#else
-        ndebug = "NDEBUG=ndef";
-#endif
-        const char *axy_debug;
-#ifdef TRDEBUG
-        axy_debug = "TRDEBUG=def";
-#else
-        axy_debug = "TRDEBUG=ndef";
-#endif
-        __android_log_print(ANDROID_LOG_DEBUG,
-                            THORNYREADER_LOG_TAG,
-                            "DEFINITIONS: %s %s",
-                            ndebug,
-                            axy_debug);
-    }
+std::string ThornyVersion(std::string base_version)
+{
+    return ThornyBuildDebug() ? base_version + "+DEBUG" : base_version;
 }
 
-void ThornyReaderVersion(const char* version, CmdResponse& response)
+void ThornyStart(const char* name) {
+    std::string defines;
+#ifdef NDEBUG
+    defines += " NDEBUG";
+#endif
+#ifdef DEBUG
+    defines += " DEBUG";
+#endif
+#ifdef _DEBUG
+    defines += " _DEBUG";
+#endif
+#ifdef TRDEBUG
+    defines += " TRDEBUG";
+#endif
+    if (defines.size() > 0) {
+        defines = ". Defines:" + defines;
+    }
+    __android_log_print(ANDROID_LOG_INFO, THORNYREADER_LOG_TAG,
+                        "Start %s v%s%s",
+                        name,
+                        ThornyVersion(THORNYREADER_BASE_VERSION).c_str(),
+                        defines.c_str());
+}
+
+void ThornyVersionResporse(const char* base_version, CmdResponse& response)
 {
     response.cmd = CMD_RES_VERSION;
-    response.addIpcString(version, false);
+    response.addIpcString(ThornyVersion(base_version).c_str(), true);
 }
