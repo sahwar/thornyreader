@@ -440,11 +440,13 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
     {
         //if (!DetectEpubFormat(stream_))
         {
-            return false;
+         //   return false;
         }
         cr_dom_->setProps(doc_props_);
-        //if (!ImportEpubDocument(stream_, cr_dom_, cfg_firstpage_thumb_))
+        CRLog::error("IMPORTING DOCX");
+        if (!ImportDocxDocument(stream_, cr_dom_, cfg_firstpage_thumb_))
         {
+            CRLog::error("IMPORTING DOCX FAILED");
             return false;
         }
         doc_props_ = cr_dom_->getProps();

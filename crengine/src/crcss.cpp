@@ -176,9 +176,7 @@ pre, code, .code {
   margin-right: 0em;
   font-family: "Roboto Mono", monospace;
 }
-t , r {
-  white-space: nowrap;
-}
+
 tt, samp, kbd {
   display: inline;
   font-family: "Roboto Mono", monospace;

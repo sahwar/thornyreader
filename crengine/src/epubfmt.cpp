@@ -1028,3 +1028,161 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 #endif
 	return true;
 }
+
+lString16 DocxGetRootFilePath(LVContainerRef m_arc)
+{
+	LVStreamRef container_stream = m_arc->OpenStream(L"[Content_Types].xml", LVOM_READ);
+	if (!container_stream.isNull())
+	{
+		CrDom *doc = LVParseXMLStream(container_stream);
+		if (doc)
+		{
+			return lString16("/word/document.xml");
+			delete doc;
+		}
+	}
+	return lString16::empty_str;
+}
+
+bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
+{
+	LVContainerRef arc = LVOpenArchive(stream);
+	if (arc.isNull())
+	{
+		CRLog::error("not a ZIP archive");
+		return false; // not a ZIP archive
+	}
+
+	// check if there is document.xml
+	lString16 rootfilePath = DocxGetRootFilePath(arc);
+	if (rootfilePath.empty())
+	{
+		CRLog::error("2");
+		return false;
+	}
+
+	EncryptedDataContainer *decryptor = new EncryptedDataContainer(arc);
+	if (decryptor->open())
+	{
+		CRLog::debug("DOCX: encrypted items detected");
+	}
+
+	LVContainerRef m_arc = LVContainerRef(decryptor);
+
+	if (decryptor->hasUnsupportedEncryption())
+	{
+		CRLog::error("3");
+		// DRM!!!
+		createEncryptedEpubWarningDocument(m_doc);
+		return true;
+	}
+
+	m_doc->setDocParentContainer(m_arc);
+
+	// read content.opf
+	EpubItems epubItems;
+	//EpubItem * epubToc = NULL; //TODO
+	LVArray<EpubItem *> spineItems;
+	lString16 codeBase;
+	//lString16 css;
+	{
+		codeBase = LVExtractPath(rootfilePath, false);
+		CRLog::trace("codeBase=%s", LCSTR(codeBase));
+	}
+
+	LVStreamRef content_stream = m_arc->OpenStream(rootfilePath.c_str(), LVOM_READ);
+
+	if (content_stream.isNull())
+	{
+		CRLog::error("4");
+		return false;
+	}
+
+	//lString16 ncxHref;
+	//lString16 coverId;
+	//bool CoverPageIsValid = false;
+
+	LVEmbeddedFontList fontList;
+	EmbeddedFontStyleParser styleParser(fontList);
+
+//	lUInt32 saveFlags = m_doc->getDocFlags();
+//	m_doc->setDocFlags(saveFlags);
+//	m_doc->setDocParentContainer(m_arc);
+
+	LvDomWriter writer(m_doc);
+#if 0
+	m_doc->setNodeTypes( fb2_elem_table );
+	m_doc->setAttributeTypes( fb2_attr_table );
+	m_doc->setNameSpaceTypes( fb2_ns_table );
+#endif
+	//m_doc->setCodeBase( codeBase );
+
+	LvDocFragmentWriter appender(&writer, cs16("body"), cs16("DocFragment"), lString16::empty_str);
+	writer.OnStart(NULL);
+	writer.OnTagOpenNoAttr(L"", L"body");
+	int fragmentCount = 0;
+
+
+				LVStreamRef stream2 = m_arc->OpenStream(rootfilePath.c_str(), LVOM_READ);
+				if (!stream2.isNull())
+				{
+
+					//LvXmlParser
+					LvHtmlParser parser(stream2, &appender, firstpage_thumb);
+					//if (parser.CheckFormat() && parser.ParseDocx())
+					if (parser.ParseDocx())
+                    {
+                        // valid
+                        fragmentCount++;
+						//lString8 headCss = appender.getHeadStyleText();
+						//CRLog::trace("style: %s", headCss.c_str());
+						//styleParser.parse(base, headCss);
+					}
+					else
+					{
+						CRLog::error("Document type is not XML/XHTML for fragment %s", LCSTR(rootfilePath));
+					}
+				}
+//			}
+//		}
+//	}
+
+	writer.OnTagClose(L"", L"body");
+	writer.OnStop();
+	//CRLog::debug("EPUB: %d documents merged", fragmentCount);
+
+	if (!fontList.empty())
+	{
+		// set document font list, and register fonts
+		m_doc->getEmbeddedFontList().set(fontList);
+		m_doc->registerEmbeddedFonts();
+		m_doc->forceReinitStyles();
+	}
+
+	//if (fragmentCount == 0)
+	{
+	//	return false;
+	}
+
+#if 0 // set stylesheet
+	//m_doc->getStylesheet()->clear();
+	m_doc->setStylesheet( NULL, true );
+	//m_doc->getStylesheet()->parse(m_stylesheet.c_str());
+	if (!css.empty() && m_doc->getDocFlag(DOC_FLAG_ENABLE_INTERNAL_STYLES)) {
+		m_doc->setStylesheet( "p.p { text-align: justify }\n"
+			"svg { text-align: center }\n"
+			"i { display: inline; font-style: italic }\n"
+			"b { display: inline; font-weight: bold }\n"
+			"abbr { display: inline }\n"
+			"acronym { display: inline }\n"
+			"address { display: inline }\n"
+			"p.title-p { hyphenate: none }\n", false);
+		m_doc->setStylesheet(UnicodeToUtf8(css).c_str(), false);
+		//m_doc->getStylesheet()->parse(UnicodeToUtf8(css).c_str());
+	} else {
+		//m_doc->getStylesheet()->parse(m_stylesheet.c_str());
+		//m_doc->setStylesheet( m_stylesheet.c_str(), false );
+	}
+#endif
+	return true;
+}
