@@ -2990,7 +2990,17 @@ bool LvXmlParser::ParseDocx()
                     tagns = "";
                 }
 
-                if(tagname == "rPr"|| tagname == "pPr" || tagname == "proofErr" || tagname == "lang" || tagname == "r" || tagname == "highlight")
+                if(   tagname == "rPr"
+                   || tagname == "rpr"
+                   || tagname == "pPr"
+                   || tagname == "ppr"
+                   || tagname == "proofErr"
+                   || tagname == "prooferr"
+                   || tagname == "lang"
+                   || tagname == "r"
+                   || tagname == "highlight"
+
+                        )
                 {
                     if (SkipTillChar('>'))
                     {
@@ -3721,7 +3731,7 @@ bool LvXmlParser::ReadText()
                 enc_table = this->m_conv_table;
 
             int nlen = PreProcessXmlString(buf, last_split_txtlen, flags, enc_table);
-            //if ( (flags & TXTFLG_TRIM) && (!(flags & TXTFLG_PRE) || (flags & TXTFLG_PRE_PARA_SPLITTING)) )
+            if ( (flags & TXTFLG_TRIM) && (!(flags & TXTFLG_PRE) || (flags & TXTFLG_PRE_PARA_SPLITTING)) )
             {
                 nlen = TrimDoubleSpaces(buf, nlen,
                     ((flags & TXTFLG_TRIM_ALLOW_START_SPACE) || pre_para_splitting)?true:false,
@@ -3937,6 +3947,11 @@ LvHtmlParser::~LvHtmlParser()
 bool LvHtmlParser::Parse()
 {
     return LvXmlParser::Parse();
+}
+
+bool LvHtmlParser::ParseDocx()
+{
+    return LvXmlParser::ParseDocx();
 }
 
 /// read file contents to string

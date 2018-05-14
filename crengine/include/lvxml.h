@@ -298,6 +298,8 @@ public:
     /// parses input stream
     virtual bool Parse();
 
+    virtual bool ParseDocx() { return false;};
+
     virtual void FullDom();
 };
 
@@ -348,6 +350,7 @@ public:
     /// Returns true if format is recognized by parser
     virtual bool CheckFormat();
     virtual bool Parse();
+    virtual bool ParseDocx();
     LvHtmlParser(LVStreamRef stream, LvXMLParserCallback * callback);
     LvHtmlParser(LVStreamRef stream, LvXMLParserCallback * callback, bool need_coverpage);
     bool need_coverpage_;
