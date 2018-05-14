@@ -105,6 +105,8 @@ public:
     virtual bool CheckFormat() = 0;
     /// parses input stream
     virtual bool Parse() = 0;
+    /// parses input stream
+    virtual bool ParseDocx() = 0;
     /// resets parsing, moves to beginning of stream
     virtual void Reset() = 0;
     /// stops parsing in the middle of file, to read header only
@@ -320,6 +322,8 @@ public:
     virtual bool CheckFormat();
     //parse
     virtual bool Parse();
+
+    virtual bool ParseDocx();
     /// sets charset by name
     virtual void SetCharset(const lChar16* name);
     /// resets parsing, moves to beginning of stream

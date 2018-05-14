@@ -426,7 +426,9 @@ bool LVDocView::LoadDoc(int doc_format, const char *absolute_path,
 bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 {
     stream_ = stream;
-	doc_format_ = doc_format;
+	//doc_format_ = doc_format;
+	doc_format_ = DOC_FORMAT_DOCX;
+	doc_format = DOC_FORMAT_DOCX;
 	CheckRenderProps(0, 0);
 	LVFileFormatParser *parser = nullptr;
 	if (doc_format == DOC_FORMAT_FB2)
@@ -434,6 +436,19 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 		LvDomWriter writer(cr_dom_);
 		parser = new LvXmlParser(stream_, &writer, false, true, cfg_firstpage_thumb_);
 	}
+    else if (doc_format == DOC_FORMAT_DOCX)
+    {
+        //if (!DetectEpubFormat(stream_))
+        {
+            return false;
+        }
+        cr_dom_->setProps(doc_props_);
+        //if (!ImportEpubDocument(stream_, cr_dom_, cfg_firstpage_thumb_))
+        {
+            return false;
+        }
+        doc_props_ = cr_dom_->getProps();
+    }
 	else if (doc_format == DOC_FORMAT_EPUB)
 	{
 		if (!DetectEpubFormat(stream_))
