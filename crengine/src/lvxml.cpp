@@ -2904,6 +2904,7 @@ bool LvXmlParser::ParseDocx()
 
     for (; !eof_ && !error && !firstpage_thumb_num_reached ;)
     {
+        bool in_blip_img = false;
         if (m_stopped)
             break;
         // Load next portion of data if necessary
@@ -2985,11 +2986,15 @@ bool LvXmlParser::ParseDocx()
                     //}}
                 }
 
-                if(tagns == "w")
+                if(tagns == "w" ||
+                   tagns == "wp"||
+                   tagns == "pic" ||
+                   tagns == "a"
+                        )
                 {
                     tagns = "";
                 }
-
+                    //removing OpenXML tags from tree
                 if(   tagname == "rPr"
                    || tagname == "rpr"
                    || tagname == "pPr"
@@ -2999,7 +3004,35 @@ bool LvXmlParser::ParseDocx()
                    || tagname == "lang"
                    || tagname == "r"
                    || tagname == "highlight"
-
+                   || tagname == "pstyle"
+                   || tagname == "anchor"
+                   || tagname == "simplepos"
+                   || tagname == "positionh"
+                   || tagname == "positionv"
+                   || tagname == "extent"
+                   || tagname == "effectextent"
+                   || tagname == "wraptopandbottom"
+                   || tagname == "docpr"
+                   || tagname == "graphicframelocks"
+                   || tagname == "cnv"
+                   || tagname == "cnvpr"
+                   || tagname == "cnvpicpr"
+                   || tagname == "piclocks"
+                   || tagname == "cnvgraphicframepr"
+                   || tagname == "graphic"
+                   || tagname == "graphicdata"
+                   || tagname == "pic"
+                   || tagname == "nvpicpr"
+                   || tagname == "blipfill"
+                   || tagname == "stretch"
+                   || tagname == "fillrect"
+                   || tagname == "sppr"
+                   || tagname == "xfrm"
+                   || tagname == "off"
+                   || tagname == "ext"
+                   || tagname == "prstgeom"
+                   || tagname == "avlst"
+                   || tagname == "drawing"
                         )
                 {
                     if (SkipTillChar('>'))
@@ -3010,6 +3043,21 @@ bool LvXmlParser::ParseDocx()
                     break;
                 }
 
+                if (tagname == "blip")
+                {
+                    tagname = "img";
+                    in_blip_img = true;
+                }
+
+                if (tagname == "posoffset")
+                {
+                    if (SkipTillChar('>'))
+                    {
+                        m_state = ps_lt;
+                        ch = ReadCharFromBuffer();
+                    }
+                    break;
+                }
 
                 if(tagname == "t")
                 {
@@ -3162,9 +3210,20 @@ bool LvXmlParser::ParseDocx()
                     attrname.lowercase();
                 }
 
-                if (attrns == "w")
+                if (attrns == "w" || attrns == "r")
                 {
                     attrns = "";
+                }
+
+                if(in_blip_img)
+                {
+                    if (attrname == "embed")
+                    {
+                        attrname = "src";
+                        lString16 rID = attrvalue;
+                        //attrvalue = _docxItems.findHrefById(rID);
+                    }
+                    in_blip_img =false;
                 }
 
                 if ((flags & TXTFLG_CONVERT_8BIT_ENTITY_ENCODING) && m_conv_table) {
