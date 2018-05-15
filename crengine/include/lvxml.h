@@ -20,6 +20,7 @@
 #include "lvstream.h"
 #include "crtxtenc.h"
 #include "dtddef.h"
+#include "docxhandler.h"
 
 #define XML_CHAR_BUFFER_SIZE 4096
 #define XML_FLAG_NO_SPACE_TEXT 1
@@ -106,7 +107,7 @@ public:
     /// parses input stream
     virtual bool Parse() = 0;
     /// parses input stream
-    virtual bool ParseDocx() = 0;
+    virtual bool ParseDocx(DocxItems docxItems) = 0;
     /// resets parsing, moves to beginning of stream
     virtual void Reset() = 0;
     /// stops parsing in the middle of file, to read header only
@@ -298,7 +299,7 @@ public:
     /// parses input stream
     virtual bool Parse();
 
-    virtual bool ParseDocx() { return false;};
+    virtual bool ParseDocx(DocxItems docxItems) { return false; };
 
     virtual void FullDom();
 };
@@ -325,7 +326,7 @@ public:
     //parse
     virtual bool Parse();
 
-    virtual bool ParseDocx();
+    virtual bool ParseDocx(DocxItems docxItems);
     /// sets charset by name
     virtual void SetCharset(const lChar16* name);
     /// resets parsing, moves to beginning of stream
@@ -350,7 +351,8 @@ public:
     /// Returns true if format is recognized by parser
     virtual bool CheckFormat();
     virtual bool Parse();
-    virtual bool ParseDocx();
+    virtual bool ParseDocx(DocxItems docxItems);
+    //virtual bool ParseDocx(DocxItems docxItems);
     LvHtmlParser(LVStreamRef stream, LvXMLParserCallback * callback);
     LvHtmlParser(LVStreamRef stream, LvXMLParserCallback * callback, bool need_coverpage);
     bool need_coverpage_;

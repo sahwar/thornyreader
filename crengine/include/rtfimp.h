@@ -376,7 +376,7 @@ public:
     /// parses input stream
     virtual bool Parse();
 
-    virtual bool ParseDocx() { return false;};
+    virtual bool ParseDocx(DocxItems docxItems) { return false; };
     /// resets parsing, moves to beginning of stream
     virtual void Reset();
     /// sets charset by name

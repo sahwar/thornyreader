@@ -2880,7 +2880,7 @@ bool LvXmlParser::Parse()
     return !error;
 }
 
-bool LvXmlParser::ParseDocx()
+bool LvXmlParser::ParseDocx(DocxItems docxItems)
 {
     Reset();
     callback_->OnStart(this);
@@ -3033,6 +3033,7 @@ bool LvXmlParser::ParseDocx()
                    || tagname == "prstgeom"
                    || tagname == "avlst"
                    || tagname == "drawing"
+                   || tagname == "wrapsquare"
                         )
                 {
                     if (SkipTillChar('>'))
@@ -3049,7 +3050,7 @@ bool LvXmlParser::ParseDocx()
                     in_blip_img = true;
                 }
 
-                if (tagname == "posoffset")
+                if (tagname == "posoffset"|| tagname == "align" )
                 {
                     if (SkipTillChar('>'))
                     {
@@ -3215,13 +3216,13 @@ bool LvXmlParser::ParseDocx()
                     attrns = "";
                 }
 
-                if(in_blip_img)
+                //if(in_blip_img)
                 {
                     if (attrname == "embed")
                     {
                         attrname = "src";
                         lString16 rID = attrvalue;
-                        //attrvalue = _docxItems.findHrefById(rID);
+                        attrvalue = docxItems.findHrefById(rID);
                     }
                     in_blip_img =false;
                 }
@@ -4008,9 +4009,9 @@ bool LvHtmlParser::Parse()
     return LvXmlParser::Parse();
 }
 
-bool LvHtmlParser::ParseDocx()
+bool LvHtmlParser::ParseDocx(DocxItems docxItems)
 {
-    return LvXmlParser::ParseDocx();
+    return LvXmlParser::ParseDocx(docxItems);
 }
 
 /// read file contents to string

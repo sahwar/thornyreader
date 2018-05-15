@@ -1,4 +1,5 @@
 #include "include/epubfmt.h"
+#include "include/docxhandler.h"
 
 class EpubItem
 {
@@ -40,7 +41,6 @@ public:
 		return NULL;
 	}
 };
-
 bool DetectEpubFormat(LVStreamRef stream)
 {
 	LVContainerRef m_arc = LVOpenArchive(stream);
@@ -1105,6 +1105,50 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 	LVEmbeddedFontList fontList;
 	EmbeddedFontStyleParser styleParser(fontList);
 
+    LVStreamRef content_stream2 = m_arc->OpenStream(L"/word/_rels/document.xml.rels", LVOM_READ);
+
+    if (content_stream2.isNull())
+    {
+        CRLog::error("5");
+        return false;
+    }
+
+    CrDom *doc2 = LVParseXMLStream(content_stream2);
+    if (!doc2)
+    {
+	    return false;
+    }
+/*        // for debug
+        {
+            LVStreamRef out = LVOpenFileStream("/data/data/org.readera/files/document.xml.rels.xml", LVOM_WRITE);
+            doc2->saveToStream(out, NULL, true);
+        }
+*/
+
+    DocxItems docxItems;
+
+    for (int i = 1; i < 50; i++)
+    {
+        ldomNode *item = doc2->nodeFromXPath(lString16("Relationships/Relationship[") << fmt::decimal(i) << "]");
+        if (!item)
+        {
+            break;
+        }
+        lString16 id = item->getAttributeValue("Id");
+        lString16 mediaType = item->getAttributeValue("Type");
+        lString16 target = L"word/";
+        target.append(item->getAttributeValue("Target"));
+        if (mediaType.endsWith("/image"))
+        {
+            DocxItem *docxItem = new DocxItem;
+            docxItem->href = target;
+            docxItem->id = id;
+            docxItem->mediaType = mediaType;
+            docxItems.add(docxItem);
+            CRLog::error("id = %s, target = %s",LCSTR(id),LCSTR(target));
+        }
+    }
+    CRPropRef m_doc_props = m_doc->getProps();
 //	lUInt32 saveFlags = m_doc->getDocFlags();
 //	m_doc->setDocFlags(saveFlags);
 //	m_doc->setDocParentContainer(m_arc);
@@ -1117,7 +1161,15 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 #endif
 	//m_doc->setCodeBase( codeBase );
 
-	LvDocFragmentWriter appender(&writer, cs16("body"), cs16("DocFragment"), lString16::empty_str);
+	class TrDocxWriter: public LvDocFragmentWriter {
+	public:
+		TrDocxWriter(LvXMLParserCallback *parentWriter)
+				: LvDocFragmentWriter(parentWriter, cs16("body"), cs16("DocFragment"), lString16::empty_str)
+		{
+		}
+	};
+
+	TrDocxWriter appender(&writer);
 	writer.OnStart(NULL);
 	writer.OnTagOpenNoAttr(L"", L"body");
 	int fragmentCount = 0;
@@ -1130,7 +1182,7 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 					//LvXmlParser
 					LvHtmlParser parser(stream2, &appender, firstpage_thumb);
 					//if (parser.CheckFormat() && parser.ParseDocx())
-					if (parser.ParseDocx())
+					if (parser.ParseDocx(docxItems))
                     {
                         // valid
                         fragmentCount++;
