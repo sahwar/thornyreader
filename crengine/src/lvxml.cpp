@@ -3003,13 +3003,13 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                 //removing OpenXML tags from tree
                 if (tagname == "proofErr"
                     //||  tagname == "rpr"
+                    //|| tagname == "pstyle" // h1 h2 h3
                     || tagname == "r"
                     || tagname == "ppr"
                     || tagname == "bcs"
                     || tagname == "ics"
                     || tagname == "lang"
                     || tagname == "highlight"
-                    || tagname == "pstyle"
                     || tagname == "anchor"
                     || tagname == "simplepos"
                     || tagname == "positionh"
@@ -3047,6 +3047,24 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     }
                     break;
                 }
+
+                //li ul ? //todo rewrite it for more adequate worklike numbered lists ect
+                if (tagname == "ilvl")
+                {
+                    tagname = "li";
+                }
+
+                //table handling
+                if (tagname == "tbl")
+                {
+                    tagname = "table";
+                }
+
+                if (tagname == "tc")
+                {
+                    tagname = "td";
+                }
+                //TODO add/remove table tags sanitizer
 
                 //bold italic undrelined text handling
                 if (in_rpr)
@@ -3132,7 +3150,18 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                         break;
                     }
                 }
-
+                if(tagname=="br")
+                {
+                    callback_->OnTagOpen(L"",L"pagebreak");
+                    callback_->OnText(L"\u200B", 1, flags);
+                    callback_->OnTagClose(L"",L"pagebreak");
+                    if (SkipTillChar('>'))
+                    {
+                        m_state = ps_text;
+                        ReadCharFromBuffer();
+                    }
+                    break;
+                }
                 if(tagname=="pagebreak")
                 {
                     tagns = "";
