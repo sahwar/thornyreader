@@ -38,7 +38,7 @@ lString16 DocxGetMainFilePath(LVContainerRef m_arc)
 DocxItems DocxParseContentTypes(LVContainerRef m_arc)
 {
     LVStreamRef container_stream = m_arc->OpenStream(L"[Content_Types].xml", LVOM_READ);
-    DocxItems docxItems_empty = nullptr;
+    DocxItems docxItems_empty;
     if (!container_stream.isNull())
     {
         CrDom *doc = LVParseXMLStream(container_stream);
@@ -181,6 +181,7 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
     };
 
     TrDocxWriter appender(&writer);
+    appender.setFlags(132);
     writer.OnStart(NULL);
     writer.OnTagOpenNoAttr(L"", L"body");
     int fragmentCount = 0;

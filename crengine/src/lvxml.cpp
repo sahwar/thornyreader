@@ -2902,9 +2902,15 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
     lString16 attrns;
     lString16 attrvalue;
 
+    bool in_blip_img = false;
+    bool in_rpr = false;
+    bool in_t = false;
+    bool rpr_b=false;
+    bool rpr_i=false;
+    bool rpr_u=false;
+
     for (; !eof_ && !error && !firstpage_thumb_num_reached ;)
     {
-        bool in_blip_img = false;
         if (m_stopped)
             break;
         // Load next portion of data if necessary
@@ -2970,10 +2976,9 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     }
                     break;
                 }
-                if (possible_capitalized_tags_) {
-                    tagns.lowercase();
-                    tagname.lowercase();
-                }
+                tagns.lowercase();
+                tagname.lowercase();
+                //CRLog::error("%s:%s",LCSTR(tagns),LCSTR(tagname));
 
                 if(tagname=="style") //|| tagname=="table" || tagname=="tr" || tagname=="td") // skipping all <style> tags and <table> <tr> <td> tags
                 {
@@ -2994,47 +2999,46 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                 {
                     tagns = "";
                 }
-                    //removing OpenXML tags from tree
-                if(   tagname == "rPr"
-                   || tagname == "rpr"
-                   || tagname == "pPr"
-                   || tagname == "ppr"
-                   || tagname == "proofErr"
-                   || tagname == "prooferr"
-                   || tagname == "lang"
-                   || tagname == "r"
-                   || tagname == "highlight"
-                   || tagname == "pstyle"
-                   || tagname == "anchor"
-                   || tagname == "simplepos"
-                   || tagname == "positionh"
-                   || tagname == "positionv"
-                   || tagname == "extent"
-                   || tagname == "effectextent"
-                   || tagname == "wraptopandbottom"
-                   || tagname == "docpr"
-                   || tagname == "graphicframelocks"
-                   || tagname == "cnv"
-                   || tagname == "cnvpr"
-                   || tagname == "cnvpicpr"
-                   || tagname == "piclocks"
-                   || tagname == "cnvgraphicframepr"
-                   || tagname == "graphic"
-                   || tagname == "graphicdata"
-                   || tagname == "pic"
-                   || tagname == "nvpicpr"
-                   || tagname == "blipfill"
-                   || tagname == "stretch"
-                   || tagname == "fillrect"
-                   || tagname == "sppr"
-                   || tagname == "xfrm"
-                   || tagname == "off"
-                   || tagname == "ext"
-                   || tagname == "prstgeom"
-                   || tagname == "avlst"
-                   || tagname == "drawing"
-                   || tagname == "wrapsquare"
-                        )
+
+                //removing OpenXML tags from tree
+                if (tagname == "proofErr"
+                    //||  tagname == "rpr"
+                    || tagname == "r"
+                    || tagname == "ppr"
+                    || tagname == "bcs"
+                    || tagname == "ics"
+                    || tagname == "lang"
+                    || tagname == "highlight"
+                    || tagname == "pstyle"
+                    || tagname == "anchor"
+                    || tagname == "simplepos"
+                    || tagname == "positionh"
+                    || tagname == "positionv"
+                    || tagname == "extent"
+                    || tagname == "effectextent"
+                    || tagname == "wraptopandbottom"
+                    || tagname == "docpr"
+                    || tagname == "graphicframelocks"
+                    || tagname == "cnv"
+                    || tagname == "cnvpr"
+                    || tagname == "cnvpicpr"
+                    || tagname == "piclocks"
+                    || tagname == "cnvgraphicframepr"
+                    || tagname == "graphic"
+                    || tagname == "graphicdata"
+                    || tagname == "pic"
+                    || tagname == "nvpicpr"
+                    || tagname == "blipfill"
+                    || tagname == "stretch"
+                    || tagname == "fillrect"
+                    || tagname == "sppr"
+                    || tagname == "xfrm"
+                    || tagname == "off"
+                    || tagname == "ext"
+                    || tagname == "prstgeom"
+                    || tagname == "avlst"
+                    || tagname == "drawing"
+                    || tagname == "wrapsquare")
                 {
                     if (SkipTillChar('>'))
                     {
@@ -3044,6 +3048,40 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     break;
                 }
 
+                //bold italic undrelined text handling
+                if (in_rpr)
+                {
+                   // CRLog::error("In R tagname == %s",LCSTR(tagname));
+                    if (tagname == "b")
+                    {
+                        rpr_b = true;
+                    }
+                    if (tagname == "i")
+                    {
+                        rpr_i = true;
+                    }
+                    if (tagname == "u")
+                    {
+                        rpr_u = true;
+                    }
+                }
+
+                if (tagname == "rpr" && !close_flag)
+                {
+                    if (SkipTillChar('>'))
+                    {
+                        m_state = ps_text;
+                        ch = ReadCharFromBuffer();
+                    }
+                    in_rpr = true;
+                    break;
+                }
+                if (tagname == "rpr" && close_flag)
+                {
+                    in_rpr = false;
+                }
+
+                //image embedding handling
                 if (tagname == "blip")
                 {
                     tagname = "img";
@@ -3062,21 +3100,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
 
                 if(tagname == "t")
                 {
-                    if (last_tag_was_t)
-                    {
-                        if (SkipTillChar('>'))
-                        {
-                            m_state = ps_text;
-                            ch = ReadCharFromBuffer();
-                        }
-                        break;
-                    }
-                    last_tag_was_t = true;
-                    //   tagname = "p";
-                }
-                else
-                {
-                    last_tag_was_t = false;
+                    in_t = true;
                 }
 
                 if(tagname=="blockquote")
@@ -3215,8 +3239,8 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                 {
                     attrns = "";
                 }
-
-                //if(in_blip_img)
+                //embedded image handling
+                if(in_blip_img)
                 {
                     if (attrname == "embed")
                     {
@@ -3240,6 +3264,29 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                 break;
             case ps_text:
             {
+                //bold italic underline tag insertion
+                if (in_t)
+                {
+                    if (rpr_b)
+                    {
+                        CRLog::error("readtext b");
+                        callback_->OnTagOpen(L"", L"b");
+                        rpr_b = false;
+                    }
+                    if (rpr_i)
+                    {
+                        CRLog::error("readtext i");
+                        callback_->OnTagOpen(L"", L"i");
+                        rpr_i = false;
+                    }
+                    if (rpr_u)
+                    {
+                        CRLog::error("readtext u");
+                        callback_->OnTagOpen(L"", L"u");
+                        rpr_u = false;
+                    }
+                    in_t = false;
+                }
                 ReadText();
                 fragments_counter++;
 
