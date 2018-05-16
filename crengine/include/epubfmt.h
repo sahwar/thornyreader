@@ -44,6 +44,6 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom * doc,  bool firstpage_thumb);
 lString16 EpubGetRootFilePath(LVContainerRef m_arc);
 
 bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb);
-lString16 DocxGetRootFilePath(LVContainerRef m_arc);
+//lString16 DocxGetMainFilePath(LVContainerRef m_arc);
 
 #endif // EPUBFMT_H
