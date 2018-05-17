@@ -149,6 +149,7 @@ public:
     void ClearSelection();
     /// get list of links
     void GetCurrentPageLinks(ldomXRangeList& list);
+    void GetCurrentPageText(ldomXRangeList& list);
     /// selects first link on page, if any. returns selected link range, null if no links.
     ldomXRange* SelectFirstPageLink();
     /// invalidate formatted data, request render

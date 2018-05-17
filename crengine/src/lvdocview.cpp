@@ -1828,7 +1828,6 @@ void LVDocView::GetCurrentPageLinks(ldomXRangeList &links_list)
 	class LinkKeeper : public ldomNodeCallback
 	{
 		ldomXRangeList &list_;
-
 		void ProcessFinalNode(ldomNode *node)
 		{
 			int end_index = node->isText() ? node->getText().length() : node->getChildCount();
@@ -1891,7 +1890,6 @@ void LVDocView::GetCurrentPageLinks(ldomXRangeList &links_list)
 				}
 			}
 		}
-
 		void ProcessLinkNode(ldomNode *node)
 		{
 			for (lUInt32 i = 0; i < node->getChildCount(); i++)
@@ -1907,12 +1905,9 @@ void LVDocView::GetCurrentPageLinks(ldomXRangeList &links_list)
 				}
 			}
 		}
-
 	public:
 		bool text_is_first_ = true;
-
 		LinkKeeper(ldomXRangeList &list) : list_(list) {}
-
 		// Called for each text fragment in range
 		virtual void onText(ldomXRange *node_range)
 		{
@@ -1941,7 +1936,6 @@ void LVDocView::GetCurrentPageLinks(ldomXRangeList &links_list)
 			             node->getDataIndex(), end_node->getDataIndex(), LCSTR(text));
 #endif
 		}
-
 		// Called for each node in range
 		virtual bool onElement(ldomXPointerEx *ptr)
 		{
@@ -1962,6 +1956,155 @@ void LVDocView::GetCurrentPageLinks(ldomXRangeList &links_list)
 		}
 	};
 	LinkKeeper callback(links_list);
+	page_range->forEach(&callback);
+	if (viewport_mode_ == MODE_PAGES && GetColumns() > 1)
+	{
+		// Process second page
+		int page_index = GetCurrPage();
+		page_range = GetPageDocRange(page_index + 1);
+		if (!page_range.isNull())
+		{
+			callback.text_is_first_ = true;
+			page_range->forEach(&callback);
+		}
+	}
+}
+
+void LVDocView::GetCurrentPageText(ldomXRangeList &list)
+{
+	list.clear();
+	LVRef<ldomXRange> page_range = GetPageDocRange();
+	if (page_range.isNull())
+	{
+		return;
+	}
+	class TextKeeper : public ldomNodeCallback
+	{
+		ldomXRangeList &list_;
+		void ProcessFinalNode(ldomNode *node)
+		{
+			int end_index = node->isText() ? node->getText().length() : node->getChildCount();
+			ldomXPointerEx start = ldomXPointerEx(node, 0);
+			ldomXPointerEx end = ldomXPointerEx(node, end_index);
+			lvRect start_rect;
+			lvRect end_rect;
+			if (!start.getRect(start_rect) || !end.getRect(end_rect))
+			{
+				CRLog::error("GetCurrentPageText getRect fail");
+				return;
+			}
+			if (start_rect.top == end_rect.top && start_rect.bottom == end_rect.bottom)
+			{
+				// Singleline link
+				list_.add(new ldomXRange(start, end));
+				return;
+			}
+			lvRect curr_rect;
+			for (int i = end_index - 1; i >= 0; i--)
+			{
+				ldomXPointerEx curr = ldomXPointerEx(node, i);
+				if (!curr.getRect(curr_rect))
+				{
+					CRLog::error("GetCurrentPageText getRect fail");
+					return;
+				}
+				if (curr_rect.top == start_rect.top)
+				{
+					if (curr_rect.bottom == start_rect.bottom)
+					{
+						// Запрыгнули на верхнюю строчку
+						list_.add(new ldomXRange(start, curr));
+						ldomXPointerEx prev = ldomXPointerEx(node, i + 1);
+						list_.add(new ldomXRange(prev, end));
+						break;
+					}
+					else
+					{
+						CRLog::error("GetCurrentPageText tops equals, bottoms doesnt");
+					}
+				}
+				else if (curr_rect.top != end_rect.top)
+				{
+					if (curr_rect.bottom != end_rect.bottom)
+					{
+						ldomXPointerEx prev = ldomXPointerEx(node, i + 1);
+						list_.add(new ldomXRange(prev, end));
+						end = ldomXPointerEx(curr);
+						if (!end.getRect(end_rect))
+						{
+							CRLog::error("GetCurrentPageText getRect fail");
+							return;
+						}
+					}
+					else
+					{
+						CRLog::error("GetCurrentPageText tops not equals, bottoms does");
+					}
+				}
+			}
+		}
+		void ProcessLinkNode(ldomNode *node)
+		{
+			for (lUInt32 i = 0; i < node->getChildCount(); i++)
+			{
+				ldomNode *child = node->getChildNode(i);
+				if (child->isText())
+				{
+					ProcessFinalNode(child);
+				}
+				else
+				{
+					ProcessLinkNode(child);
+				}
+			}
+		}
+	public:
+		bool text_is_first_ = true;
+		TextKeeper(ldomXRangeList &list) : list_(list) {}
+		// Called for each text fragment in range
+		virtual void onText(ldomXRange *node_range)
+		{
+			if (!text_is_first_)
+			{
+				return;
+			}
+			text_is_first_ = false;
+			ldomNode *node = node_range->getStart().getNode();
+			ldomNode *element_node = node->getParentNode();
+			if (element_node->isNull())
+			{
+				return;
+			}
+			ProcessLinkNode(element_node);
+#ifdef TRDEBUG
+			lString16 text = element_node->getText();
+			int start = node_range->getStart().getOffset();
+			int end = node_range->getEnd().getOffset();
+			if (start < end)
+			{
+				text = text.substr(start, end - start);
+			}
+			ldomNode *end_node = node_range->getEnd().getNode();
+			CRLog::debug("GetCurrentPageText first text on page: %d-%d %s",
+						 node->getDataIndex(), end_node->getDataIndex(), LCSTR(text));
+#endif
+		}
+		// Called for each node in range
+		virtual bool onElement(ldomXPointerEx *ptr)
+		{
+			ldomNode *element_node = ptr->getNode();
+#ifdef TRDEBUG
+			if (element_node->getChildCount() == 0)
+			{
+				// Empty link in malformed doc, example: <a name="sync_on_demand"></a>
+				CRLog::trace("GetCurrentPageText empty link in malformed doc");
+			}
+#endif
+			ProcessLinkNode(element_node);
+			return true;
+		}
+	};
+	TextKeeper callback(list);
 	page_range->forEach(&callback);
 	if (viewport_mode_ == MODE_PAGES && GetColumns() > 1)
 	{

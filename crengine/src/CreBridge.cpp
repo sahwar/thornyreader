@@ -427,9 +427,79 @@ void CreBridge::processPage(CmdRequest& request, CmdResponse& response)
     response.cmd = CMD_RES_PAGE;
 }
 
+void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
+{
+#ifdef TRDEBUG
+#define DEBUG_TEXT
+#endif //TRDEBUG
+    response.cmd = CMD_RES_PAGE_TEXT;
+    CmdDataIterator iter(request.first);
+    uint32_t external_page = 0;
+    iter.getInt(&external_page);
+    if (!iter.isValid()) {
+        CRLog::error("processPageText bad request data");
+        response.result = RES_BAD_REQ_DATA;
+        return;
+    }
+    uint32_t page = (uint32_t) ImportPage(external_page, doc_view_->GetColumns());
+    doc_view_->GoToPage(page);
+#ifdef DEBUG_TEXT
+    CRLog::debug("processPageText external_page=%d page=%d page_width=%d page_height=%d",
+            external_page, page, doc_view_->GetWidth(), doc_view_->GetHeight());
+    CRLog::trace("processPageText text: %s", LCSTR(doc_view_->GetPageText(page)));
+#endif
+    ldomXRangeList list;
+    doc_view_->GetCurrentPageText(list);
+    if (list.empty()) {
+        return;
+    }
+    float page_width = doc_view_->GetWidth();
+    float page_height = doc_view_->GetHeight();
+    for (int i = 0; i < list.length(); i++) {
+        ldomXRange* text = list[i];
+        lvRect raw_rect;
+        text->getRect(raw_rect);
+        lvRect rect = lvRect(raw_rect.left, raw_rect.top, raw_rect.right, raw_rect.bottom);
+        if (!doc_view_->DocToWindowRect(rect)) {
+#ifdef TRDEBUG
+            ldomNode* start_node = text->getStart().getNode();
+            ldomNode* end_node = text->getEnd().getNode();
+            CRLog::warn("processPageText DocToWindowRect fail %s\n  %d:%d-%d:%d\n  %s %d\n  %s %d",
+                        LCSTR(text->getHRef()),
+                        raw_rect.left, raw_rect.right, raw_rect.top, raw_rect.bottom,
+                        LCSTR(text->getStart().toString()), start_node->getDataIndex(),
+                        LCSTR(text->getEnd().toString()), end_node->getDataIndex());
+#endif
+            continue;
+        }
+        float l = rect.left / page_width;
+        float t = rect.top / page_height;
+        float r = rect.right / page_width;
+        float b = rect.bottom / page_height;
+        lString16 word = text->GetRangeText();
+        response.addFloat(l);
+        response.addFloat(t);
+        response.addFloat(r);
+        response.addFloat(b);
+        responseAddString(response, word);
+#ifdef DEBUG_TEXT
+        ldomNode* start_node = text->getStart().getNode();
+        ldomNode* end_node = text->getEnd().getNode();
+        CRLog::trace("processPageText %d:%d-%d:%d %d:%d-%d:%d\n  %s %d\n  %s %d",
+                     rect.left, rect.right, rect.top, rect.bottom,
+                     raw_rect.left, raw_rect.right, raw_rect.top, raw_rect.bottom,
+                     LCSTR(text->getStart().toString()), start_node->getDataIndex(),
+                     LCSTR(text->getEnd().toString()), end_node->getDataIndex());
+#endif
+    }
+#undef DEBUG_TEXT
+}
+
 void CreBridge::processPageLinks(CmdRequest& request, CmdResponse& response)
 {
+#ifdef TRDEBUG
 #define DEBUG_LINKS
+#endif //TRDEBUG
     response.cmd = CMD_RES_LINKS;
     CmdDataIterator iter(request.first);
     uint32_t external_page = 0;
@@ -442,12 +512,9 @@ void CreBridge::processPageLinks(CmdRequest& request, CmdResponse& response)
     uint32_t page = (uint32_t) ImportPage(external_page, doc_view_->GetColumns());
     doc_view_->GoToPage(page);
 #ifdef DEBUG_LINKS
-    if (0)
-    {
-        CRLog::debug("processPageLinks external_page=%d page=%d page_width=%d page_height=%d",
-                external_page, page, doc_view_->GetWidth(), doc_view_->GetHeight());
-        CRLog::debug("processPageLinks text: %s", LCSTR(doc_view_->GetPageText(page)));
-    }
+    CRLog::debug("processPageLinks external_page=%d page=%d page_width=%d page_height=%d",
+            external_page, page, doc_view_->GetWidth(), doc_view_->GetHeight());
+    CRLog::trace("processPageLinks text: %s", LCSTR(doc_view_->GetPageText(page)));
 #endif
     ldomXRangeList list;
     doc_view_->GetCurrentPageLinks(list);
@@ -462,7 +529,7 @@ void CreBridge::processPageLinks(CmdRequest& request, CmdResponse& response)
         link->getRect(raw_rect);
         lvRect rect = lvRect(raw_rect.left, raw_rect.top, raw_rect.right, raw_rect.bottom);
         if (!doc_view_->DocToWindowRect(rect)) {
-#ifdef DEBUG_LINKS
+#ifdef TRDEBUG
             ldomNode* start_node = link->getStart().getNode();
             ldomNode* end_node = link->getEnd().getNode();
             CRLog::warn("processPageLinks DocToWindowRect fail %s\n  %d:%d-%d:%d\n  %s %d\n  %s %d",
@@ -510,11 +577,12 @@ void CreBridge::processPageLinks(CmdRequest& request, CmdResponse& response)
 #ifdef DEBUG_LINKS
         ldomNode* start_node = link->getStart().getNode();
         ldomNode* end_node = link->getEnd().getNode();
-        /*CRLog::trace("processPageLinks %s %d\n  %d:%d-%d:%d %d:%d-%d:%d\n  %s %d\n  %s %d",
+        CRLog::trace("processPageLinks %s %d\n  %d:%d-%d:%d %d:%d-%d:%d\n  %s %d\n  %s %d",
                      LCSTR(href), target_page, rect.left, rect.right, rect.top, rect.bottom,
                      raw_rect.left, raw_rect.right, raw_rect.top, raw_rect.bottom,
                      LCSTR(link->getStart().toString()), start_node->getDataIndex(),
-                     LCSTR(link->getEnd().toString()), end_node->getDataIndex());*/
+                     LCSTR(link->getEnd().toString()), end_node->getDataIndex());
+
 #endif
     }
 #undef DEBUG_LINKS
@@ -642,13 +710,17 @@ void CreBridge::process(CmdRequest& request, CmdResponse& response)
             //CRLog::trace("CreBridge: CMD_REQ_PAGE");
             processPage(request, response);
             break;
+        case CMD_REQ_PAGE_RENDER:
+            //CRLog::trace("CreBridge: CMD_REQ_PAGE_RENDER");
+            processPageRender(request, response);
+            break;
         case CMD_REQ_LINKS:
             //CRLog::trace("CreBridge: CMD_REQ_LINKS");
             processPageLinks(request, response);
             break;
-        case CMD_REQ_PAGE_RENDER:
-            //CRLog::trace("CreBridge: CMD_REQ_PAGE_RENDER");
-            processPageRender(request, response);
+        case CMD_REQ_PAGE_TEXT:
+            //CRLog::trace("CreBridge: CMD_REQ_PAGE_TEXT");
+            processPageText(request, response);
             break;
         case CMD_REQ_OUTLINE:
             //CRLog::trace("CreBridge: CMD_REQ_OUTLINE");
