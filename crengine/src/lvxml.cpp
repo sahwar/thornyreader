@@ -2904,10 +2904,17 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
 
     bool in_blip_img = false;
     bool in_rpr = false;
+    bool in_ppr = false;
+    bool in_pstyle = false;
     bool in_t = false;
+    bool in_header= false;
+
     bool rpr_b=false;
     bool rpr_i=false;
     bool rpr_u=false;
+    bool ilvl=false;
+    int pstyle_value= 0;
+
 
     for (; !eof_ && !error && !firstpage_thumb_num_reached ;)
     {
@@ -3005,7 +3012,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     //||  tagname == "rpr"
                     //|| tagname == "pstyle" // h1 h2 h3
                     || tagname == "r"
-                    || tagname == "ppr"
+                    //|| tagname == "ppr"
                     || tagname == "bcs"
                     || tagname == "ics"
                     || tagname == "lang"
@@ -3048,11 +3055,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     break;
                 }
 
-                //li ul ? //todo rewrite it for more adequate worklike numbered lists ect
-                if (tagname == "ilvl")
-                {
-                    tagname = "li";
-                }
+
 
                 //table handling
                 if (tagname == "tbl")
@@ -3081,6 +3084,31 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     if (tagname == "u")
                     {
                         rpr_u = true;
+                    }
+                }
+
+                    //header styles handling
+                if (tagname == "ppr" && !close_flag)
+                {
+                    if (SkipTillChar('>'))
+                    {
+                        m_state = ps_text;
+                        ch = ReadCharFromBuffer();
+                    }
+                    in_ppr = true;
+                    break;
+                }
+                if (tagname == "ppr" && close_flag)
+                {
+                    in_ppr = false;
+                }
+
+                if( in_ppr)
+                {
+                    if (tagname == "pstyle")
+                    {
+                        in_pstyle = true;
+                        m_state = ps_attr;
                     }
                 }
 
@@ -3116,8 +3144,20 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     break;
                 }
 
+                //li  //todo rewrite it for numbered lists
+                if (tagname == "ilvl")
+                {
+                    ilvl = true;
+                }
+
                 if(tagname == "t")
                 {
+                    if(ilvl)
+                    {
+                        tagname = "li";
+
+                        ilvl = false;
+                    }
                     in_t = true;
                 }
 
@@ -3268,6 +3308,27 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                 {
                     attrns = "";
                 }
+
+                if(in_pstyle)
+                {
+                    if(attrname == "val")
+                    {
+                        in_header = true;
+                        if (attrvalue == "1")
+                        {
+                            pstyle_value = 1;
+                        }
+                        if (attrvalue == "2")
+                        {
+                            pstyle_value = 2;
+                        }
+                        if (attrvalue == "3")
+                        {
+                            pstyle_value = 3;
+                        }
+                    }
+                    in_pstyle = false;
+                }
                 //embedded image handling
                 if(in_blip_img)
                 {
@@ -3293,25 +3354,41 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                 break;
             case ps_text:
             {
-                //bold italic underline tag insertion
+                //bold italic underline list tag insertion
                 if (in_t)
                 {
+                    if(in_header)
+                    {
+                        switch (pstyle_value){
+                            case 1:
+                                callback_->OnTagOpen(L"", L"h1");
+                                break;
+                            case 2:
+                                callback_->OnTagOpen(L"", L"h2");
+                                break;
+                            case 3:
+                                callback_->OnTagOpen(L"", L"h3");
+                                break;
+                            default:
+                                in_header = false;
+                                break;
+                        }
+                        in_header = false;
+                        pstyle_value = 0;
+                    }
                     if (rpr_b)
                     {
-                        CRLog::error("readtext b");
                         callback_->OnTagOpen(L"", L"b");
                         rpr_b = false;
                     }
-                    if (rpr_i)
+                    else if (rpr_i)
                     {
-                        CRLog::error("readtext i");
-                        callback_->OnTagOpen(L"", L"i");
+                        //callback_->OnTagOpen(L"", L"i");
                         rpr_i = false;
                     }
-                    if (rpr_u)
+                    else if (rpr_u)
                     {
-                        CRLog::error("readtext u");
-                        callback_->OnTagOpen(L"", L"u");
+                        //callback_->OnTagOpen(L"", L"u");
                         rpr_u = false;
                     }
                     in_t = false;
