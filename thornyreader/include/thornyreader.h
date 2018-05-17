@@ -42,6 +42,7 @@ void ThornyVersionResporse(const char* base_version, CmdResponse& response);
 #define DOC_FORMAT_OXPS 11
 #define DOC_FORMAT_CHM 12
 #define DOC_FORMAT_HTML 13
+#define DOC_FORMAT_DOCX 14
 
 #define CONFIG_CRE_FOOTNOTES 100
 #define CONFIG_CRE_EMBEDDED_STYLES 101
