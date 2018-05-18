@@ -15,9 +15,13 @@
 
 #define META_MAX_LENGTH 2000
 
+#ifdef TRDEBUG
 #define DUMP_DOMTREE 0
 // define to non-zero (1..5) to see block bounds // NOW IT IS IN CRCONFIG
 //#define DEBUG_TREE_DRAW 1
+#else
+#define DUMP_DOMTREE 0
 #define DEBUG_TREE_DRAW 0
+#endif // TRDEBUG
 
 #endif //CRCONFIG_H
