@@ -14,11 +14,12 @@
 #include "include/lvtinydom.h"
 #include "include/fb2def.h"
 #include "include/lvrend.h"
+#include "include/crconfig.h"
 
 //#define DEBUG_TREE_DRAW 3
-// define to non-zero (1..5) to see block bounds
+// define to non-zero (1..5) to see block bounds // NOW IT IS IN CRCONFIG
 //#define DEBUG_TREE_DRAW 1
-#define DEBUG_TREE_DRAW 0
+
 //#define DEBUG_DUMP_ENABLED
 #ifdef DEBUG_DUMP_ENABLED
 class simpleLogFile

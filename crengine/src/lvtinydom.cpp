@@ -5543,7 +5543,7 @@ lString16 ldomXRange::GetRangeText(lChar16 blockDelimiter, int maxTextLen)
             int start = node_range->getStart().getOffset();
             int end = node_range->getEnd().getOffset();
             if (start < end) {
-                text_ << text.substr(start, end - start);
+                text_ << text.substr(start, end - start+1); // problem was here, added +1, so full string is being sent
             }
             lastText = true;
             newBlock = false;

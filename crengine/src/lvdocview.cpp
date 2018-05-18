@@ -1227,7 +1227,7 @@ bool LVDocView::DocToWindowRect(lvRect &rect)
 	else
 	{
 		int page = GetCurrPage();
-		if (page >= 0 && page < pages_list_.length() && rect.top >= pages_list_[page]->start)
+		if (page >= 0 && page < pages_list_.length() && rect.top+1 >= pages_list_[page]->start)
 		{
 			int index = -1;
 			if (rect.bottom <= (pages_list_[page]->start + pages_list_[page]->height))
@@ -1243,16 +1243,26 @@ bool LVDocView::DocToWindowRect(lvRect &rect)
 			if (index >= 0)
 			{
 				int right = rect.right + page_rects_[index].left + margins_.left;
-				if (right < page_rects_[index].right - margins_.right)
+				if (right-1 <= page_rects_[index].right - margins_.right)
 				{
 					rect.left = rect.left + page_rects_[index].left + margins_.left;
-					rect.right = right;
-					rect.top = rect.top + margins_.top - pages_list_[page + index]->start;
-					rect.bottom = rect.bottom + margins_.top - pages_list_[page + index]->start;
-					return true;
-				}
-			}
+                    rect.right = right;
+                    rect.top = rect.top + margins_.top - pages_list_[page + index]->start;
+                    rect.bottom = rect.bottom + margins_.top - pages_list_[page + index]->start;
+                    return true;
+                }
+                else
+                {
+                    CRLog::error("NOT PASSED BY HORIZONTAL CHECKS");
+                }
+            }
+            else
+            {
+                CRLog::error("NOT PASSED BY VERTICAL CHECKS. Index = %d",index);
+            }
 		}
+        CRLog::error("page >= 0 && page < pages_list_.length() && rect.top >= pages_list_[page]->start");
+        CRLog::error("%d >= 0 && %d < %d && %d >= %d", page,page,pages_list_.length(),rect.top,pages_list_[page]->start);
 		return false;
 	}
 	return false;
@@ -1983,6 +1993,8 @@ void LVDocView::GetCurrentPageText(ldomXRangeList &list)
 		ldomXRangeList &list_;
 		void ProcessFinalNode(ldomNode *node)
 		{
+            CRLog::error("node->getText() = %s",LCSTR(node->getText()));
+            CRLog::error("node->getText().length = %d",node->getText().length());
 			int end_index = node->isText() ? node->getText().length() : node->getChildCount();
 			ldomXPointerEx start = ldomXPointerEx(node, 0);
 			ldomXPointerEx end = ldomXPointerEx(node, end_index);
@@ -2000,7 +2012,8 @@ void LVDocView::GetCurrentPageText(ldomXRangeList &list)
 				return;
 			}
 			lvRect curr_rect;
-			for (int i = end_index - 1; i >= 0; i--)
+			//for (int i = end_index - 1; i >= 0; i--)
+			for (int i = end_index ; i >= 0; i--)
 			{
 				ldomXPointerEx curr = ldomXPointerEx(node, i);
 				if (!curr.getRect(curr_rect))
