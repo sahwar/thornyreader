@@ -1,24 +1,22 @@
 #include <stdlib.h>
-#include <stdio.h>
 
-
-#include "include/mobihandler.h"
 #include "thornyreader/include/thornyreader.h"
 #include "thornyreader/include/StProtocol.h"
 #include "thornyreader/include/StSocket.h"
 #include "include/CreBridge.h"
+#include "include/mobihandler.h"
 
-static inline int CeilToEvenInt(int n)
+static int CeilToEvenInt(int n)
 {
     return (n + 1) & ~1;
 }
 
-static inline int FloorToEvenInt(int n)
+static int FloorToEvenInt(int n)
 {
     return n & ~1;
 }
 
-static inline uint32_t ExportPagesCount(int columns, int pages)
+static uint32_t ExportPagesCount(int columns, int pages)
 {
 	if (columns == 2) {
 		return (uint32_t) (CeilToEvenInt(pages) / columns);
@@ -26,7 +24,7 @@ static inline uint32_t ExportPagesCount(int columns, int pages)
 	return (uint32_t) pages;
 }
 
-static inline int ExportPage(int columns, int page)
+static int ExportPage(int columns, int page)
 {
 	if (columns == 2) {
 		return FloorToEvenInt(page) / columns;
@@ -34,7 +32,7 @@ static inline int ExportPage(int columns, int page)
 	return page;
 }
 
-static inline int ImportPage(int columns, int page)
+static int ImportPage(int columns, int page)
 {
 	return page * columns;
 }
@@ -662,8 +660,6 @@ void CreBridge::processQuit(CmdRequest& request, CmdResponse& response)
     response.cmd = CMD_RES_QUIT;
 }
 
-
-
 CreBridge::CreBridge() : StBridge(THORNYREADER_LOG_TAG)
 {
     doc_view_ = NULL;
@@ -676,7 +672,6 @@ CreBridge::CreBridge() : StBridge(THORNYREADER_LOG_TAG)
     // 0 - disabled, 1 - bytecode, 2 - auto
     fontMan->SetHintingMode(HINTING_MODE_BYTECODE_INTERPRETOR);
     fontMan->setKerning(true);
-
     HyphMan::init();
 }
 
@@ -741,10 +736,6 @@ void CreBridge::process(CmdRequest& request, CmdResponse& response)
         case CMD_REQ_CRE_METADATA:
             //CRLog::trace("CreBridge: CMD_REQ_CRE_METADATA");
             processMetadata(request, response);
-            break;
-        case CMD_REQ_ALIVE:
-            //CRLog::trace("CreBridge: CMD_REQ_ALIVE");
-            response.cmd = CMD_RES_ALIVE;
             break;
         case CMD_REQ_QUIT:
             //CRLog::trace("CreBridge: CMD_REQ_QUIT");

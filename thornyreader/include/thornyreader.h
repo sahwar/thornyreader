@@ -17,9 +17,9 @@
 #ifndef _THORNYREADER_H_
 #define _THORNYREADER_H_
 
+#include <string>
 #include "thornyreader_version.h"
 #include "StProtocol.h"
-#include <string>
 
 #define THORNYREADER_LOG_TAG "thornyreader"
 

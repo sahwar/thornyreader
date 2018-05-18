@@ -55,8 +55,6 @@
 #define CMD_RES_CRE_PAGE_XPATH			27
 #define CMD_REQ_CRE_METADATA   			28
 #define CMD_RES_CRE_METADATA			29
-#define CMD_REQ_ALIVE   			    30
-#define CMD_RES_ALIVE			        31
 #define CMD_REQ_LINKS   			    32
 #define CMD_RES_LINKS			        33
 #define CMD_REQ_CONVERT   			    34
