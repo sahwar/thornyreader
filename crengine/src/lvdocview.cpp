@@ -2545,14 +2545,15 @@ void CreBridge::processMetadata(CmdRequest &request, CmdResponse &response)
 		if (!thumb_image.isNull() && thumb_image->GetWidth() > 0 && thumb_image->GetHeight() > 0)
 		{
             thumb_width = thumb_image->GetWidth();
-            thumb_height = thumb_image->GetHeight();
-            unsigned char *pixels = doc_thumb->newByteArray(thumb_width * thumb_height * 4);
-            LVColorDrawBuf *buf = new LVColorDrawBuf(thumb_width, thumb_height, pixels, 32);
-            buf->Draw(thumb_image, 0, 0, thumb_width, thumb_height, false);
-            convertBitmap(buf);
-            delete buf;
-            thumb_image.Clear();
-        }
+			if (thumb_width * thumb_height * 4 <= 20e6) { // 20 mb
+				unsigned char *pixels = doc_thumb->newByteArray(thumb_width * thumb_height * 4);
+				LVColorDrawBuf *buf = new LVColorDrawBuf(thumb_width, thumb_height, pixels, 32);
+				buf->Draw(thumb_image, 0, 0, thumb_width, thumb_height, false);
+				convertBitmap(buf);
+				delete buf;
+				thumb_image.Clear();
+			}
+		}
 	}
 	if(title.length() > META_MAX_LENGTH)
 	{

@@ -13,7 +13,11 @@
 #define FONT_FOLDER "/system/fonts/"
 #define FALLBACK_FONTS_ENABLE 1
 
-#define META_MAX_LENGTH 60
+#define META_MAX_LENGTH 2000
 
 #define DUMP_DOMTREE 0
+// define to non-zero (1..5) to see block bounds // NOW IT IS IN CRCONFIG
+//#define DEBUG_TREE_DRAW 1
+#define DEBUG_TREE_DRAW 0
+
 #endif //CRCONFIG_H
