@@ -35,6 +35,7 @@ lString16 DocxGetMainFilePath(LVContainerRef m_arc)
     return lString16::empty_str;
 }
 
+//left that method for toc or other usage implementetion
 DocxItems DocxParseContentTypes(LVContainerRef m_arc)
 {
     LVStreamRef container_stream = m_arc->OpenStream(L"[Content_Types].xml", LVOM_READ);
@@ -100,7 +101,6 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 
     m_doc->setDocParentContainer(m_arc);
 
-
     lString16 codeBase;
     //lString16 css;
     {
@@ -115,10 +115,6 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
         CRLog::error("4");
         return false;
     }
-
-    //lString16 ncxHref;
-    //lString16 coverId;
-    //bool CoverPageIsValid = false;
 
     LVStreamRef content_stream2 = m_arc->OpenStream(L"/word/_rels/document.xml.rels", LVOM_READ);
 
@@ -165,12 +161,6 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
     CRPropRef m_doc_props = m_doc->getProps();
 
     LvDomWriter writer(m_doc);
-#if 0
-    m_doc->setNodeTypes( fb2_elem_table );
-	m_doc->setAttributeTypes( fb2_attr_table );
-	m_doc->setNameSpaceTypes( fb2_ns_table );
-#endif
-    //m_doc->setCodeBase( codeBase );
 
     class TrDocxWriter: public LvDocFragmentWriter {
     public:
@@ -184,7 +174,6 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
     appender.setFlags(132);
     writer.OnStart(NULL);
     writer.OnTagOpenNoAttr(L"", L"body");
-    int fragmentCount = 0;
 
 
     LVStreamRef stream2 = m_arc->OpenStream(rootfilePath.c_str(), LVOM_READ);
@@ -193,29 +182,18 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 
         //LvXmlParser
         LvHtmlParser parser(stream2, &appender, firstpage_thumb);
-        //if (parser.CheckFormat() && parser.ParseDocx())
         if (parser.ParseDocx(docxItems))
         {
             // valid
-            fragmentCount++;
         }
         else
         {
             CRLog::error("Document type is not XML/XHTML for fragment %s", LCSTR(rootfilePath));
         }
     }
-//			}
-//		}
-//	}
 
     writer.OnTagClose(L"", L"body");
     writer.OnStop();
-    //CRLog::debug("EPUB: %d documents merged", fragmentCount);
-
-    //if (fragmentCount == 0)
-    {
-        //	return false;
-    }
 
 #if 0 // set stylesheet
     //m_doc->getStylesheet()->clear();
