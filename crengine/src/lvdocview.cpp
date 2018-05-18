@@ -426,9 +426,7 @@ bool LVDocView::LoadDoc(int doc_format, const char *absolute_path,
 bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 {
     stream_ = stream;
-	//doc_format_ = doc_format;
-	doc_format_ = DOC_FORMAT_DOCX;
-	doc_format = DOC_FORMAT_DOCX;
+	doc_format_ = doc_format;
 	CheckRenderProps(0, 0);
 	LVFileFormatParser *parser = nullptr;
 	if (doc_format == DOC_FORMAT_FB2)
