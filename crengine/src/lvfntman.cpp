@@ -2093,6 +2093,16 @@ public:
         lString8Collection faces;
 
         GetSystemFallbackFontsList(fonts);
+        if (fonts.length() == 0)
+        {
+            CRLog::error("No fallback font files found!");
+            faces.add(lString8("Roboto"));//default
+            AddFallbackFontFaceIntoArray(faces.at(0));
+            lString8 fallbackface = GetFallbackFontFaceFromArray(0);
+            SetFallbackFontFace(fallbackface);
+            _fallbackFontsInitalized = true;
+            return;
+        }
         faces.add(lString8("Roboto"));//default
         for (int i = 0; i < fonts.length(); ++i)
         {
