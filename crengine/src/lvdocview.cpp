@@ -2554,6 +2554,23 @@ void CreBridge::processMetadata(CmdRequest &request, CmdResponse &response)
             thumb_image.Clear();
         }
 	}
+	if(title.length() > META_MAX_LENGTH)
+	{
+		title = title.substr(0,META_MAX_LENGTH);
+	}
+	if(authors.length() > META_MAX_LENGTH)
+	{
+		authors = authors.substr(0,META_MAX_LENGTH);
+	}
+	if(series.length() > META_MAX_LENGTH)
+	{
+		series = series.substr(0,META_MAX_LENGTH);
+	}
+	if(lang.length() > META_MAX_LENGTH)
+	{
+		lang = lang.substr(0,META_MAX_LENGTH);
+	}
+
 	response.addData(doc_thumb);
 	response.addInt((uint32_t) thumb_width);
 	response.addInt((uint32_t) thumb_height);
