@@ -430,7 +430,7 @@ void CreBridge::processPage(CmdRequest& request, CmdResponse& response)
 void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
 {
 #ifdef TRDEBUG
-#define DEBUG_TEXT
+//#define DEBUG_TEXT
 #endif //TRDEBUG
     response.cmd = CMD_RES_PAGE_TEXT;
     CmdDataIterator iter(request.first);
@@ -455,13 +455,35 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
     }
     float page_width = doc_view_->GetWidth();
     float page_height = doc_view_->GetHeight();
-    for (int i = 0; i < list.length(); i++) {
+    for (int i = 0; i < list.length(); i++)
+    {
+        //doc_view_->selectRange(*list[i]);
+        //doc_view_->selectWords(words);
         ldomXRange* text = list[i];
-        lvRect raw_rect;
-        text->getRect(raw_rect);
-        lvRect rect = lvRect(raw_rect.left, raw_rect.top, raw_rect.right, raw_rect.bottom);
-        if (!doc_view_->DocToWindowRect(rect)) {
-#ifdef TRDEBUG
+
+       // CRLog::error("text :%d = %s",i, LCSTR(text->getStart().toString()));
+        LVArray<ldomWord> list2;
+        text->getRangeWords(list2);
+        for (int i = 0; i < list2.length() ; ++i)
+        {
+            CRLog::error("list:%d : %s",i,LCSTR(list2.get(i).getText()));
+            ldomXPointer a1 = list2.get(i).getStartXPointer();
+            ldomXPointer a2 = list2.get(i).getEndXPointer();
+            ldomXPointerEx b1 = a1;
+            ldomXPointerEx b2 = a2;
+
+            ldomXRange a;
+            a.setStart(b1);
+            a.setEnd(b2);
+
+            lvRect raw_rect;
+            a.getRect(raw_rect);
+            lvRect rect = lvRect(raw_rect.left, raw_rect.top, raw_rect.right, raw_rect.bottom);
+        //CRLog::error("RECT: \n U:%d \n D: %d \n L:%d \n R:%d \n",rect.top,rect.bottom,rect.left,rect.right);
+
+        if (!doc_view_->DocToWindowRect(rect))
+        {
+            #ifdef TRDEBUG
             ldomNode* start_node = text->getStart().getNode();
             ldomNode* end_node = text->getEnd().getNode();
             CRLog::warn("processPageText DocToWindowRect fail %s\n  %d:%d-%d:%d\n  %s %d\n  %s %d",
@@ -469,14 +491,15 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
                         raw_rect.left, raw_rect.right, raw_rect.top, raw_rect.bottom,
                         LCSTR(text->getStart().toString()), start_node->getDataIndex(),
                         LCSTR(text->getEnd().toString()), end_node->getDataIndex());
-#endif
+            #endif
             continue;
         }
         float l = rect.left / page_width;
         float t = rect.top / page_height;
         float r = rect.right / page_width;
         float b = rect.bottom / page_height;
-        lString16 word = text->GetRangeText();
+        lString16 word = list2.get(i).getText();
+        CRLog::error("word = %s",LCSTR(word));
         response.addFloat(l);
         response.addFloat(t);
         response.addFloat(r);
@@ -491,6 +514,7 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
                      LCSTR(text->getStart().toString()), start_node->getDataIndex(),
                      LCSTR(text->getEnd().toString()), end_node->getDataIndex());
 #endif
+        }
     }
 #undef DEBUG_TEXT
 }
