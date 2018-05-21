@@ -1993,8 +1993,6 @@ void LVDocView::GetCurrentPageText(ldomXRangeList &list)
 		ldomXRangeList &list_;
 		void ProcessFinalNode(ldomNode *node)
 		{
-            CRLog::error("node->getText() = %s",LCSTR(node->getText()));
-            CRLog::error("node->getText().length = %d",node->getText().length());
 			int end_index = node->isText() ? node->getText().length() : node->getChildCount();
 			ldomXPointerEx start = ldomXPointerEx(node, 0);
 			ldomXPointerEx end = ldomXPointerEx(node, end_index);
