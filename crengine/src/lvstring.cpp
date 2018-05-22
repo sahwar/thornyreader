@@ -3077,14 +3077,14 @@ static lUInt16 char_props[] = {
 // 0x0020:
 CH_PROP_SPACE, // ' '
 CH_PROP_PUNCT, // '!'
-0, // '\"'
+CH_PROP_SIGN, // '\"'
 CH_PROP_SIGN, // '#'
 CH_PROP_SIGN, // '$'
 CH_PROP_SIGN, // '%'
 CH_PROP_SIGN, // '&'
 CH_PROP_SIGN, // '\''
-0, // '('
-0, // ')'
+CH_PROP_SIGN, // '('
+CH_PROP_SIGN, // ')'
 CH_PROP_SIGN, // '*'
 CH_PROP_SIGN, // '+'
 CH_PROP_PUNCT, // ','
@@ -3953,6 +3953,8 @@ inline lUInt16 getCharProp(lChar16 ch) {
         return char_props_1f00[ch & 255];
     else if (ch>=0x2012 && ch<=0x2015)
         return CH_PROP_DASH|CH_PROP_SIGN;
+    else if (ch==0x2026) //add symbols here if not caught
+        return CH_PROP_SIGN;
     return 0;
 }
 

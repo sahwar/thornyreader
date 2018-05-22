@@ -5245,8 +5245,20 @@ void ldomXRange::getRangeWords(LVArray<ldomWord>& words_list) {
                 len = end;
             }
             int beginOfWord = -1;
+            int TRFLAGS = 0 ;
+            TRFLAGS |= CH_PROP_ALPHA;
+            TRFLAGS |= CH_PROP_DIGIT;
+            TRFLAGS |= CH_PROP_PUNCT;
+            TRFLAGS |= CH_PROP_HYPHEN;
+            TRFLAGS |= CH_PROP_VOWEL;
+            TRFLAGS |= CH_PROP_CONSONANT;
+            TRFLAGS |= CH_PROP_SIGN;
+            TRFLAGS |= CH_PROP_ALPHA_SIGN;
+            TRFLAGS |= CH_PROP_DASH;
+
             for (int i = nodeRange->getStart().getOffset(); i <= len; i++) {
-                int alpha = lGetCharProps(text[i]) & CH_PROP_ALPHA;
+                //int alpha = lGetCharProps(text[i]) & CH_PROP_ALPHA; //  words check here
+                int alpha = lGetCharProps(text[i]) & TRFLAGS; //  words check here
                 if (alpha && beginOfWord < 0) {
                     beginOfWord = i;
                 }
