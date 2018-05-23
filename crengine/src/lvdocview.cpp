@@ -1254,11 +1254,17 @@ bool LVDocView::DocToWindowRect(lvRect &rect)
                 else
                 {
                     CRLog::error("NOT PASSED BY HORIZONTAL CHECKS");
+                    CRLog::error("right - 1 <= page_rects_[index].right - margins_.right");
+                    CRLog::error("%d <= %d - %d", right - 1, page_rects_[index].right, margins_.right);
+                    return false;
                 }
             }
             else
             {
                 CRLog::error("NOT PASSED BY VERTICAL CHECKS. Index = %d",index);
+                CRLog::error("rect.bottom <= (pages_list_[page]->start + pages_list_[page]->height)");
+                CRLog::error("%d <= (%d + %d)",rect.bottom, pages_list_[page]->start, pages_list_[page]->height);
+                return false;
             }
 		}
         CRLog::error("page >= 0 && page < pages_list_.length() && rect.top >= pages_list_[page]->start");
@@ -1802,7 +1808,7 @@ LVRef<ldomXRange> LVDocView::GetPageDocRange(int page_index)
 		res = LVRef<ldomXRange>(new ldomXRange(start, end));
 	}
 	else
-	{
+	{   CRLog::error("pages");
 		// PAGES mode
 		if (page_index < 0 || page_index >= pages_list_.length())
 		{
@@ -1816,8 +1822,8 @@ LVRef<ldomXRange> LVDocView::GetPageDocRange(int page_index)
 		ldomXPointer start = cr_dom_->createXPointer(lvPoint(0, page->start));
 		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(m_dx + m_dy, page->start + page->height - 1));
 		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
-		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height), 1);
-		ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
+		ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height), 1);
+		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
 		if (start.isNull() || end.isNull())
 		{
 			return res;
