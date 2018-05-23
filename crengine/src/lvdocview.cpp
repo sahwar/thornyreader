@@ -1808,7 +1808,7 @@ LVRef<ldomXRange> LVDocView::GetPageDocRange(int page_index)
 		res = LVRef<ldomXRange>(new ldomXRange(start, end));
 	}
 	else
-	{   CRLog::error("pages");
+	{
 		// PAGES mode
 		if (page_index < 0 || page_index >= pages_list_.length())
 		{
@@ -1822,7 +1822,8 @@ LVRef<ldomXRange> LVDocView::GetPageDocRange(int page_index)
 		ldomXPointer start = cr_dom_->createXPointer(lvPoint(0, page->start));
 		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(m_dx + m_dy, page->start + page->height - 1));
 		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
-		ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height), 1);
+        //todo dynamically add two line heights instead of fixed 50 pixels
+        ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + 50), 1);
 		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
 		if (start.isNull() || end.isNull())
 		{
