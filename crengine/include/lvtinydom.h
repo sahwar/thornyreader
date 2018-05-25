@@ -1313,6 +1313,8 @@ public:
     lString16 GetRangeText( lChar16 blockDelimiter='\n', int maxTextLen=0 );
     /// get all words from specified range
     void getRangeWords( LVArray<ldomWord> & list );
+
+    void getRangeChars( LVArray<ldomWord> & list );
     /// returns href attribute of <A> element, null string if not found
     lString16 getHRef();
     /// sets range to nearest word bounds, returns true if success
