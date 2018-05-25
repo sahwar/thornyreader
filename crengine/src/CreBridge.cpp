@@ -451,7 +451,9 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
 #endif
     float page_width = doc_view_->GetWidth();
     float page_height = doc_view_->GetHeight();
+    int page_width_int = doc_view_->GetWidth();
     int page_height_int = doc_view_->GetHeight();
+    bool two_columns = doc_view_->GetColumns() > 1;
 
     //we need these lines to get list of paragraph ends. it passes it to doc_view->curr_page_para_array
     ldomXRangeList unused;                      //this
@@ -469,8 +471,7 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
     ldomXRange text = *range;
 
     // CRLog::error("text :%d = %s",i, LCSTR(text->getStart().toString()));
-    LVArray<ldomWord> list2;
-    text.getRangeWords(list2);
+
     int strheight_last = 0;
     int para_counter = 0;
 
@@ -482,178 +483,141 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
             doc_view_->next_page_para_array.add(para_array.get(i));
         }
     }
-    for (int i = 0; i < list2.length(); ++i) //main cycle
+
+    LVArray<ldomWord> word_chars;
+    text.getRangeChars(word_chars);
+    for (int i = 0; i < word_chars.length(); ++i)
     {
+        ldomXPointer start = word_chars.get(i).getStartXPointer();
+        ldomXPointer end = word_chars.get(i).getEndXPointer();
+        ldomXPointerEx startex = start;
+        ldomXPointerEx endex = end;
 
-        //CRLog::error("word:%d : %s",i,LCSTR(list2.get(i).getText()));
-        ldomXPointer a1 = list2.get(i).getStartXPointer();
-        ldomXPointer a2 = list2.get(i).getEndXPointer();
-        ldomXPointerEx b1 = a1;
-        ldomXPointerEx b2 = a2;
+        ldomXRange ch;
+        ch.setStart(startex);
+        ch.setEnd(endex);
 
-        ldomXRange word;
-        word.setStart(b1);
-        word.setEnd(b2);
 
-        LVArray<ldomWord> word_chars;
-        CRLog::error("1");
-        word.getRangeChars(word_chars);
-        for (int i = 0; i < word_chars.length(); ++i)
+        lvRect rect;
+        ch.getRect(rect);
+        int strheight_curr = rect.bottom - rect.top;
+
+        //paragraph breaks implementation
+        if (para_counter > para_array.length())
         {
-            CRLog::error("2");
-            ldomXPointer start = word_chars.get(i).getStartXPointer();
-            ldomXPointer end = word_chars.get(i).getEndXPointer();
-            ldomXPointerEx startex = start;
-            ldomXPointerEx endex = end;
+            para_counter = para_array.length();
+        }
+        if (rect.top > para_array.get(para_counter).top)
+        {
+            lvRect raw_rect_n = para_array.get(para_counter);
+            lvRect rect_n = lvRect(raw_rect_n.left + margins.left, raw_rect_n.top + margins.top - offset, raw_rect_n.right + margins.left, raw_rect_n.bottom + margins.top - offset);
+            float l5 = (rect_n.left + (strheight_curr/2)) / page_width;
+            float r5 = (rect_n.right + (strheight_curr*2)) / page_width;
+            float t5 = (rect_n.top) / page_height;
+            float b5 = (rect_n.bottom) / page_height;
+            lString16 para_end = lString16("PARA_END ") + lString16::itoa(para_counter); //Todo change "PARA_END" to defined symbol // bottom lag is here
+            response.addFloat(l5);
+            response.addFloat(t5);
+            response.addFloat(r5);
+            response.addFloat(b5);
+            responseAddString(response, para_end);
 
-            ldomXRange ch;
-            ch.setStart(startex);
-            ch.setEnd(endex);
+            para_counter++;
+        }
 
-
-
-            lvRect rect;
-            ch.getRect(rect);
-            int strheight_curr = rect.bottom - rect.top;
-
-            //paragraph breaks implementation
-            if (para_counter > para_array.length())
+        // when line break happens between pages
+        if (strheight_last != 0 && strheight_curr >= strheight_last * 2)
+        {
+            //check if top of block is on this page  and is in needed range
+            if (rect.top + margins.top < doc_view_->GetOffset() + doc_view_->GetHeight())// && rect.top + strheight_curr < page_height_int - margins.bottom)
             {
-                para_counter = para_array.length();
-            }
-            if (rect.top > para_array.get(para_counter).top)
-            {
-                lvRect raw_rect_n = para_array.get(para_counter);
-                lvRect rect_n = lvRect(raw_rect_n.left + margins.left, raw_rect_n.top + margins.top - offset, raw_rect_n.right + margins.left, raw_rect_n.bottom + margins.top - offset);
-                float l5 = (rect_n.left + 15) / page_width;
-                float r5 = (rect_n.right + 35) / page_width;
-                float t5 = (rect_n.top) / page_height;
-                float b5 = (rect_n.bottom) / page_height;
-                lString16 para_end = lString16("PARA_END ") + lString16::itoa(para_counter); //Todo change "PARA_END" to defined symbol
-                response.addFloat(l5);
-                response.addFloat(t5);
-                response.addFloat(r5);
-                response.addFloat(b5);
-                responseAddString(response, para_end);
-
-                para_counter++;
-            }
-
-            // when line break happens between pages
-            if (strheight_last != 0 && strheight_curr >= strheight_last * 2)
-            {
-                //check if top of block is on this page  and is in needed range
-                if (rect.top + margins.top < doc_view_->GetOffset() + doc_view_->GetHeight())// && rect.top + strheight_curr < page_height_int - margins.bottom)
+                //check if bottom of block is out of this page
+                if (rect.bottom + margins.top + margins.bottom - doc_view_->GetOffset() >= doc_view_->GetHeight())
                 {
-                    //check if bottom of block is out of this page
-                    //if (rect.bottom + margins.top > doc_view_->GetOffset() + doc_view_->GetHeight())
-                    if (rect.bottom + margins.top + margins.bottom - doc_view_->GetOffset() >= doc_view_->GetHeight())
-                    {
-                        lvRect orig_rect = lvRect(rect.left + margins.left, rect.top + margins.top - offset, rect.right + margins.left, rect.bottom + margins.top - offset);
-                        //top block add
-                        float l3 = orig_rect.right / page_width;
-                        float t3 = orig_rect.top / page_height;
-                        float r3 = (page_width - margins.right) / page_width;
-                        float b3 = (orig_rect.top + strheight_last) / page_height;
-                        lString16 word = word_chars.get(i).getText();
-                        // CRLog::error("word = %s",LCSTR(word));
-                        response.addFloat(l3);
-                        response.addFloat(t3);
-                        response.addFloat(r3);
-                        response.addFloat(b3);
-                        responseAddString(response, word);
+                    lvRect orig_rect = lvRect(rect.left + margins.left, rect.top + margins.top - offset, rect.right + margins.left, rect.bottom + margins.top - offset);
 
-                        //last line glue block add
-                        float l4 = (page_width - margins.right) / page_width;
-                        float t4 = orig_rect.top / page_height;
-                        float r4 = (page_width - margins.right + 10) / page_width;
-                        float b4 = (orig_rect.top + strheight_last) / page_height;
-                        lString16 last_line_glue = lString16("LAST_LINE_GLUE"); //Todo change "LAST_LINE_GLUE" to defined symbol
-                        response.addFloat(l4);
-                        response.addFloat(t4);
-                        response.addFloat(r4);
-                        response.addFloat(b4);
-                        responseAddString(response, last_line_glue);
-                        continue;
-                    }
+                    float pre_r3 = (two_columns) ? (page_width_int /4) : page_width_int ;
+                    pre_r3 = pre_r3 - margins.right;
+
+                    //top block add
+                    float l3 = orig_rect.right / page_width;
+                    float t3 = orig_rect.top / page_height;
+                    float r3 = pre_r3 / page_height;
+                    float b3 = (orig_rect.top + strheight_last) / page_height;
+                    lString16 word = word_chars.get(i).getText();
+                    // CRLog::error("word = %s",LCSTR(word));
+                    response.addFloat(l3);
+                    response.addFloat(t3);
+                    response.addFloat(r3);
+                    response.addFloat(b3);
+                    responseAddString(response, word);
                 }
             }
-            else
-            {
-                strheight_last = strheight_curr;
-            }
-            if (!doc_view_->DocToWindowRect(rect))
-            {
-                #ifdef TRDEBUG
-                #if 0
-                CRLog::warn("processPageText DocToWindowRect fail %s\n  %d:%d-%d:%d\n  %s %d\n  %s %d",
+        }
+        else
+        {
+            strheight_last = strheight_curr;
+        }
+        if (!doc_view_->DocToWindowRect(rect))
+        {
+#ifdef TRDEBUG
+#if 0
+            CRLog::warn("processPageText DocToWindowRect fail %s\n  %d:%d-%d:%d\n  %s %d\n  %s %d",
                             LCSTR(text.getHRef()),
                             rect.left, rect.right, rect.top, rect.bottom,
                             LCSTR(text.getStart().toString()), start_node->getDataIndex(),
                             LCSTR(text.getEnd().toString()), end_node->getDataIndex());
-                #endif
-                #endif // TRDEBUG
-                continue;
-            }
+#endif
+#endif // TRDEBUG
+            continue;
+        }
 
 
-            if (strheight_last != 0 && strheight_curr >= strheight_last * 2) //line break implementation
+        if (strheight_last != 0 && strheight_curr >= strheight_last * 2) //last symbol line break implementation
+        {
+            //top block  // todo top right side lag is here
+            float halfwidth = page_width_int /2;
+            bool right_side =  rect.left > halfwidth;
+
+            float pre_r = (two_columns) ? (halfwidth) : page_width_int ;
+            pre_r = pre_r - margins.right;
+
+            if (right_side)
             {
-                //top block
-                float l = rect.right / page_width;
-                float t = rect.top / page_height;
-                float r = (page_width - doc_view_->cfg_margins_.right) / page_width;
-                float b = (rect.top + strheight_last) / page_height;
-                lString16 word = word_chars.get(i).getText();
-                // CRLog::error("word = %s",LCSTR(word));
-                response.addFloat(l);
-                response.addFloat(t);
-                response.addFloat(r);
-                response.addFloat(b);
-                responseAddString(response, word);
-
-                //glue block
-                float l1 = (page_width - doc_view_->cfg_margins_.right) / page_width;
-                float t1 = rect.top / page_height;
-                float r1 = (page_width - doc_view_->cfg_margins_.right + 10) / page_width;
-                float b1 = (rect.top + strheight_last) / page_height;
-                lString16 glue = lString16("GLUE"); //Todo change "glue" to defined symbol
-                response.addFloat(l1);
-                response.addFloat(t1);
-                response.addFloat(r1);
-                response.addFloat(b1);
-                responseAddString(response, glue);
-
-                //bottom block
-                float l2 = (doc_view_->cfg_margins_.left) / page_width;
-                float t2 = (rect.top + strheight_last) / page_height;
-                float r2 = rect.left / page_width;
-                float b2 = rect.bottom / page_height;
-                lString16 word2 = word_chars.get(i).getText();
-                //  CRLog::error("word2 = %s",LCSTR(word2));
-                response.addFloat(l2);
-                response.addFloat(t2);
-                response.addFloat(r2);
-                response.addFloat(b2);
-                responseAddString(response, word2);
+                pre_r = pre_r+halfwidth;
             }
-            else
-            { //usual single-line words
-                strheight_last = strheight_curr;
-                float l = rect.left / page_width;
-                float t = rect.top / page_height;
-                float r = rect.right / page_width;
-                float b = rect.bottom / page_height;
-                lString16 word = word_chars.get(i).getText();
-                // CRLog::error("word = %s", LCSTR(word));
-                response.addFloat(l);
-                response.addFloat(t);
-                response.addFloat(r);
-                response.addFloat(b);
-                responseAddString(response, word);
-            }
+
+            float l = rect.right / page_width;
+            float t = rect.top / page_height;
+            float r = pre_r / page_width;
+            float b = (rect.top + strheight_last) / page_height;
+            lString16 word = word_chars.get(i).getText();
+            // CRLog::error("word = %s",LCSTR(word));
+            response.addFloat(l);
+            response.addFloat(t);
+            response.addFloat(r);
+            response.addFloat(b);
+            responseAddString(response, word);
+
+        }
+        else
+        { //usual single-line words
+            strheight_last = strheight_curr;
+            float l = rect.left / page_width;
+            float t = rect.top / page_height;
+            float r = rect.right / page_width;
+            float b = rect.bottom / page_height;
+            lString16 word = word_chars.get(i).getText();
+            // CRLog::error("word = %s", LCSTR(word));
+
+            response.addFloat(l);
+            response.addFloat(t);
+            response.addFloat(r);
+            response.addFloat(b);
+            responseAddString(response, word);
+        }
 #ifdef DEBUG_TEXT
-            ldomNode* start_node = text->getStart().getNode();
+        ldomNode* start_node = text->getStart().getNode();
             ldomNode* end_node = text->getEnd().getNode();
             CRLog::trace("processPageText %d:%d-%d:%d %d:%d-%d:%d\n  %s %d\n  %s %d",
                          rect.left, rect.right, rect.top, rect.bottom,
@@ -661,7 +625,6 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
                          LCSTR(text->getStart().toString()), start_node->getDataIndex(),
                          LCSTR(text->getEnd().toString()), end_node->getDataIndex());
 #endif
-        }
     }
 #undef DEBUG_TEXT
 }
