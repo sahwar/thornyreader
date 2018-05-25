@@ -544,7 +544,7 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 if (DUMP_DOMTREE == 1)
 {
     CRLog::error("dumping domtree");
-    LVStreamRef out = LVOpenFileStream("/data/data/org.readera/files/temp.xml", LVOM_WRITE);
+    LVStreamRef out = LVOpenFileStream("/data/data/org.readera.trdevel/files/temp.xml", LVOM_WRITE);
     cr_dom_->saveToStream(out, NULL, true);
 }
 #if 0
@@ -1998,69 +1998,8 @@ void LVDocView::GetCurrentPageText(ldomXRangeList &list)
 	class TextKeeper : public ldomNodeCallback
 	{
 		ldomXRangeList &list_;
-		void ProcessFinalNode(ldomNode *node)
-		{
-			int end_index = node->isText() ? node->getText().length() : node->getChildCount();
-			ldomXPointerEx start = ldomXPointerEx(node, 0);
-			ldomXPointerEx end = ldomXPointerEx(node, end_index);
-			lvRect start_rect;
-			lvRect end_rect;
-			if (!start.getRect(start_rect) || !end.getRect(end_rect))
-			{
-				CRLog::error("GetCurrentPageText getRect fail");
-				return;
-			}
-			if (start_rect.top == end_rect.top && start_rect.bottom == end_rect.bottom)
-			{
-				// Singleline link
-				list_.add(new ldomXRange(start, end));
-				return;
-			}
-			lvRect curr_rect;
-			//for (int i = end_index - 1; i >= 0; i--)
-			for (int i = end_index ; i >= 0; i--)
-			{
-				ldomXPointerEx curr = ldomXPointerEx(node, i);
-				if (!curr.getRect(curr_rect))
-				{
-					CRLog::error("GetCurrentPageText getRect fail");
-					return;
-				}
-				if (curr_rect.top == start_rect.top)
-				{
-					if (curr_rect.bottom == start_rect.bottom)
-					{
-						// Запрыгнули на верхнюю строчку
-						list_.add(new ldomXRange(start, curr));
-						ldomXPointerEx prev = ldomXPointerEx(node, i + 1);
-						list_.add(new ldomXRange(prev, end));
-						break;
-					}
-					else
-					{
-						CRLog::error("GetCurrentPageText tops equals, bottoms doesnt");
-					}
-				}
-				else if (curr_rect.top != end_rect.top)
-				{
-					if (curr_rect.bottom != end_rect.bottom)
-					{
-						ldomXPointerEx prev = ldomXPointerEx(node, i + 1);
-						list_.add(new ldomXRange(prev, end));
-						end = ldomXPointerEx(curr);
-						if (!end.getRect(end_rect))
-						{
-							CRLog::error("GetCurrentPageText getRect fail");
-							return;
-						}
-					}
-					else
-					{
-						CRLog::error("GetCurrentPageText tops not equals, bottoms does");
-					}
-				}
-			}
-		}
+		LVArray<lvRect> para_rect_array;
+
 		void ProcessLinkNode(ldomNode *node)
 		{
 			for (lUInt32 i = 0; i < node->getChildCount(); i++)
@@ -2068,7 +2007,7 @@ void LVDocView::GetCurrentPageText(ldomXRangeList &list)
 				ldomNode *child = node->getChildNode(i);
 				if (child->isText())
 				{
-					ProcessFinalNode(child);
+					ProcessFinalNode_GetNodeEnd(child);
 				}
 				else
 				{
@@ -2076,6 +2015,32 @@ void LVDocView::GetCurrentPageText(ldomXRangeList &list)
 				}
 			}
 		}
+
+        void ProcessFinalNode_GetNodeEnd(ldomNode *node)
+        {
+            ldomXPointerEx end;
+            if (node->isText())
+            {
+                int end_index = node->getText().length();
+                end = ldomXPointerEx(node, end_index);
+            }
+            else
+            {
+                return;
+            }
+            lvRect empty_rect(0,0,0,0);
+            lvRect end_rect;
+            if (!end.getRect(end_rect))
+            {
+                CRLog::error("Unable to get node end coordinates!");
+                para_rect_array.add(empty_rect);
+
+                return;
+            }
+            para_rect_array.add(end_rect);
+            //CRLog::error("end node: t=%d l=%d , arrlength = %d ",end_rect.top,end_rect.left,para_rect_array.length());
+            return;
+        }
 	public:
 		bool text_is_first_ = true;
 		TextKeeper(ldomXRangeList &list) : list_(list) {}
@@ -2121,10 +2086,18 @@ void LVDocView::GetCurrentPageText(ldomXRangeList &list)
 			ProcessLinkNode(element_node);
 			return true;
 		}
+        LVArray<lvRect> GetParaArray()
+        {
+            return para_rect_array;
+        }
 	};
+
+    this->curr_page_para_array.clear();
 	TextKeeper callback(list);
 	page_range->forEach(&callback);
-	if (viewport_mode_ == MODE_PAGES && GetColumns() > 1)
+	this->curr_page_para_array= callback.GetParaArray();
+
+	if (viewport_mode_ == MODE_PAGES && GetColumns() > 1) //todo add second page processing for paraends
 	{
 		// Process second page
 		int page_index = GetCurrPage();
@@ -2133,6 +2106,7 @@ void LVDocView::GetCurrentPageText(ldomXRangeList &list)
 		{
 			callback.text_is_first_ = true;
 			page_range->forEach(&callback);
+            this->curr_page_para_array.add(callback.GetParaArray());
 		}
 	}
 }

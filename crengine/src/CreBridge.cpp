@@ -450,26 +450,45 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
 #endif
     float page_width = doc_view_->GetWidth();
     float page_height = doc_view_->GetHeight();
+    int page_width_int = doc_view_->GetWidth();
+    int page_height_int = doc_view_->GetHeight();
 
+    //we need these lines to get list of paragraph ends. it passes it to doc_view->curr_page_para_array
+    ldomXRangeList unused;                      //this
+    doc_view_->GetCurrentPageText(unused);      //this
+    unused.clear();                             //this
+    LVArray<lvRect> para_array;
+
+    para_array.add(doc_view_->next_page_para_array);
+    para_array.add(doc_view_->curr_page_para_array);
 
     LVRef<ldomXRange> range = doc_view_->GetPageDocRange(-1);
     int offset = doc_view_->GetOffset();
+    lvRect margins = doc_view_->cfg_margins_;
 
         ldomXRange text = *range;
 
        // CRLog::error("text :%d = %s",i, LCSTR(text->getStart().toString()));
         LVArray<ldomWord> list2;
         text.getRangeWords(list2);
-
         int strheight_last = 0;
-        for (int i = 0; i < list2.length() ; ++i)
+    int para_counter = 0;
+    //passing the lowest para breaks down to next page
+    for (int i = 0; i <para_array.length() ; ++i)
+    {
+        if (para_array.get(i).bottom < page_height_int - margins.bottom  )
         {
-            CRLog::error("word:%d : %s",i,LCSTR(list2.get(i).getText()));
+            doc_view_->next_page_para_array.add(para_array.get(i));
+        }
+    }
+        for (int i = 0; i < list2.length() ; ++i) //main cycle
+        {
+            //CRLog::error("word:%d : %s",i,LCSTR(list2.get(i).getText()));
             ldomXPointer a1 = list2.get(i).getStartXPointer();
             ldomXPointer a2 = list2.get(i).getEndXPointer();
             ldomXPointerEx b1 = a1;
             ldomXPointerEx b2 = a2;
-            lvRect margins = doc_view_->cfg_margins_;
+
 
             ldomXRange a;
             a.setStart(b1);
@@ -478,10 +497,33 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
             lvRect raw_rect;
             a.getRect(raw_rect);
             lvRect rect = lvRect(raw_rect.left, raw_rect.top, raw_rect.right, raw_rect.bottom);
-        //CRLog::error("RECT: \n U:%d \n D: %d \n L:%d \n R:%d \n",rect.top,rect.bottom,rect.left,rect.right);
 
             int strheight_curr = rect.bottom - rect.top;
 
+            //paragraph breaks implementation
+            if(para_counter > para_array.length())
+            {
+                para_counter = para_array.length();
+            }
+            if (rect.top > para_array.get(para_counter).top)
+            {
+                lvRect rect_orig = lvRect(rect.left + margins.left , rect.top + margins.top - offset, rect.right + margins.left, rect.bottom+ margins.top - offset);
+
+                lvRect raw_rect_n = para_array.get(para_counter);
+                lvRect rect_n = lvRect(raw_rect_n.left + margins.left , raw_rect_n.top + margins.top - offset, raw_rect_n.right + margins.left, raw_rect_n.bottom+ margins.top - offset);
+                float l5 = (rect_n.left + 15) / page_width;
+                float r5 = (rect_n.right + 35) / page_width;
+                float t5 = (rect_n.top) / page_height;
+                float b5 = (rect_n.bottom) / page_height;
+                lString16 para_end = lString16("PARA_END ") + lString16::itoa(para_counter); //Todo change "PARA_END" to defined symbol
+                response.addFloat(l5);
+                response.addFloat(t5);
+                response.addFloat(r5);
+                response.addFloat(b5);
+                responseAddString(response, para_end);
+
+                para_counter++;
+            }
             if(strheight_last != 0 && strheight_curr >= strheight_last * 2)// when line break happens between pages
             {
                 //check if top of block is on this page
@@ -491,14 +533,12 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
                     //if (raw_rect.bottom + margins.top > doc_view_->GetOffset() + doc_view_->GetHeight())
                     if (raw_rect.bottom + margins.top + margins.bottom - doc_view_->GetOffset() >= doc_view_->GetHeight())
                     {
-                        CRLog::error("C");
-
-                        lvRect lastrect = lvRect(raw_rect.left + margins.left , raw_rect.top + margins.top - offset, raw_rect.right + margins.left, raw_rect.bottom+ margins.top - offset);
+                        lvRect orig_rect = lvRect(raw_rect.left + margins.left , raw_rect.top + margins.top - offset, raw_rect.right + margins.left, raw_rect.bottom+ margins.top - offset);
                         //top block add
-                        float l3 = lastrect.right / page_width;
-                        float t3 = lastrect.top / page_height;
+                        float l3 = orig_rect.right / page_width;
+                        float t3 = orig_rect.top / page_height;
                         float r3 = (page_width - margins.right) / page_width;
-                        float b3 = (lastrect.top + strheight_last) / page_height;
+                        float b3 = (orig_rect.top + strheight_last) / page_height;
                         lString16 word = list2.get(i).getText();
                         // CRLog::error("word = %s",LCSTR(word));
                         response.addFloat(l3);
@@ -509,9 +549,9 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
 
                         //last line glue block add
                         float l4 = (page_width - margins.right) / page_width;
-                        float t4 = lastrect.top / page_height;
+                        float t4 = orig_rect.top / page_height;
                         float r4 = (page_width - margins.right + 10) / page_width;
-                        float b4 = (lastrect.top + strheight_last) / page_height;
+                        float b4 = (orig_rect.top + strheight_last) / page_height;
                         lString16 last_line_glue = lString16("LAST_LINE_GLUE"); //Todo change "LAST_LINE_GLUE" to defined symbol
                         response.addFloat(l4);
                         response.addFloat(t4);
@@ -520,15 +560,7 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
                         responseAddString(response, last_line_glue);
                         continue;
                     }
-                    /*else
-                    { CRLog::error("C raw_rect.bottom + cfg_margins_.top - GetOffset() > GetHeight()");
-                      CRLog::error("%d + %d - %d > %d", raw_rect.bottom, doc_view_->cfg_margins_.top, doc_view_->GetOffset(), doc_view_->GetHeight() );
-                    }*/
                 }
-                /*else
-                {  CRLog::error("raw_rect.top + margins_.top <  GetOffset() + page_height");
-                CRLog::error("%d + %d <  %d + %d ",raw_rect.top, doc_view_->cfg_margins_.top ,  doc_view_->GetOffset() , doc_view_->GetHeight() );
-                }*/
             }
             else
             {

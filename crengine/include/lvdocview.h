@@ -117,6 +117,8 @@ public:
     bool cfg_enable_footnotes_;
     bool cfg_firstpage_thumb_;
     bool cfg_txt_smart_format_;
+    LVArray<lvRect> curr_page_para_array;
+    LVArray<lvRect> next_page_para_array;
 
     inline bool IsPagesMode() { return viewport_mode_ == MODE_PAGES; }
     inline bool IsScrollMode() { return viewport_mode_ == MODE_SCROLL; }
@@ -171,7 +173,7 @@ public:
     LVImageSourceRef getImageByPoint(lvPoint pt);
     /// converts point from window to document coordinates, returns true if success
     bool WindowToDocPoint(lvPoint& pt);
-    /// converts rect from documsnt to window coordinates, returns true if success
+    /// converts rect from document to window coordinates, returns true if success
     bool DocToWindowRect(lvRect& rect);
     /// returns document
     CrDom* GetCrDom() { return cr_dom_; }
