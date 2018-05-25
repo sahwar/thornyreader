@@ -5301,6 +5301,7 @@ void ldomXRange::getRangeChars(LVArray<ldomWord>& words_list) {
             TRFLAGS |= CH_PROP_ALPHA;
             TRFLAGS |= CH_PROP_DIGIT;
             TRFLAGS |= CH_PROP_PUNCT;
+            TRFLAGS |= CH_PROP_SPACE;
             TRFLAGS |= CH_PROP_HYPHEN;
             TRFLAGS |= CH_PROP_VOWEL;
             TRFLAGS |= CH_PROP_CONSONANT;
