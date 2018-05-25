@@ -2016,34 +2016,36 @@ void LVDocView::GetCurrentPageText(ldomXRangeList &list)
 			}
 		}
 
-        void ProcessFinalNode_GetNodeEnd(ldomNode *node)
-        {
-            ldomXPointerEx end;
-            if (node->isText())
-            {
-                int end_index = node->getText().length();
-                end = ldomXPointerEx(node, end_index);
-            }
-            else
-            {
-                return;
-            }
-            lvRect empty_rect(0,0,0,0);
-            lvRect end_rect;
-            if (!end.getRect(end_rect))
-            {
-                CRLog::error("Unable to get node end coordinates!");
-                para_rect_array.add(empty_rect);
+		void ProcessFinalNode_GetNodeEnd(ldomNode *node)
+		{
+			ldomXPointerEx end;
+			if (node->isText())
+			{
+				int end_index = node->getText().length();
+				end = ldomXPointerEx(node, end_index);
+			}
+			else
+			{
+				return;
+			}
+			lvRect empty_rect(0, 0, 0, 0);
+			lvRect end_rect;
+			if (!end.getRect(end_rect))
+			{
+				CRLog::error("Unable to get node end coordinates!");
+				para_rect_array.add(empty_rect);
 
-                return;
-            }
-            para_rect_array.add(end_rect);
-            //CRLog::error("end node: t=%d l=%d , arrlength = %d ",end_rect.top,end_rect.left,para_rect_array.length());
-            return;
-        }
+				return;
+			}
+			para_rect_array.add(end_rect);
+			//CRLog::error("end node: t=%d l=%d , arrlength = %d ",end_rect.top,end_rect.left,para_rect_array.length());
+			return;
+		}
+
 	public:
 		bool text_is_first_ = true;
-		TextKeeper(ldomXRangeList &list) : list_(list) {}
+
+		TextKeeper(ldomXRangeList &list) : list_(list)	{	}
 		// Called for each text fragment in range
 		virtual void onText(ldomXRange *node_range)
 		{
@@ -2068,8 +2070,7 @@ void LVDocView::GetCurrentPageText(ldomXRangeList &list)
 				text = text.substr(start, end - start);
 			}
 			ldomNode *end_node = node_range->getEnd().getNode();
-			CRLog::debug("GetCurrentPageText first text on page: %d-%d %s",
-						 node->getDataIndex(), end_node->getDataIndex(), LCSTR(text));
+			CRLog::debug("GetCurrentPageText first text on page: %d-%d %s", node->getDataIndex(), end_node->getDataIndex(), LCSTR(text));
 #endif
 		}
 		// Called for each node in range
@@ -2086,10 +2087,10 @@ void LVDocView::GetCurrentPageText(ldomXRangeList &list)
 			ProcessLinkNode(element_node);
 			return true;
 		}
-        LVArray<lvRect> GetParaArray()
-        {
-            return para_rect_array;
-        }
+		LVArray<lvRect> GetParaArray()
+		{
+			return para_rect_array;
+		}
 	};
 
     this->curr_page_para_array.clear();
