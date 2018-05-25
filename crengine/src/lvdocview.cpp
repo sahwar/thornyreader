@@ -1823,7 +1823,15 @@ LVRef<ldomXRange> LVDocView::GetPageDocRange(int page_index)
 		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(m_dx + m_dy, page->start + page->height - 1));
 		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
         //todo dynamically add two line heights instead of fixed 50 pixels
-        ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + 50), 1);
+        ldomXPointer end;
+		if (GetColumns() > 1)
+		{
+			end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + page->height + 50), 1);
+		}
+		else
+		{
+			end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + 50), 1);
+		}
 		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
 		if (start.isNull() || end.isNull())
 		{
@@ -2038,7 +2046,6 @@ void LVDocView::GetCurrentPageText(ldomXRangeList &list)
 				return;
 			}
 			para_rect_array.add(end_rect);
-			//CRLog::error("end node: t=%d l=%d , arrlength = %d ",end_rect.top,end_rect.left,para_rect_array.length());
 			return;
 		}
 
