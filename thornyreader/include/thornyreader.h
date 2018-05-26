@@ -17,6 +17,7 @@
 #ifndef _THORNYREADER_H_
 #define _THORNYREADER_H_
 
+#include <fcntl.h>
 #include <string>
 #include "thornyreader_version.h"
 #include "StProtocol.h"
@@ -84,5 +85,6 @@ void ThornyVersionResporse(const char* base_version, CmdResponse& response);
 
 #define HARDCONFIG_DJVU_RENDERING_MODE 0
 #define HARDCONFIG_MUPDF_SLOW_CMYK 0
+#define SEND_FD_VIA_SOCKET 0
 
 #endif /* _THORNYREADER_H_ */

@@ -19,7 +19,6 @@
 #include <algorithm>
 
 #include "StLog.h"
-#include "StProtocol.h"
 #include "StSocket.h"
 
 #include "MuPdfBridge.h"
@@ -257,7 +256,7 @@ void MuPdfBridge::processOpen(CmdRequest& request, CmdResponse& response)
         response.result = RES_BAD_REQ_DATA;
         return;
     }
-
+#if SEND_FD_VIA_SOCKET == 1
     DEBUG_L(L_DEBUG, LCTX, "Socket name: %s", socketName);
     StSocketConnection connection((const char*)socketName);
     if (!connection.isValid())
@@ -275,7 +274,9 @@ void MuPdfBridge::processOpen(CmdRequest& request, CmdResponse& response)
         response.result = RES_BAD_REQ_DATA;
         return;
     }
-
+#else
+    fd = open(reinterpret_cast<const char*>(file_name), O_RDONLY);
+#endif
     if (this->password)
     {
         free(this->password);

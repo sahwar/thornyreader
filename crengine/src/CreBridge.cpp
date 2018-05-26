@@ -363,6 +363,7 @@ void CreBridge::processOpen(CmdRequest& request, CmdResponse& response)
         response.result = RES_BAD_REQ_DATA;
         return;
     }
+#if SEND_FD_VIA_SOCKET == 1
     StSocketConnection connection((const char*) socket_name);
     if (!connection.isValid()) {
         response.result = RES_BAD_REQ_DATA;
@@ -374,6 +375,7 @@ void CreBridge::processOpen(CmdRequest& request, CmdResponse& response)
         response.result = RES_BAD_REQ_DATA;
         return;
     }
+#endif
     const char* absolute_path = reinterpret_cast<const char*>(absolute_path_arg);
     bool smart_archive = (bool) smart_archive_arg;
 	bool result = doc_view_->LoadDoc(doc_format, absolute_path, compressed_size, smart_archive);

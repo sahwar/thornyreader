@@ -154,10 +154,12 @@ void DjvuBridge::processOpen(CmdRequest& request, CmdResponse& response)
 
     uint32_t doc_format = 0;
     uint8_t* socketName = NULL;
+    uint8_t* file_name = NULL;
 
     CmdDataIterator iter(request.first);
     iter.getInt(&doc_format);
     iter.getByteArray(&socketName);
+    iter.getByteArray(&file_name);
 
     if ((!iter.isValid()) || (!socketName))
     {
@@ -166,7 +168,7 @@ void DjvuBridge::processOpen(CmdRequest& request, CmdResponse& response)
         response.result = RES_BAD_REQ_DATA;
         return;
     }
-
+#if SEND_FD_VIA_SOCKET == 1
     DEBUG_L(L_DEBUG, LCTX, "Socket name: %s", socketName);
     StSocketConnection connection((const char*)socketName);
     if (!connection.isValid())
@@ -185,7 +187,9 @@ void DjvuBridge::processOpen(CmdRequest& request, CmdResponse& response)
         response.result = RES_BAD_REQ_DATA;
         return;
     }
-
+#else
+    int fd = open(reinterpret_cast<const char*>(file_name), O_RDONLY);
+#endif
     if (doc == NULL)
     {
         context = ddjvu_context_create(LCTX);
