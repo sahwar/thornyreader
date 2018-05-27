@@ -15,7 +15,8 @@ LOCAL_SRC_FILES := \
 	src/StResponseQueue.cpp \
 	src/StStringNaturalCompare.cpp \
 	src/StSocket.cpp \
-	src/thornyreader.cpp
+	src/thornyreader.cpp \
+	src/debug_generate_crash.cpp
 
 LOCAL_ARM_MODE := $(APP_ARM_MODE)
 

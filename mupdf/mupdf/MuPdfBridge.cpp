@@ -23,6 +23,7 @@
 
 #include "MuPdfBridge.h"
 #include "thornyreader.h"
+#include "debug_generate_crash.h"
 #include "bitmaputils.h"
 
 #define LCTX "MuPdfBridge"
@@ -380,11 +381,6 @@ void MuPdfBridge::processOpen(CmdRequest& request, CmdResponse& response)
 	*/
 }
 
-static void SegfaultDeath()
-{
-    *(int*) 0 = 0;
-}
-
 void MuPdfBridge::processPageInfo(CmdRequest& request, CmdResponse& response)
 {
     response.cmd = CMD_RES_PAGE_INFO;
@@ -411,7 +407,7 @@ void MuPdfBridge::processPageInfo(CmdRequest& request, CmdResponse& response)
 
 #ifdef DEBUG_CRASH
     if (pageNo == 1) {
-        SegfaultDeath();
+        debug_generate_segfault();
     }
 #endif
 
@@ -477,7 +473,7 @@ void MuPdfBridge::processPage(CmdRequest& request, CmdResponse& response)
 
 #ifdef DEBUG_CRASH
     if (pageNumber == 3) {
-        SegfaultDeath();
+        debug_generate_segfault();
     }
 #endif
 
@@ -523,7 +519,7 @@ void MuPdfBridge::processPageFree(CmdRequest& request, CmdResponse& response)
 
 #ifdef DEBUG_CRASH
     if (pageNumber == 5) {
-        SegfaultDeath();
+        debug_generate_segfault();
     }
 #endif
 
@@ -611,7 +607,7 @@ void MuPdfBridge::processPageRender(CmdRequest& request, CmdResponse& response)
 
 #ifdef DEBUG_CRASH
     if (page_index == 7) {
-        SegfaultDeath();
+        debug_generate_segfault();
     }
 #endif
 
@@ -1038,7 +1034,7 @@ void MuPdfBridge::processSmartCrop(CmdRequest& request, CmdResponse& response)
 
 #ifdef DEBUG_CRASH
     if (page_index == 9) {
-        SegfaultDeath();
+        debug_generate_segfault();
     }
 #endif
 
