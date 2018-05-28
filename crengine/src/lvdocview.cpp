@@ -1227,16 +1227,15 @@ bool LVDocView::DocToWindowRect(lvRect &rect)
 	else
 	{
 		int page = GetCurrPage();
-		if (page >= 0 && page < pages_list_.length() && rect.top+1 >= pages_list_[page]->start)
+		if (page >= 0 && page < pages_list_.length())// && rect.top+1 >= pages_list_[page]->start)
 		{
 			int index = -1;
-			if (rect.bottom <= (pages_list_[page]->start + pages_list_[page]->height))
+			if (rect.top+1 <= (pages_list_[page]->start + pages_list_[page]->height))
 			{
 				index = 0;
 			}
 			else if (GetColumns() == 2 && page + 1 < pages_list_.length() &&
-			         rect.bottom <=
-			         (pages_list_[page + 1]->start + pages_list_[page + 1]->height))
+			         rect.bottom <= (pages_list_[page + 1]->start + pages_list_[page + 1]->height))
 			{
 				index = 1;
 			}
@@ -1270,6 +1269,45 @@ bool LVDocView::DocToWindowRect(lvRect &rect)
         CRLog::error("page >= 0 && page < pages_list_.length() && rect.top >= pages_list_[page]->start");
         CRLog::error("%d >= 0 && %d < %d && %d >= %d", page,page,pages_list_.length(),rect.top,pages_list_[page]->start);
 		return false;
+	}
+	return false;
+}
+
+bool LVDocView::DocToWindowRectSecondColumn(lvRect &rect)
+{
+	CHECK_RENDER("DocToWindowRect()")
+	int page = GetCurrPage();
+	if (page >= 0 && page < pages_list_.length())
+	{
+		int index = -1;
+		if (rect.top + 1 <= (pages_list_[page]->start + pages_list_[page]->height))
+		{
+			index = 0;
+		}
+		else if (GetColumns() == 2 && page + 1 < pages_list_.length() && rect.bottom <= (pages_list_[page + 1]->start + pages_list_[page + 1]->height + pages_list_[page + 1]->height))
+		{
+			index = 1;
+		}
+		if (index >= 0)
+		{
+			int right = rect.right + page_rects_[index].left + margins_.left;
+			if (right - 1 <= page_rects_[index].right - margins_.right)
+			{
+				rect.left = rect.left + page_rects_[index].left + margins_.left;
+				rect.right = right;
+				rect.top = rect.top + margins_.top - pages_list_[page + index]->start;
+				rect.bottom = rect.bottom + margins_.top - pages_list_[page + index]->start;
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
+		else
+		{
+			return false;
+		}
 	}
 	return false;
 }
@@ -1826,7 +1864,7 @@ LVRef<ldomXRange> LVDocView::GetPageDocRange(int page_index)
         ldomXPointer end;
 		if (GetColumns() > 1)
 		{
-			end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + page->height + 50), 1);
+			end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + page->height + 100), 1);
 		}
 		else
 		{

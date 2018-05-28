@@ -454,6 +454,7 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
     int page_width_int = doc_view_->GetWidth();
     int page_height_int = doc_view_->GetHeight();
     bool two_columns = doc_view_->GetColumns() > 1;
+    float halfwidth = page_width_int /2;
 
     //we need these lines to get list of paragraph ends. it passes it to doc_view->curr_page_para_array
     ldomXRangeList unused;                      //this
@@ -474,6 +475,7 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
 
     int strheight_last = 0;
     int para_counter = 0;
+    bool lastline_check=false;
 
     //passing the lowest para breaks down to next page
     for (int i = 0; i < para_array.length(); ++i)
@@ -510,12 +512,23 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
         if (rect.top > para_array.get(para_counter).top)
         {
             lvRect raw_rect_n = para_array.get(para_counter);
-            lvRect rect_n = lvRect(raw_rect_n.left + margins.left, raw_rect_n.top + margins.top - offset, raw_rect_n.right + margins.left, raw_rect_n.bottom + margins.top - offset);
+            lvRect rect_n = lvRect(raw_rect_n.left, raw_rect_n.top, raw_rect_n.right, raw_rect_n.bottom);
+            if (!doc_view_->DocToWindowRect(rect_n))
+            {
+                CRLog::error("Para_rect_to_window failed!");
+                para_counter++;
+                continue;
+            }
+            bool right_side =  rect_n.left > halfwidth;
+
             float l5 = (rect_n.left + (strheight_curr/2)) / page_width;
             float r5 = (rect_n.right + (strheight_curr*2)) / page_width;
-            float t5 = (rect_n.top) / page_height;
-            float b5 = (rect_n.bottom) / page_height;
-            lString16 para_end = lString16("PARA_END ") + lString16::itoa(para_counter); //Todo change "PARA_END" to defined symbol // bottom lag is here
+            float t5 = (rect_n.top +10 ) / page_height;
+            float b5 = (rect_n.bottom -10 ) / page_height;
+
+            lString16 para_end = lString16("PARA_END ") + lString16::itoa(para_counter); //Todo change "PARA_END" to defined symbol
+            CRLog::error("para end = %d", para_counter);
+
             response.addFloat(l5);
             response.addFloat(t5);
             response.addFloat(r5);
@@ -525,39 +538,45 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
             para_counter++;
         }
 
-        // when line break happens between pages
-        if (strheight_last != 0 && strheight_curr >= strheight_last * 2)
+        //two columns last line line break implementetaion
+        lvRect rect_n = lvRect(rect.left, rect.top, rect.right, rect.bottom);
+        doc_view_->DocToWindowRectSecondColumn(rect_n);
+        bool right_side = rect_n.left > halfwidth;
+
+        if (!lastline_check && two_columns && right_side)
         {
-            //check if top of block is on this page  and is in needed range
-            if (rect.top + margins.top < doc_view_->GetOffset() + doc_view_->GetHeight())// && rect.top + strheight_curr < page_height_int - margins.bottom)
+            // when line break happens between pages right side implementation
+            if (strheight_last != 0 && strheight_curr >= strheight_last * 2)
             {
-                //check if bottom of block is out of this page
-                if (rect.bottom + margins.top + margins.bottom - doc_view_->GetOffset() >= doc_view_->GetHeight())
+                //check if top of block is on this page  and is in needed range
+                if (rect_n.top + margins.top < page_height_int)
                 {
-                    lvRect orig_rect = lvRect(rect.left + margins.left, rect.top + margins.top - offset, rect.right + margins.left, rect.bottom + margins.top - offset);
-
-                    float pre_r3 = (two_columns) ? (page_width_int /4) : page_width_int ;
-                    pre_r3 = pre_r3 - margins.right;
-
-                    //top block add
-                    float l3 = orig_rect.right / page_width;
-                    float t3 = orig_rect.top / page_height;
-                    float r3 = pre_r3 / page_height;
-                    float b3 = (orig_rect.top + strheight_last) / page_height;
-                    lString16 word = word_chars.get(i).getText();
-                    // CRLog::error("word = %s",LCSTR(word));
-                    response.addFloat(l3);
-                    response.addFloat(t3);
-                    response.addFloat(r3);
-                    response.addFloat(b3);
-                    responseAddString(response, word);
+                    //check if bottom of block is out of this page
+                    if (rect_n.bottom + margins.top >= page_height_int)
+                    {
+                        float pre_r = page_width_int - margins.right;
+                        //top block add
+                        float l3 = (rect_n.right) / page_width;
+                        float t3 = (rect_n.top) / page_height;
+                        float r3 = pre_r / page_width;
+                        float b3 = (rect_n.top + strheight_last) / page_height;
+                        lString16 word = word_chars.get(i).getText() + lString16("++");
+                        //CRLog::error("jump letter = %s",LCSTR(word));
+                        response.addFloat(l3);
+                        response.addFloat(t3);
+                        response.addFloat(r3);
+                        response.addFloat(b3);
+                        responseAddString(response, word);
+                        lastline_check = true;
+                    }
                 }
             }
+            else
+            {
+                strheight_last = strheight_curr;
+            }
         }
-        else
-        {
-            strheight_last = strheight_curr;
-        }
+
         if (!doc_view_->DocToWindowRect(rect))
         {
 #ifdef TRDEBUG
@@ -572,9 +591,42 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
             continue;
         }
 
-
-        if (strheight_last != 0 && strheight_curr >= strheight_last * 2) //last symbol line break implementation
+        // when line break happens between pages left side implementation
+        if (strheight_last != 0 && strheight_curr >= strheight_last * 2)
         {
+            //check if top of block is on this page  and is in needed range
+            if (rect.top + margins.top < offset + page_height_int)// && rect.top + strheight_curr < page_height_int - margins.bottom)
+            {
+                //check if bottom of block is out of this page
+                if (rect.bottom + margins.top >= page_height_int)
+                {
+                    float pre_r = halfwidth - margins.right; //(two_columns) ? (halfwidth) : page_width_int ;
+
+                    //top block add
+                    float l3 = rect.right / page_width;
+                    float t3 = (rect.top) / page_height;
+                    float r3 = pre_r / page_width;
+                    float b3 = (rect.top + strheight_last) / page_height;
+                    lString16 word = word_chars.get(i).getText();
+                    //CRLog::error("jump letter = %s",LCSTR(word));
+                    response.addFloat(l3);
+                    response.addFloat(t3);
+                    response.addFloat(r3);
+                    response.addFloat(b3);
+                    responseAddString(response, word);
+                    continue;
+                }
+            }
+        }
+        else
+        {
+            strheight_last = strheight_curr;
+        }
+
+        //usual line break implementation
+        if (strheight_last != 0 && strheight_curr >= strheight_last * 2)
+        {
+
             //top block  // todo top right side lag is here
             float halfwidth = page_width_int /2;
             bool right_side =  rect.left > halfwidth;
@@ -588,9 +640,15 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
             }
 
             float l = rect.right / page_width;
-            float t = rect.top / page_height;
             float r = pre_r / page_width;
+            float t = rect.top / page_height;
             float b = (rect.top + strheight_last) / page_height;
+            if(rect.top < margins.top)
+            {   CRLog::error("rect top = %d, margins.top = %d",rect.top,margins.top);
+                t = (rect.top - strheight_last) /page_height;
+                b = (rect.top + 10) / page_height;
+            }
+
             lString16 word = word_chars.get(i).getText();
             // CRLog::error("word = %s",LCSTR(word));
             response.addFloat(l);
@@ -598,7 +656,6 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
             response.addFloat(r);
             response.addFloat(b);
             responseAddString(response, word);
-
         }
         else
         { //usual single-line words
