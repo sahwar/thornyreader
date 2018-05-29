@@ -407,7 +407,7 @@ void MuPdfBridge::processPageInfo(CmdRequest& request, CmdResponse& response)
 
 #ifdef DEBUG_CRASH
     if (pageNo == 1) {
-        debug_generate_segfault();
+        debug_generate_sigsegv_segv_maperr();
     }
 #endif
 
@@ -473,7 +473,7 @@ void MuPdfBridge::processPage(CmdRequest& request, CmdResponse& response)
 
 #ifdef DEBUG_CRASH
     if (pageNumber == 3) {
-        debug_generate_segfault();
+        debug_generate_sigsegv_segv_maperr();
     }
 #endif
 
@@ -519,7 +519,7 @@ void MuPdfBridge::processPageFree(CmdRequest& request, CmdResponse& response)
 
 #ifdef DEBUG_CRASH
     if (pageNumber == 5) {
-        debug_generate_segfault();
+        debug_generate_sigsegv_segv_maperr();
     }
 #endif
 
@@ -607,7 +607,7 @@ void MuPdfBridge::processPageRender(CmdRequest& request, CmdResponse& response)
 
 #ifdef DEBUG_CRASH
     if (page_index == 7) {
-        debug_generate_segfault();
+        debug_generate_sigsegv_segv_maperr();
     }
 #endif
 
@@ -1034,7 +1034,7 @@ void MuPdfBridge::processSmartCrop(CmdRequest& request, CmdResponse& response)
 
 #ifdef DEBUG_CRASH
     if (page_index == 9) {
-        debug_generate_segfault();
+        debug_generate_sigsegv_segv_maperr();
     }
 #endif
 

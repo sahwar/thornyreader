@@ -4,7 +4,7 @@
 
 static volatile bool true_var = true;
 
-void debug_generate_segfault()
+void debug_generate_sigsegv_segv_maperr()
 {
 #ifdef TRDEBUG
     *(int*) 0 = 0;
