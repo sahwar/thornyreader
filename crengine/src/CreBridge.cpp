@@ -430,7 +430,7 @@ void CreBridge::processPage(CmdRequest& request, CmdResponse& response)
 void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
 {
 #ifdef TRDEBUG
-//#define DEBUG_TEXT
+#define DEBUG_TEXT
 #endif //TRDEBUG
     response.cmd = CMD_RES_PAGE_TEXT;
     CmdDataIterator iter(request.first);
@@ -444,11 +444,9 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
     }
     uint32_t page = (uint32_t) ImportPage(external_page, doc_view_->GetColumns());
     doc_view_->GoToPage(page);
-    CRLog::error("page = %d", page);
 #ifdef DEBUG_TEXT
     CRLog::debug("processPageText external_page=%d page=%d page_width=%d page_height=%d",
             external_page, page, doc_view_->GetWidth(), doc_view_->GetHeight());
-    CRLog::trace("processPageText text: %s", LCSTR(doc_view_->GetPageText(page)));
 #endif
     float page_width = doc_view_->GetWidth();
     float page_height = doc_view_->GetHeight();
@@ -468,50 +466,42 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
     raw_para_array.add(doc_view_->curr_page_para_array);
     doc_view_->curr_page_para_array.clear();
 
-    LVRef<ldomXRange> range = doc_view_->GetPageDocRange(-1);
+    LVRef<ldomXRange> range = doc_view_->GetPageDocRange();
     int offset = doc_view_->GetOffset();
     lvRect margins = doc_view_->cfg_margins_;
 
     ldomXRange text = *range;
 
-    // CRLog::error("text :%d = %s",i, LCSTR(text->getStart().toString()));
-
     int strheight_last = 0;
     int para_counter = 0;
     bool lastline_check=false;
-    bool nomoreparas = false;
 
-    for (int i = 0; i < raw_para_array.length(); ++i)
+    lvRect lastrect;
+    for (int i = 0; i < raw_para_array.length(); i++)
     {
         lvRect rawrect = raw_para_array.get(i);
         if (rawrect.top < offset)
         {
-           // CRLog::error("para_top = %d",rawrect.top);
             continue;
         }
         int bottom = (two_columns) ? offset + page_height_int + page_height_int - margins.bottom : offset + page_height_int - margins.bottom;
         if (rawrect.bottom > bottom)
         {
-           // CRLog::error("para_bottom = %d",rawrect.bottom);
+            continue;
+        }
+        if(rawrect == lastrect)
+        {
             continue;
         }
         para_array.add(rawrect);
+        lastrect = rawrect;
     }
-    /* for (int i = para_array.length(); i > 0 ; i--)
-     {
-         if(i< para_array.length() && para_array.get(i+1) == para_array.get(i))
-         {
-     //       para_array.remove(i);
-         }
-     }*/
-    for (int i = 0; i < para_array.length() ; ++i)
-    {
-        CRLog::error("para array = %d",i);
-    }
+
     LVArray<ldomWord> word_chars;
     text.getRangeChars(word_chars);
     for (int i = 0; i < word_chars.length(); ++i)
     {
+        lString16 word = word_chars.get(i).getText();
         ldomXPointer start = word_chars.get(i).getStartXPointer();
         ldomXPointer end = word_chars.get(i).getEndXPointer();
         ldomXPointerEx startex = start;
@@ -521,45 +511,10 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
         ch.setStart(startex);
         ch.setEnd(endex);
 
-
         lvRect rect;
         ch.getRect(rect);
         int strheight_curr = rect.bottom - rect.top;
 
-        //paragraph breaks implementation
-        if (para_counter > para_array.length())
-        {
-            para_counter = para_array.length()-1;
-            nomoreparas = true;
-        }
-        if (para_array.length()>0 && rect.top > para_array.get(para_counter).top && !nomoreparas)
-        {
-            lvRect raw_rect_n = para_array.get(para_counter);
-            lvRect rect_n = lvRect(raw_rect_n.left, raw_rect_n.top, raw_rect_n.right, raw_rect_n.bottom);
-            if (!doc_view_->DocToWindowRect(rect_n))
-            {
-                CRLog::error("Para_rect_to_window failed!");
-                para_counter++;
-               // continue;
-            }
-            bool right_side =  rect_n.left > halfwidth;
-
-            float l5 = (rect_n.left + (strheight_curr/2)) / page_width;
-            float r5 = (rect_n.right + (strheight_curr*2)) / page_width;
-            float t5 = (rect_n.top +10 ) / page_height;
-            float b5 = (rect_n.bottom -10 ) / page_height;
-
-            lString16 para_end = lString16("PARA_END ") + lString16::itoa(para_counter); //Todo change "PARA_END" to defined symbol
-            CRLog::error("para end = %d", para_counter);
-
-            response.addFloat(l5);
-            response.addFloat(t5);
-            response.addFloat(r5);
-            response.addFloat(b5);
-            responseAddString(response, para_end);
-
-            para_counter++;
-        }
 
         //two columns last line on poge line break implementetaion
         lvRect rect_n = lvRect(rect.left, rect.top, rect.right, rect.bottom);
@@ -600,6 +555,36 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
             }
         }
 
+        lvRect temprect;
+        ch.getRect(temprect);
+        if (!doc_view_->DocToWindowRect(temprect))
+        {
+            break;
+        }
+
+        //paragraph breaks implementation
+        if (para_counter < para_array.length() && rect.top > para_array.get(para_counter).top)
+        {
+            lvRect raw_rect_n = para_array.get(para_counter);
+            lvRect rect_n = lvRect(raw_rect_n.left, raw_rect_n.top, raw_rect_n.right, raw_rect_n.bottom);
+            doc_view_->DocToWindowRect(rect_n);
+
+            float l5 = (rect_n.left + (strheight_curr / 2)) / page_width;                //Todo change para_end dimensions to 1 pixel wide line height
+            float r5 = (rect_n.right + (strheight_curr * 2)) / page_width;
+            float t5 = (rect_n.top + 10) / page_height;
+            float b5 = (rect_n.bottom - 10) / page_height;
+
+            lString16 para_end = lString16("PARA_END ") + lString16::itoa(para_counter); //Todo change "PARA_END" to defined symbol
+
+            response.addFloat(l5);
+            response.addFloat(t5);
+            response.addFloat(r5);
+            response.addFloat(b5);
+            responseAddString(response, para_end);
+
+            para_counter++;
+        }
+
         // line break implementation
         if (strheight_last != 0 && strheight_curr >= strheight_last * 2)
         {
@@ -612,7 +597,15 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
                 //check if bottom of block is out of this page
                 if (rect.bottom + margins.top >= page_height_int)
                 {
-                    float pre_r = (right_side) ? page_width_int : halfwidth ;
+                    float pre_r;
+                    if(two_columns)
+                    {
+                       pre_r = (right_side) ? page_width_int : halfwidth ;
+                    }
+                    else
+                    {
+                        pre_r = page_width_int;
+                    }
                     pre_r= pre_r - margins.right;
                     //top block add
                     float l3 = rect_n.right / page_width;
@@ -638,12 +631,10 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
         if (!doc_view_->DocToWindowRect(rect))
         {
 #ifdef TRDEBUG
-#if 0
-            CRLog::warn("processPageText DocToWindowRect fail %s\n  %d:%d-%d:%d\n  %s %d\n  %s %d",
-                            LCSTR(text.getHRef()),
-                            rect.left, rect.right, rect.top, rect.bottom,
-                            LCSTR(text.getStart().toString()), start_node->getDataIndex(),
-                            LCSTR(text.getEnd().toString()), end_node->getDataIndex());
+#if 1
+            CRLog::warn("processPageText DocToWindowRect fail");
+            lString16 word = word_chars.get(i).getText();
+            CRLog::error("letter '%s' is ignored", LCSTR(word));
 #endif
 #endif // TRDEBUG
             continue;
@@ -652,8 +643,7 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
         if (strheight_last != 0 && strheight_curr >= strheight_last * 2)
         {
 
-            //top block  // todo top right side lag is here
-            float halfwidth = page_width_int /2;
+            //top block
             bool right_side =  rect.left > halfwidth;
 
             float pre_r = (two_columns) ? (halfwidth) : page_width_int ;
@@ -669,7 +659,7 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
             float t = rect.top / page_height;
             float b = (rect.top + strheight_last) / page_height;
             if(rect.top < margins.top)
-            {   CRLog::error("rect top = %d, margins.top = %d",rect.top,margins.top);
+            {
                 t = (rect.top - strheight_last) /page_height;
                 b = (rect.top + 10) / page_height;
             }
@@ -698,34 +688,27 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
             response.addFloat(b);
             responseAddString(response, word);
         }
-#ifdef DEBUG_TEXT
-        ldomNode* start_node = text->getStart().getNode();
-            ldomNode* end_node = text->getEnd().getNode();
-            CRLog::trace("processPageText %d:%d-%d:%d %d:%d-%d:%d\n  %s %d\n  %s %d",
-                         rect.left, rect.right, rect.top, rect.bottom,
-                         rect.left, rect.right, rect.top, rect.bottom,
-                         LCSTR(text->getStart().toString()), start_node->getDataIndex(),
-                         LCSTR(text->getEnd().toString()), end_node->getDataIndex());
-#endif
     }
-       /*lvRect rect = para_array.get(para_array.length()-1);
-       if (rect.bottom> offset+page_height + page_height -margins.bottom)
-       {
-           doc_view_->DocToWindowRectSecondColumn(rect);
-           float l = (rect.left + (strheight_last / 2)) / page_width;
-           float r = (rect.right + (strheight_last * 2)) / page_width;
-           float t = (rect.top + 10) / page_height;
-           float b = (rect.bottom - 10) / page_height;
-           lString16 para_end = lString16("PARA_END_LAST ") + lString16::itoa(para_array.length() - 1);  //Todo change "PARA_END" to defined symbol
-           CRLog::error("ParaEndLast = %s", LCSTR(para_end));
+    //adding last para end on page if needed
+    if (para_counter<para_array.length())
+    {
+        lvRect rect = para_array.get(para_counter);
 
-           response.addFloat(l);
-           response.addFloat(t);
-           response.addFloat(r);
-           response.addFloat(b);
-           responseAddString(response, para_end);
-       }*/
+        if (doc_view_->DocToWindowRect(rect))
+        {
+            float l = (rect.left + (strheight_last / 2)) / page_width;
+            float r = (rect.right + (strheight_last * 2)) / page_width;
+            float t = (rect.top + 10) / page_height;                                           //Todo change para_end dimensions to 1 pixel wide line height
+            float b = (rect.bottom - 10) / page_height;
+            lString16 para_end = lString16("PARA_END_LAST ") + lString16::itoa(para_counter);  //Todo change "PARA_END" to defined symbol
+            response.addFloat(l);
+            response.addFloat(t);
+            response.addFloat(r);
+            response.addFloat(b);
+            responseAddString(response, para_end);
+        }
 
+    }
 #undef DEBUG_TEXT
 }
 

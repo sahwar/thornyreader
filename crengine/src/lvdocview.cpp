@@ -544,7 +544,8 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 if (DUMP_DOMTREE == 1)
 {
     CRLog::error("dumping domtree");
-    LVStreamRef out = LVOpenFileStream("/data/data/org.readera.trdevel/files/temp.xml", LVOM_WRITE);
+    LVStreamRef out = LVOpenFileStream("/sdcard/temp.xml", LVOM_WRITE);
+    //LVStreamRef out = LVOpenFileStream("/data/data/org.readera.trdevel/files/temp.xml", LVOM_WRITE);
     cr_dom_->saveToStream(out, NULL, true);
 }
 #if 0
@@ -1252,22 +1253,14 @@ bool LVDocView::DocToWindowRect(lvRect &rect)
                 }
                 else
                 {
-                    CRLog::error("NOT PASSED BY HORIZONTAL CHECKS");
-                    CRLog::error("right - 1 <= page_rects_[index].right - margins_.right");
-                    CRLog::error("%d <= %d - %d", right - 1, page_rects_[index].right, margins_.right);
                     return false;
                 }
             }
             else
             {
-                CRLog::error("NOT PASSED BY VERTICAL CHECKS. Index = %d",index);
-                CRLog::error("rect.bottom <= (pages_list_[page]->start + pages_list_[page]->height)");
-                CRLog::error("%d <= (%d + %d)",rect.bottom, pages_list_[page]->start, pages_list_[page]->height);
                 return false;
             }
 		}
-        CRLog::error("page >= 0 && page < pages_list_.length() && rect.top >= pages_list_[page]->start");
-        CRLog::error("%d >= 0 && %d < %d && %d >= %d", page,page,pages_list_.length(),rect.top,pages_list_[page]->start);
 		return false;
 	}
 	return false;
@@ -1864,7 +1857,8 @@ LVRef<ldomXRange> LVDocView::GetPageDocRange(int page_index)
         ldomXPointer end;
 		if (GetColumns() > 1)
 		{
-			end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + page->height + 100), 1);
+			//end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + page->height + 100), 1);
+			end = cr_dom_->createXPointer(lvPoint(0, page->start + (page->height * 3)), 1);
 		}
 		else
 		{
@@ -1915,7 +1909,7 @@ LVRef<ldomXRange> LVDocView::GetPageParaDocRange(int page_index)
     ldomXPointer end;
     if (GetColumns() > 1)
     {
-        end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + page->height +100));
+        end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + page->height ));
     }
     else
     {
@@ -2128,9 +2122,8 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 			lvRect end_rect;
 			if (!end.getRect(end_rect))
 			{
-				CRLog::error("Unable to get node end coordinates!");
+				CRLog::warn("Unable to get node end coordinates. Ignoring,");
 				para_rect_array.add(empty_rect);
-
 				return;
 			}
 			para_rect_array.add(end_rect);
@@ -2165,7 +2158,7 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 				text = text.substr(start, end - start);
 			}
 			ldomNode *end_node = node_range->getEnd().getNode();
-			CRLog::debug("GetCurrentPageParas first text on page: %d-%d %s", node->getDataIndex(), end_node->getDataIndex(), LCSTR(text));
+			//CRLog::debug("GetCurrentPageParas first text on page: %d-%d %s", node->getDataIndex(), end_node->getDataIndex(), LCSTR(text));
 #endif
 		}
 		// Called for each node in range
@@ -2193,7 +2186,7 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 	page_range->forEach(&callback);
 	this->curr_page_para_array= callback.GetParaArray();
 
-	if (viewport_mode_ == MODE_PAGES && GetColumns() > 1) //todo add second page processing for paraends
+	if (viewport_mode_ == MODE_PAGES && GetColumns() > 1)
 	{
 		// Process second page
 		int page_index = GetCurrPage();
