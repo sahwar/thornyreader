@@ -15,6 +15,7 @@
  */
 
 #include <stdlib.h>
+//#include <mupdf/pdf.h>
 
 #include "StLog.h"
 #include "StProtocol.h"
@@ -22,10 +23,17 @@
 #include "MuPdfBridge.h"
 
 #define LCTX "EBookDroid.MuPDF.Decoder.Search"
+#ifdef TRDEBUG
+#define L_DEBUG_TEXT true
+#define L_DEBUG_CHARS true
+#else
 #define L_DEBUG_TEXT false
 #define L_DEBUG_CHARS false
+#endif //TRDEBUG
 
 char utf8[32 * 1024];
+char ch;
+char paraend[10] = { 'P','A','R','A','_','E','N','D',0};
 
 void toResponse(CmdResponse& response, fz_rect& bounds, fz_irect* rr, const char* str, int len)
 {
@@ -44,7 +52,23 @@ void toResponse(CmdResponse& response, fz_rect& bounds, fz_irect* rr, const char
     response.addFloat(top);
     response.addFloat(right);
     response.addFloat(bottom);
-    response.addIpcString(utf8, true);
+    response.addIpcString(&ch, true);
+}
+
+void toResponseParaend(CmdResponse& response, fz_rect& bounds, fz_irect* rr, const char* str, int len)
+{
+    float width = bounds.x1 - bounds.x0;
+    float height = bounds.y1 - bounds.y0;
+    float left = (rr->x0 - bounds.x0) / width;
+    float top = (rr->y0 - bounds.y0) / height;
+    float right = (rr->x1 - bounds.x0) / width;
+    float bottom = (rr->y1 - bounds.y0) / height;
+
+    response.addFloat(left);
+    response.addFloat(top);
+    response.addFloat(right);
+    response.addFloat(bottom);
+    response.addIpcString(str, true);
 }
 
 void processLine(CmdResponse& response, fz_context *ctx, fz_rect& bounds, fz_text_line& line)
@@ -65,21 +89,22 @@ void processLine(CmdResponse& response, fz_context *ctx, fz_rect& bounds, fz_tex
             for (textIndex = 0; textIndex < span->len;)
             {
                 fz_text_char& text = span->text[textIndex];
-                bool space = (text.c == 0x0D) || (text.c == 0x0A) || (text.c == 0x09) || (text.c == 0x20);
+                bool space = (text.c == 0x0D) || (text.c == 0x0A) || (text.c == 0x09) || (text.c == 0x20) || (text.c == 0x002e);
                 if (prevspace && space)
                 {
                     // Do nothing with spaces
                     textIndex++;
                 }
-                else if (!prevspace && !space)
+                else if (!prevspace)// &&) !space)
                 {
                     fz_rect bbox;
                     fz_text_char_bbox(ctx, &bbox, span, textIndex);
                     fz_union_rect(&rr, &bbox);
                     index += fz_runetochar(utf8 + index, text.c);
-
+                    ch = text.c;
                     DEBUG_L(L_DEBUG_CHARS, LCTX,
-                        "processText: char processing: %d %04x %f %f %f %f", index, text.c, rr.x0, rr.y0, rr.x1, rr.y1);
+                        "processText: char processing: %d %04x %lc %f %f %f %f", index, text.c, text.c, rr.x0, rr.y0, rr.x1, rr.y1);
+                    toResponse(response, bounds, fz_round_rect(&box, &rr), utf8, index);
                     textIndex++;
                 }
                 else
@@ -163,6 +188,9 @@ void MuPdfBridge::processText(int pageNo, const char* pattern, CmdResponse& resp
                                 }
                             }
                         }
+                        fz_irect qbox = fz_empty_irect;
+                        fz_rect bbbox = block.u.text->bbox;  // todo change bounding box to box after last symbol instead of block box
+                        toResponseParaend(response, bounds, fz_round_rect(&qbox, &bbbox), paraend, 9);
                     }
                     DEBUG_L(L_DEBUG_TEXT, LCTX, "processText: page processed");
                 }
