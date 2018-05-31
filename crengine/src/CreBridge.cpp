@@ -593,11 +593,17 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
             lvRect raw_rect_n = para_array.get(para_counter);
             lvRect rect_n = lvRect(raw_rect_n.left, raw_rect_n.top, raw_rect_n.right, raw_rect_n.bottom);
             doc_view_->DocToWindowRect(rect_n);
-
-            float l5 = (rect_n.left + (strheight_curr / 2)) / page_width;                //Todo change para_end dimensions to 1 pixel wide line height
+#ifdef DEBUG_CRE_PARA_END_BLOCKS
+            float l5 = (rect_n.left + (strheight_curr / 2)) / page_width;
             float r5 = (rect_n.right + (strheight_curr * 2)) / page_width;
             float t5 = (rect_n.top + 10) / page_height;
             float b5 = (rect_n.bottom - 10) / page_height;
+#else
+            float l5 = (rect_n.left + (strheight_curr / 2)) / page_width;
+            float r5 = (rect_n.right + (strheight_curr / 2)) / page_width;
+            float t5 = rect_n.top / page_height;
+            float b5 = rect_n.bottom / page_height;
+#endif // DEBUG_PARA_END_BLOCKS
 
             lString16 para_end = lString16("\n");// + lString16::itoa(para_counter);
 
@@ -717,10 +723,17 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
 
         if (doc_view_->DocToWindowRect(rect))
         {
+#ifdef DEBUG_CRE_PARA_END_BLOCKS
             float l = (rect.left + (strheight_last / 2)) / page_width;
             float r = (rect.right + (strheight_last * 2)) / page_width;
-            float t = (rect.top + 10) / page_height;                                           //Todo change para_end dimensions to 1 pixel wide line height
+            float t = (rect.top + 10) / page_height;
             float b = (rect.bottom - 10) / page_height;
+#else
+            float l = (rect.left + (strheight_last / 2)) / page_width;
+            float r = (rect.right + (strheight_last / 2)) / page_width;
+            float t = rect.top / page_height;
+            float b = rect.bottom  / page_height;
+#endif // DEBUG_PARA_END_BLOCKS
             lString16 para_end = lString16("\n");
             response.addFloat(l);
             response.addFloat(t);
