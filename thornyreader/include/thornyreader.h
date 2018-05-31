@@ -89,4 +89,5 @@ void ThornyVersionResporse(const char* base_version, CmdResponse& response);
 #define HARDCONFIG_MUPDF_SLOW_CMYK 0
 #define SEND_FD_VIA_SOCKET 0
 
+#define PDF_PARA_BLOCKS_DEBUG 1
 #endif /* _THORNYREADER_H_ */

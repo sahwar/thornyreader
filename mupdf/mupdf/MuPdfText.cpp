@@ -15,7 +15,6 @@
  */
 
 #include <stdlib.h>
-//#include <mupdf/pdf.h>
 
 #include "StLog.h"
 #include "StProtocol.h"
@@ -23,13 +22,8 @@
 #include "MuPdfBridge.h"
 
 #define LCTX "EBookDroid.MuPDF.Decoder.Search"
-#ifdef TRDEBUG
-#define L_DEBUG_TEXT true
-#define L_DEBUG_CHARS true
-#else
 #define L_DEBUG_TEXT false
 #define L_DEBUG_CHARS false
-#endif //TRDEBUG
 
 char utf8[32 * 1024];
 char paraend[3] = { '\n',0};
@@ -100,11 +94,11 @@ void processLine(CmdResponse& response, fz_context *ctx, fz_rect& bounds, fz_tex
                 {
                     fz_rect bbox;
                     fz_text_char_bbox(ctx, &bbox, span, textIndex);
-                    last_char = bbox;
                     fz_union_rect(&rr, &bbox);
+                    last_char = bbox;
                     length = fz_runetochar(utf8, text.c);
                     DEBUG_L(L_DEBUG_CHARS, LCTX,
-                        "processText: char processing: %d %04x %lc %f %f %f %f", index, text.c, text.c, rr.x0, rr.y0, rr.x1, rr.y1);
+                            "processText: char processing: %d %04x %f %f %f %f", index, text.c, rr.x0, rr.y0, rr.x1, rr.y1);
                     toResponse(response, bounds, fz_round_rect(&box, &rr), utf8, 2);
                     textIndex++;
                 }
@@ -189,15 +183,20 @@ void MuPdfBridge::processText(int pageNo, const char* pattern, CmdResponse& resp
                                 }
                             }
                             fz_irect qbox = fz_empty_irect;
-                            fz_rect bbbox = block.u.text->bbox;  // todo change bounding box width to 1px wide right after last block
+                            fz_rect bbbox = block.u.text->bbox;
                             float lastchar_width = (last_char.x1-last_char.x0);
                             float lastchar_height = (last_char.y1-last_char.y0);
+                            #ifdef PDF_PARA_BLOCKS_DEBUG
                             bbbox.x0 = last_char.x1 + lastchar_width;
                             bbbox.x1 = last_char.x1 + lastchar_width + lastchar_width;
-                            //bbbox.y1 = last_char.y1; // todo change bounding box height to last symbol height <<HERE UNCOMMENT THIS
-                            //bbbox.y0 = last_char.y0; // todo change bounding box height to last symbol height <<HERE UNCOMMENT THIS
-                            bbbox.y0 = last_char.y0 + (lastchar_height/4); // todo change bounding box height to last symbol height
-                            bbbox.y1 = last_char.y1 - (lastchar_height/4); // todo change bounding box height to last symbol height
+                            bbbox.y0 = last_char.y0 + (lastchar_height/4);
+                            bbbox.y1 = last_char.y1 - (lastchar_height/4);
+                            #else
+                            bbbox.x0 = last_char.x1 + lastchar_width;
+                            bbbox.x1 = last_char.x1 + lastchar_width + (lastchar_width/2);
+                            bbbox.y0 = last_char.y0;
+                            bbbox.y1 = last_char.y1;
+                            #endif //PDF_PARA_BLOCKS_DEBUG
                             toResponseParaend(response, bounds, fz_round_rect(&qbox, &bbbox), paraend, 9);
                         }
                     }
