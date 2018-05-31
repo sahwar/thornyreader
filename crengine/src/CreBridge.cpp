@@ -502,6 +502,31 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
     for (int i = 0; i < word_chars.length(); ++i)
     {
         lString16 word = word_chars.get(i).getText();
+        if (word.lastChar() == 0x0A) //skipping /n (newline feed) chars
+        {continue;}
+        //converting all different spaces to one type space
+        if (      (word.firstChar() == L'\u00A0')
+               || (word.firstChar() == L'\u180E')
+               || (word.firstChar() == L'\u2000')
+               || (word.firstChar() == L'\u2001')
+               || (word.firstChar() == L'\u2002')
+               || (word.firstChar() == L'\u2003')
+               || (word.firstChar() == L'\u2004')
+               || (word.firstChar() == L'\u2005')
+               || (word.firstChar() == L'\u2006')
+               || (word.firstChar() == L'\u2007')
+               || (word.firstChar() == L'\u2008')
+               || (word.firstChar() == L'\u2009')
+               || (word.firstChar() == L'\u200A')
+               || (word.firstChar() == L'\u200B')
+               || (word.firstChar() == L'\u202F')
+               || (word.firstChar() == L'\u205F')
+               || (word.firstChar() == L'\u3000')
+               || (word.firstChar() == L'\uFEFF'))
+        {
+        word = lString16(" "); // L'\u0020' regular ascii space
+        }
+
         ldomXPointer start = word_chars.get(i).getStartXPointer();
         ldomXPointer end = word_chars.get(i).getEndXPointer();
         ldomXPointerEx startex = start;
@@ -538,7 +563,7 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
                         float t3 = (rect_n.top) / page_height;
                         float r3 = pre_r / page_width;
                         float b3 = (rect_n.top + strheight_last) / page_height;
-                        lString16 word = word_chars.get(i).getText() + lString16("++");
+                        //word = word + lString16("++");
                         //CRLog::error("jump letter = %s",LCSTR(word));
                         response.addFloat(l3);
                         response.addFloat(t3);
@@ -574,7 +599,7 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
             float t5 = (rect_n.top + 10) / page_height;
             float b5 = (rect_n.bottom - 10) / page_height;
 
-            lString16 para_end = lString16("PARA_END ") + lString16::itoa(para_counter); //Todo change "PARA_END" to defined symbol
+            lString16 para_end = lString16("\n");// + lString16::itoa(para_counter);
 
             response.addFloat(l5);
             response.addFloat(t5);
@@ -612,7 +637,6 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
                     float t3 = (rect_n.top) / page_height;
                     float r3 = pre_r / page_width;
                     float b3 = (rect_n.top + strheight_last) / page_height;
-                    lString16 word = word_chars.get(i).getText();
                     //CRLog::error("jump letter = %s",LCSTR(word));
                     response.addFloat(l3);
                     response.addFloat(t3);
@@ -633,7 +657,6 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
 #ifdef TRDEBUG
 #if 1
             CRLog::warn("processPageText DocToWindowRect fail");
-            lString16 word = word_chars.get(i).getText();
             CRLog::error("letter '%s' is ignored", LCSTR(word));
 #endif
 #endif // TRDEBUG
@@ -664,7 +687,6 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
                 b = (rect.top + 10) / page_height;
             }
 
-            lString16 word = word_chars.get(i).getText();
             // CRLog::error("word = %s",LCSTR(word));
             response.addFloat(l);
             response.addFloat(t);
@@ -679,7 +701,6 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
             float t = rect.top / page_height;
             float r = rect.right / page_width;
             float b = rect.bottom / page_height;
-            lString16 word = word_chars.get(i).getText();
             //CRLog::error("usual letter = %s", LCSTR(word));
 
             response.addFloat(l);
@@ -700,7 +721,7 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
             float r = (rect.right + (strheight_last * 2)) / page_width;
             float t = (rect.top + 10) / page_height;                                           //Todo change para_end dimensions to 1 pixel wide line height
             float b = (rect.bottom - 10) / page_height;
-            lString16 para_end = lString16("PARA_END_LAST ") + lString16::itoa(para_counter);  //Todo change "PARA_END" to defined symbol
+            lString16 para_end = lString16("\n");
             response.addFloat(l);
             response.addFloat(t);
             response.addFloat(r);
