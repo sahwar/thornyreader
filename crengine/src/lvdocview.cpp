@@ -1858,7 +1858,7 @@ LVRef<ldomXRange> LVDocView::GetPageDocRange(int page_index)
 		if (GetColumns() > 1)
 		{
 			//end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + page->height + 100), 1);
-			end = cr_dom_->createXPointer(lvPoint(0, page->start + (page->height * 3)), 1);
+			end = cr_dom_->createXPointer(lvPoint(0, page->start + (page->height * 4)), 1);
 		}
 		else
 		{
