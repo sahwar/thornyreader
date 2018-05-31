@@ -32,8 +32,9 @@
 #endif //TRDEBUG
 
 char utf8[32 * 1024];
-char ch;
-char paraend[10] = { 'P','A','R','A','_','E','N','D',0};
+char paraend[3] = { '\n',0};
+fz_rect last_char;
+int length;
 
 void toResponse(CmdResponse& response, fz_rect& bounds, fz_irect* rr, const char* str, int len)
 {
@@ -44,7 +45,7 @@ void toResponse(CmdResponse& response, fz_rect& bounds, fz_irect* rr, const char
     float right = (rr->x1 - bounds.x0) / width;
     float bottom = (rr->y1 - bounds.y0) / height;
 
-    utf8[len] = 0;
+    utf8[length] = 0;
 
     DEBUG_L(L_DEBUG_TEXT, LCTX, "processText: add word: %d %f %f %f %f %s", len, left, top, right, bottom, utf8);
 
@@ -52,7 +53,7 @@ void toResponse(CmdResponse& response, fz_rect& bounds, fz_irect* rr, const char
     response.addFloat(top);
     response.addFloat(right);
     response.addFloat(bottom);
-    response.addIpcString(&ch, true);
+    response.addIpcString(utf8, true);
 }
 
 void toResponseParaend(CmdResponse& response, fz_rect& bounds, fz_irect* rr, const char* str, int len)
@@ -99,12 +100,12 @@ void processLine(CmdResponse& response, fz_context *ctx, fz_rect& bounds, fz_tex
                 {
                     fz_rect bbox;
                     fz_text_char_bbox(ctx, &bbox, span, textIndex);
+                    last_char = bbox;
                     fz_union_rect(&rr, &bbox);
-                    index += fz_runetochar(utf8 + index, text.c);
-                    ch = text.c;
+                    length = fz_runetochar(utf8, text.c);
                     DEBUG_L(L_DEBUG_CHARS, LCTX,
                         "processText: char processing: %d %04x %lc %f %f %f %f", index, text.c, text.c, rr.x0, rr.y0, rr.x1, rr.y1);
-                    toResponse(response, bounds, fz_round_rect(&box, &rr), utf8, index);
+                    toResponse(response, bounds, fz_round_rect(&box, &rr), utf8, 2);
                     textIndex++;
                 }
                 else
@@ -187,10 +188,18 @@ void MuPdfBridge::processText(int pageNo, const char* pattern, CmdResponse& resp
                                     processLine(response, ctx, bounds, line);
                                 }
                             }
+                            fz_irect qbox = fz_empty_irect;
+                            fz_rect bbbox = block.u.text->bbox;  // todo change bounding box width to 1px wide right after last block
+                            float lastchar_width = (last_char.x1-last_char.x0);
+                            float lastchar_height = (last_char.y1-last_char.y0);
+                            bbbox.x0 = last_char.x1 + lastchar_width;
+                            bbbox.x1 = last_char.x1 + lastchar_width + lastchar_width;
+                            //bbbox.y1 = last_char.y1; // todo change bounding box height to last symbol height <<HERE UNCOMMENT THIS
+                            //bbbox.y0 = last_char.y0; // todo change bounding box height to last symbol height <<HERE UNCOMMENT THIS
+                            bbbox.y0 = last_char.y0 + (lastchar_height/4); // todo change bounding box height to last symbol height
+                            bbbox.y1 = last_char.y1 - (lastchar_height/4); // todo change bounding box height to last symbol height
+                            toResponseParaend(response, bounds, fz_round_rect(&qbox, &bbbox), paraend, 9);
                         }
-                        fz_irect qbox = fz_empty_irect;
-                        fz_rect bbbox = block.u.text->bbox;  // todo change bounding box to box after last symbol instead of block box
-                        toResponseParaend(response, bounds, fz_round_rect(&qbox, &bbbox), paraend, 9);
                     }
                     DEBUG_L(L_DEBUG_TEXT, LCTX, "processText: page processed");
                 }
