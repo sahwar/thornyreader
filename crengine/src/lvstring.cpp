@@ -3955,7 +3955,8 @@ inline lUInt16 getCharProp(lChar16 ch) {
         return CH_PROP_DASH|CH_PROP_SIGN;
     else if (ch==0x2026) //add symbols here if not caught
         return CH_PROP_SIGN;
-    return 0;
+    return CH_PROP_HIEROGLYPH;
+    //return 0;
 }
 
 void lStr_getCharProps( const lChar16 * str, int sz, lUInt16 * props )

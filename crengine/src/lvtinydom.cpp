@@ -5308,6 +5308,7 @@ void ldomXRange::getRangeChars(LVArray<ldomWord>& words_list) {
             TRFLAGS |= CH_PROP_SIGN;
             TRFLAGS |= CH_PROP_ALPHA_SIGN;
             TRFLAGS |= CH_PROP_DASH;
+            TRFLAGS |= CH_PROP_HIEROGLYPH;
 
             for (int i = nodeRange->getStart().getOffset(); i <= len; i++) {
                 int alpha = lGetCharProps(text[i]) & TRFLAGS; //  words check here
