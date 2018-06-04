@@ -15,6 +15,7 @@
  */
 
 #include <stdlib.h>
+#include <cstring>
 
 #include "StLog.h"
 #include "StProtocol.h"
@@ -62,6 +63,9 @@ void djvu_get_djvu_words(miniexp_t expr, const char* pattern, ddjvu_pageinfo_t *
         if (miniexp_stringp(head))
         {
             const char* text = miniexp_to_str(head);
+            char result[50];
+            strcpy(result,text);
+            strcat(result," ");
 
             DEBUG_L(L_DEBUG_TEXT, LCTX,
                 "processText: %d, %d, %d, %d: %s", coords[0], coords[1], coords[2], coords[3], text);
@@ -72,7 +76,7 @@ void djvu_get_djvu_words(miniexp_t expr, const char* pattern, ddjvu_pageinfo_t *
             response.addFloat(t < b ? t : b);
             response.addFloat(coords[2] / width);
             response.addFloat(t > b ? t : b);
-            response.addIpcString(text, true);
+            response.addIpcString(result, true);
         }
         else if (miniexp_consp(head))
         {
