@@ -529,6 +529,7 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
 
         ldomXPointer start = word_chars.get(i).getStartXPointer();
         ldomXPointer end = word_chars.get(i).getEndXPointer();
+        lString16 startpath = start.toString();
         ldomXPointerEx startex = start;
         ldomXPointerEx endex = end;
 
@@ -540,7 +541,7 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
         ch.getRect(rect);
         int strheight_curr = rect.bottom - rect.top;
 
-
+        //CRLog::error("start: %s ",LCSTR(start.toString()));
         //two columns last line on poge line break implementetaion
         lvRect rect_n = lvRect(rect.left, rect.top, rect.right, rect.bottom);
         doc_view_->DocToWindowRectSecondColumn(rect_n);
@@ -707,6 +708,7 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
             response.addFloat(r);
             response.addFloat(b);
             responseAddString(response, word);
+            //responseAddString(response, startpath);
         }
     }
     //adding last para end on page if needed

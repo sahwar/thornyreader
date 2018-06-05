@@ -127,6 +127,7 @@ void processLine(CmdResponse& response, fz_context *ctx, fz_rect& bounds, fz_tex
 
 void MuPdfBridge::processText(int pageNo, const char* pattern, CmdResponse& response)
 {
+
     fz_page *page = getPage(pageNo, false);
     if (page == NULL)
     {
