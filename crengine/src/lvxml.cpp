@@ -2675,8 +2675,7 @@ bool LvXmlParser::Parse()
                     tagns.lowercase();
                     tagname.lowercase();
                 }
-
-                if(tagname=="style") //|| tagname=="table" || tagname=="tr" || tagname=="td") // skipping all <style> tags and <table> <tr> <td> tags
+                if(tagname=="style" || tagname=="span") //|| tagname=="tr" || tagname=="td") // skipping all <style> tags and <table> <tr> <td> tags
                 {
                     //if (attrname=="name")
                     //{ if(attrvalue.pos("override")!=-1 || attrvalue.pos("GramE")!=-1 )// || attrvalue.pos("")!=-1 ){
