@@ -580,13 +580,6 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
             }
         }
 
-        lvRect temprect;
-        ch.getRect(temprect);
-        if (!doc_view_->DocToWindowRect(temprect))
-        {
-            break;
-        }
-
         //paragraph breaks implementation
         if (para_counter < para_array.length() && rect.top > para_array.get(para_counter).top)
         {
@@ -661,9 +654,9 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
         if (!doc_view_->DocToWindowRect(rect))
         {
 #ifdef TRDEBUG
-#if 1
+#if 0
             CRLog::warn("processPageText DocToWindowRect fail");
-            CRLog::error("letter '%s' is ignored", LCSTR(word));
+            CRLog::warn("letter '%s' is ignored", LCSTR(word));
 #endif
 #endif // TRDEBUG
             continue;
