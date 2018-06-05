@@ -25,7 +25,6 @@
 #define L_DEBUG_TEXT false
 #define L_DEBUG_CHARS false
 #define PDF_PARA_BLOCKS_DEBUG 1
-int counter;
 
 char utf8[32 * 1024];
 char paraend[3] = { '\n',0};
@@ -101,11 +100,7 @@ void processLine(CmdResponse& response, fz_context *ctx, fz_rect& bounds, fz_tex
                     length = fz_runetochar(utf8, text.c);
                     DEBUG_L(L_DEBUG_CHARS, LCTX,
                             "processText: char processing: %d %04x %f %f %f %f", index, text.c, rr.x0, rr.y0, rr.x1, rr.y1);
-                    if(counter<5000)
-                    {
-                        toResponse(response, bounds, fz_round_rect(&box, &rr), utf8, 2);
-                    }
-                    counter++;
+                    toResponse(response, bounds, fz_round_rect(&box, &rr), utf8, 2);
                     textIndex++;
                 }
                 else
