@@ -501,8 +501,6 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
     text.getRangeChars(word_chars);
     for (int i = 0; i < word_chars.length(); ++i)
     {
-        if(i>5000)
-        {break;}
         lString16 word = word_chars.get(i).getText();
         if (word.lastChar() == 0x0A) //skipping /n (newline feed) chars
         {continue;}
