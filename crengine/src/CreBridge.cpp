@@ -529,7 +529,6 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
 
         ldomXPointer start = word_chars.get(i).getStartXPointer();
         ldomXPointer end = word_chars.get(i).getEndXPointer();
-        lString16 startpath = start.toString();
         ldomXPointerEx startex = start;
         ldomXPointerEx endex = end;
 
