@@ -544,7 +544,8 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 if (DUMP_DOMTREE == 1)
 {
     CRLog::error("dumping domtree");
-    LVStreamRef out = LVOpenFileStream("/data/data/org.readera/files/temp.xml", LVOM_WRITE);
+    LVStreamRef out = LVOpenFileStream("/sdcard/temp.xml", LVOM_WRITE);
+    //LVStreamRef out = LVOpenFileStream("/data/data/org.readera.trdevel/files/temp.xml", LVOM_WRITE);
     cr_dom_->saveToStream(out, NULL, true);
 }
 #if 0
@@ -1227,33 +1228,79 @@ bool LVDocView::DocToWindowRect(lvRect &rect)
 	else
 	{
 		int page = GetCurrPage();
-		if (page >= 0 && page < pages_list_.length() && rect.top >= pages_list_[page]->start)
+		if (page >= 0 && page < pages_list_.length())// && rect.top+1 >= pages_list_[page]->start)
 		{
 			int index = -1;
-			if (rect.bottom <= (pages_list_[page]->start + pages_list_[page]->height))
+			if (rect.top+1 <= (pages_list_[page]->start + pages_list_[page]->height))
 			{
 				index = 0;
 			}
 			else if (GetColumns() == 2 && page + 1 < pages_list_.length() &&
-			         rect.bottom <=
-			         (pages_list_[page + 1]->start + pages_list_[page + 1]->height))
+			         rect.bottom <= (pages_list_[page + 1]->start + pages_list_[page + 1]->height))
 			{
 				index = 1;
 			}
 			if (index >= 0)
 			{
 				int right = rect.right + page_rects_[index].left + margins_.left;
-				if (right < page_rects_[index].right - margins_.right)
+				if (right-1 <= page_rects_[index].right - margins_.right)
 				{
 					rect.left = rect.left + page_rects_[index].left + margins_.left;
-					rect.right = right;
-					rect.top = rect.top + margins_.top - pages_list_[page + index]->start;
-					rect.bottom = rect.bottom + margins_.top - pages_list_[page + index]->start;
-					return true;
-				}
-			}
+                    rect.right = right;
+                    rect.top = rect.top + margins_.top - pages_list_[page + index]->start;
+                    rect.bottom = rect.bottom + margins_.top - pages_list_[page + index]->start;
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
+            }
 		}
 		return false;
+	}
+	return false;
+}
+
+bool LVDocView::DocToWindowRectSecondColumn(lvRect &rect)
+{
+	CHECK_RENDER("DocToWindowRect()")
+	int page = GetCurrPage();
+	if (page >= 0 && page < pages_list_.length())
+	{
+		int index = -1;
+		if (rect.top + 1 <= (pages_list_[page]->start + pages_list_[page]->height))
+		{
+			index = 0;
+		}
+		else if (GetColumns() == 2 && page + 1 < pages_list_.length() && rect.bottom <= (pages_list_[page + 1]->start + pages_list_[page + 1]->height + pages_list_[page + 1]->height))
+		{
+			index = 1;
+		}
+		if (index >= 0)
+		{
+			int right = rect.right + page_rects_[index].left + margins_.left;
+			if (right - 1 <= page_rects_[index].right - margins_.right)
+			{
+				rect.left = rect.left + page_rects_[index].left + margins_.left;
+				rect.right = right;
+				rect.top = rect.top + margins_.top - pages_list_[page + index]->start;
+				rect.bottom = rect.bottom + margins_.top - pages_list_[page + index]->start;
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
+		else
+		{
+			return false;
+		}
 	}
 	return false;
 }
@@ -1806,8 +1853,18 @@ LVRef<ldomXRange> LVDocView::GetPageDocRange(int page_index)
 		ldomXPointer start = cr_dom_->createXPointer(lvPoint(0, page->start));
 		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(m_dx + m_dy, page->start + page->height - 1));
 		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
-		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height), 1);
-		ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
+        //todo dynamically add two line heights instead of fixed 50 pixels
+        ldomXPointer end;
+		if (GetColumns() > 1)
+		{
+			//end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + page->height + 100), 1);
+			end = cr_dom_->createXPointer(lvPoint(0, page->start + (page->height * 10)), 1);
+		}
+		else
+		{
+			end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + 50), 1);
+		}
+		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
 		if (start.isNull() || end.isNull())
 		{
 			return res;
@@ -1815,6 +1872,56 @@ LVRef<ldomXRange> LVDocView::GetPageDocRange(int page_index)
 		res = LVRef<ldomXRange>(new ldomXRange(start, end));
 	}
 	return res;
+}
+
+
+/// get page document range, -1 for current page
+LVRef<ldomXRange> LVDocView::GetPageParaDocRange(int page_index)
+{
+    CHECK_RENDER("getPageDocRange()")
+    LVRef<ldomXRange> res(NULL);
+
+    // PAGES mode
+    if (page_index < 0 || page_index >= pages_list_.length())
+    {
+        page_index = GetCurrPage();
+    }
+    LVRendPageInfo *page = pages_list_[page_index];
+    if (page->type != PAGE_TYPE_NORMAL)
+    {
+        return res;
+    }
+    ldomXPointer start;
+    if(page_index==0)
+    {
+        start = cr_dom_->createXPointer(lvPoint(0, page->start));
+    }
+    else if( page_index == 1)
+    {
+        start = cr_dom_->createXPointer(lvPoint(0, 0));
+    }
+    else
+    {
+       start = cr_dom_->createXPointer(lvPoint(0, page->start - page->height));
+    }//ldomXPointer end = cr_dom_->createXPointer(lvPoint(m_dx + m_dy, page->start + page->height - 1));
+    //ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
+    //todo dynamically add two line heights instead of fixed 50 pixels
+    ldomXPointer end;
+    if (GetColumns() > 1)
+    {
+        end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + page->height ));
+    }
+    else
+    {
+        end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + 50 ));
+    }
+    //ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
+    if (start.isNull() || end.isNull())
+    {
+        return res;
+    }
+    res = LVRef<ldomXRange>(new ldomXRange(start, end));
+    return res;
 }
 
 void LVDocView::GetCurrentPageLinks(ldomXRangeList &links_list)
@@ -1970,10 +2077,10 @@ void LVDocView::GetCurrentPageLinks(ldomXRangeList &links_list)
 	}
 }
 
-void LVDocView::GetCurrentPageText(ldomXRangeList &list)
+void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 {
 	list.clear();
-	LVRef<ldomXRange> page_range = GetPageDocRange();
+	LVRef<ldomXRange> page_range = GetPageParaDocRange();
 	if (page_range.isNull())
 	{
 		return;
@@ -1981,68 +2088,8 @@ void LVDocView::GetCurrentPageText(ldomXRangeList &list)
 	class TextKeeper : public ldomNodeCallback
 	{
 		ldomXRangeList &list_;
-		void ProcessFinalNode(ldomNode *node)
-		{
-			int end_index = node->isText() ? node->getText().length() : node->getChildCount();
-			ldomXPointerEx start = ldomXPointerEx(node, 0);
-			ldomXPointerEx end = ldomXPointerEx(node, end_index);
-			lvRect start_rect;
-			lvRect end_rect;
-			if (!start.getRect(start_rect) || !end.getRect(end_rect))
-			{
-				CRLog::error("GetCurrentPageText getRect fail");
-				return;
-			}
-			if (start_rect.top == end_rect.top && start_rect.bottom == end_rect.bottom)
-			{
-				// Singleline link
-				list_.add(new ldomXRange(start, end));
-				return;
-			}
-			lvRect curr_rect;
-			for (int i = end_index - 1; i >= 0; i--)
-			{
-				ldomXPointerEx curr = ldomXPointerEx(node, i);
-				if (!curr.getRect(curr_rect))
-				{
-					CRLog::error("GetCurrentPageText getRect fail");
-					return;
-				}
-				if (curr_rect.top == start_rect.top)
-				{
-					if (curr_rect.bottom == start_rect.bottom)
-					{
-						// Запрыгнули на верхнюю строчку
-						list_.add(new ldomXRange(start, curr));
-						ldomXPointerEx prev = ldomXPointerEx(node, i + 1);
-						list_.add(new ldomXRange(prev, end));
-						break;
-					}
-					else
-					{
-						CRLog::error("GetCurrentPageText tops equals, bottoms doesnt");
-					}
-				}
-				else if (curr_rect.top != end_rect.top)
-				{
-					if (curr_rect.bottom != end_rect.bottom)
-					{
-						ldomXPointerEx prev = ldomXPointerEx(node, i + 1);
-						list_.add(new ldomXRange(prev, end));
-						end = ldomXPointerEx(curr);
-						if (!end.getRect(end_rect))
-						{
-							CRLog::error("GetCurrentPageText getRect fail");
-							return;
-						}
-					}
-					else
-					{
-						CRLog::error("GetCurrentPageText tops not equals, bottoms does");
-					}
-				}
-			}
-		}
+		LVArray<lvRect> para_rect_array;
+
 		void ProcessLinkNode(ldomNode *node)
 		{
 			for (lUInt32 i = 0; i < node->getChildCount(); i++)
@@ -2050,7 +2097,7 @@ void LVDocView::GetCurrentPageText(ldomXRangeList &list)
 				ldomNode *child = node->getChildNode(i);
 				if (child->isText())
 				{
-					ProcessFinalNode(child);
+					ProcessFinalNode_GetNodeEnd(child);
 				}
 				else
 				{
@@ -2058,9 +2105,35 @@ void LVDocView::GetCurrentPageText(ldomXRangeList &list)
 				}
 			}
 		}
+
+		void ProcessFinalNode_GetNodeEnd(ldomNode *node)
+		{
+			ldomXPointerEx end;
+			if (node->isText())
+			{
+				int end_index = node->getText().length();
+				end = ldomXPointerEx(node, end_index);
+			}
+			else
+			{
+				return;
+			}
+			lvRect empty_rect(0, 0, 0, 0);
+			lvRect end_rect;
+			if (!end.getRect(end_rect))
+			{
+				CRLog::warn("Unable to get node end coordinates. Ignoring,");
+				para_rect_array.add(empty_rect);
+				return;
+			}
+			para_rect_array.add(end_rect);
+			return;
+		}
+
 	public:
 		bool text_is_first_ = true;
-		TextKeeper(ldomXRangeList &list) : list_(list) {}
+
+		TextKeeper(ldomXRangeList &list) : list_(list)	{	}
 		// Called for each text fragment in range
 		virtual void onText(ldomXRange *node_range)
 		{
@@ -2085,8 +2158,7 @@ void LVDocView::GetCurrentPageText(ldomXRangeList &list)
 				text = text.substr(start, end - start);
 			}
 			ldomNode *end_node = node_range->getEnd().getNode();
-			CRLog::debug("GetCurrentPageText first text on page: %d-%d %s",
-						 node->getDataIndex(), end_node->getDataIndex(), LCSTR(text));
+			//CRLog::debug("GetCurrentPageParas first text on page: %d-%d %s", node->getDataIndex(), end_node->getDataIndex(), LCSTR(text));
 #endif
 		}
 		// Called for each node in range
@@ -2097,15 +2169,23 @@ void LVDocView::GetCurrentPageText(ldomXRangeList &list)
 			if (element_node->getChildCount() == 0)
 			{
 				// Empty link in malformed doc, example: <a name="sync_on_demand"></a>
-				CRLog::trace("GetCurrentPageText empty link in malformed doc");
+				CRLog::trace("GetCurrentPageParas empty link in malformed doc");
 			}
 #endif
 			ProcessLinkNode(element_node);
 			return true;
 		}
+		LVArray<lvRect> GetParaArray()
+		{
+			return para_rect_array;
+		}
 	};
+
+    this->curr_page_para_array.clear();
 	TextKeeper callback(list);
 	page_range->forEach(&callback);
+	this->curr_page_para_array= callback.GetParaArray();
+
 	if (viewport_mode_ == MODE_PAGES && GetColumns() > 1)
 	{
 		// Process second page
@@ -2115,6 +2195,7 @@ void LVDocView::GetCurrentPageText(ldomXRangeList &list)
 		{
 			callback.text_is_first_ = true;
 			page_range->forEach(&callback);
+            this->curr_page_para_array.add(callback.GetParaArray());
 		}
 	}
 }

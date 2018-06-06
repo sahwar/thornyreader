@@ -117,6 +117,7 @@ public:
     bool cfg_enable_footnotes_;
     bool cfg_firstpage_thumb_;
     bool cfg_txt_smart_format_;
+    LVArray<lvRect> curr_page_para_array;
 
     inline bool IsPagesMode() { return viewport_mode_ == MODE_PAGES; }
     inline bool IsScrollMode() { return viewport_mode_ == MODE_SCROLL; }
@@ -149,7 +150,7 @@ public:
     void ClearSelection();
     /// get list of links
     void GetCurrentPageLinks(ldomXRangeList& list);
-    void GetCurrentPageText(ldomXRangeList& list);
+    void GetCurrentPageParas(ldomXRangeList &list);
     /// selects first link on page, if any. returns selected link range, null if no links.
     ldomXRange* SelectFirstPageLink();
     /// invalidate formatted data, request render
@@ -159,6 +160,7 @@ public:
     void UpdateBookmarksRanges();
     /// get page document range, -1 for current page
     LVRef<ldomXRange> GetPageDocRange(int page_index = -1);
+    LVRef<ldomXRange> GetPageParaDocRange(int page_index = -1);
     /// get page text, -1 for current page
     lString16 GetPageText(int page_index = -1);
     int GetColumns();
@@ -171,8 +173,9 @@ public:
     LVImageSourceRef getImageByPoint(lvPoint pt);
     /// converts point from window to document coordinates, returns true if success
     bool WindowToDocPoint(lvPoint& pt);
-    /// converts rect from documsnt to window coordinates, returns true if success
+    /// converts rect from document to window coordinates, returns true if success
     bool DocToWindowRect(lvRect& rect);
+    bool DocToWindowRectSecondColumn(lvRect &rect);
     /// returns document
     CrDom* GetCrDom() { return cr_dom_; }
     /// draws scaled image into buffer, clear background according to current settings

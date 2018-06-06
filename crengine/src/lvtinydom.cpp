@@ -5245,14 +5245,75 @@ void ldomXRange::getRangeWords(LVArray<ldomWord>& words_list) {
                 len = end;
             }
             int beginOfWord = -1;
+            int TRFLAGS = 0 ;
+            TRFLAGS |= CH_PROP_ALPHA;
+            TRFLAGS |= CH_PROP_DIGIT;
+            TRFLAGS |= CH_PROP_PUNCT;
+            TRFLAGS |= CH_PROP_HYPHEN;
+            TRFLAGS |= CH_PROP_VOWEL;
+            TRFLAGS |= CH_PROP_CONSONANT;
+            TRFLAGS |= CH_PROP_SIGN;
+            TRFLAGS |= CH_PROP_ALPHA_SIGN;
+            TRFLAGS |= CH_PROP_DASH;
+
             for (int i = nodeRange->getStart().getOffset(); i <= len; i++) {
-                int alpha = lGetCharProps(text[i]) & CH_PROP_ALPHA;
+                //int alpha = lGetCharProps(text[i]) & CH_PROP_ALPHA; //  words check here
+                int alpha = lGetCharProps(text[i]) & TRFLAGS; //  words check here
                 if (alpha && beginOfWord < 0) {
                     beginOfWord = i;
                 }
                 if (!alpha && beginOfWord >= 0) {
                     list_.add(ldomWord(node, beginOfWord, i));
                     beginOfWord = -1;
+                }
+            }
+        }
+        /// called for each found node in range
+        virtual bool onElement(ldomXPointerEx* ptr) {
+            ldomNode* elem = ptr->getNode();
+            if (elem->getRendMethod() == erm_invisible) {
+                return false;
+            }
+            return true;
+        }
+    };
+    WordsCollector collector(words_list);
+    forEach(&collector);
+}
+
+
+/// get all words from specified range
+void ldomXRange::getRangeChars(LVArray<ldomWord>& words_list) {
+    class WordsCollector : public ldomNodeCallback {
+        LVArray<ldomWord>& list_;
+    public:
+        WordsCollector(LVArray<ldomWord>& list) : list_(list) {}
+        /// called for each found text fragment in range
+        virtual void onText(ldomXRange* nodeRange) {
+            ldomNode* node = nodeRange->getStart().getNode();
+            lString16 text = node->getText();
+            int len = text.length();
+            int end = nodeRange->getEnd().getOffset();
+            if (len > end) {
+                len = end;
+            }
+            int TRFLAGS = 0 ;
+            TRFLAGS |= CH_PROP_ALPHA;
+            TRFLAGS |= CH_PROP_DIGIT;
+            TRFLAGS |= CH_PROP_PUNCT;
+            TRFLAGS |= CH_PROP_SPACE;
+            TRFLAGS |= CH_PROP_HYPHEN;
+            TRFLAGS |= CH_PROP_VOWEL;
+            TRFLAGS |= CH_PROP_CONSONANT;
+            TRFLAGS |= CH_PROP_SIGN;
+            TRFLAGS |= CH_PROP_ALPHA_SIGN;
+            TRFLAGS |= CH_PROP_DASH;
+            TRFLAGS |= CH_PROP_HIEROGLYPH;
+
+            for (int i = nodeRange->getStart().getOffset(); i <= len; i++) {
+                int alpha = lGetCharProps(text[i]) & TRFLAGS; //  words check here
+                if (alpha) {
+                    list_.add(ldomWord(node, i, i+1));
                 }
             }
         }
@@ -5543,7 +5604,7 @@ lString16 ldomXRange::GetRangeText(lChar16 blockDelimiter, int maxTextLen)
             int start = node_range->getStart().getOffset();
             int end = node_range->getEnd().getOffset();
             if (start < end) {
-                text_ << text.substr(start, end - start);
+                text_ << text.substr(start, end - start+1); // problem was here, added +1, so full string is being sent
             }
             lastText = true;
             newBlock = false;

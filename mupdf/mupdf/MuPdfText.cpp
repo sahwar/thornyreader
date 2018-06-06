@@ -24,8 +24,12 @@
 #define LCTX "EBookDroid.MuPDF.Decoder.Search"
 #define L_DEBUG_TEXT false
 #define L_DEBUG_CHARS false
+#define PDF_PARA_BLOCKS_DEBUG 1
 
 char utf8[32 * 1024];
+char paraend[3] = { '\n',0};
+fz_rect last_char;
+int length;
 
 void toResponse(CmdResponse& response, fz_rect& bounds, fz_irect* rr, const char* str, int len)
 {
@@ -36,7 +40,7 @@ void toResponse(CmdResponse& response, fz_rect& bounds, fz_irect* rr, const char
     float right = (rr->x1 - bounds.x0) / width;
     float bottom = (rr->y1 - bounds.y0) / height;
 
-    utf8[len] = 0;
+    utf8[length] = 0;
 
     DEBUG_L(L_DEBUG_TEXT, LCTX, "processText: add word: %d %f %f %f %f %s", len, left, top, right, bottom, utf8);
 
@@ -45,6 +49,22 @@ void toResponse(CmdResponse& response, fz_rect& bounds, fz_irect* rr, const char
     response.addFloat(right);
     response.addFloat(bottom);
     response.addIpcString(utf8, true);
+}
+
+void toResponseParaend(CmdResponse& response, fz_rect& bounds, fz_irect* rr, const char* str, int len)
+{
+    float width = bounds.x1 - bounds.x0;
+    float height = bounds.y1 - bounds.y0;
+    float left = (rr->x0 - bounds.x0) / width;
+    float top = (rr->y0 - bounds.y0) / height;
+    float right = (rr->x1 - bounds.x0) / width;
+    float bottom = (rr->y1 - bounds.y0) / height;
+
+    response.addFloat(left);
+    response.addFloat(top);
+    response.addFloat(right);
+    response.addFloat(bottom);
+    response.addIpcString(str, true);
 }
 
 void processLine(CmdResponse& response, fz_context *ctx, fz_rect& bounds, fz_text_line& line)
@@ -65,21 +85,22 @@ void processLine(CmdResponse& response, fz_context *ctx, fz_rect& bounds, fz_tex
             for (textIndex = 0; textIndex < span->len;)
             {
                 fz_text_char& text = span->text[textIndex];
-                bool space = (text.c == 0x0D) || (text.c == 0x0A) || (text.c == 0x09) || (text.c == 0x20);
+                bool space = (text.c == 0x0D) || (text.c == 0x0A) || (text.c == 0x09) || (text.c == 0x20) || (text.c == 0x002e);
                 if (prevspace && space)
                 {
                     // Do nothing with spaces
                     textIndex++;
                 }
-                else if (!prevspace && !space)
+                else if (!prevspace)// &&) !space)
                 {
                     fz_rect bbox;
                     fz_text_char_bbox(ctx, &bbox, span, textIndex);
                     fz_union_rect(&rr, &bbox);
-                    index += fz_runetochar(utf8 + index, text.c);
-
+                    last_char = bbox;
+                    length = fz_runetochar(utf8, text.c);
                     DEBUG_L(L_DEBUG_CHARS, LCTX,
-                        "processText: char processing: %d %04x %f %f %f %f", index, text.c, rr.x0, rr.y0, rr.x1, rr.y1);
+                            "processText: char processing: %d %04x %f %f %f %f", index, text.c, rr.x0, rr.y0, rr.x1, rr.y1);
+                    toResponse(response, bounds, fz_round_rect(&box, &rr), utf8, 2);
                     textIndex++;
                 }
                 else
@@ -162,6 +183,22 @@ void MuPdfBridge::processText(int pageNo, const char* pattern, CmdResponse& resp
                                     processLine(response, ctx, bounds, line);
                                 }
                             }
+                            fz_irect qbox = fz_empty_irect;
+                            fz_rect bbbox = block.u.text->bbox;
+                            float lastchar_width = (last_char.x1-last_char.x0);
+                            float lastchar_height = (last_char.y1-last_char.y0);
+                            #ifdef PDF_PARA_BLOCKS_DEBUG
+                            bbbox.x0 = last_char.x1 + lastchar_width;
+                            bbbox.x1 = last_char.x1 + lastchar_width + lastchar_width;
+                            bbbox.y0 = last_char.y0 + (lastchar_height/4);
+                            bbbox.y1 = last_char.y1 - (lastchar_height/4);
+                            #else
+                            bbbox.x0 = last_char.x1 + lastchar_width;
+                            bbbox.x1 = last_char.x1 + lastchar_width + (lastchar_width/2);
+                            bbbox.y0 = last_char.y0;
+                            bbbox.y1 = last_char.y1;
+                            #endif //PDF_PARA_BLOCKS_DEBUG
+                            toResponseParaend(response, bounds, fz_round_rect(&qbox, &bbbox), paraend, 9);
                         }
                     }
                     DEBUG_L(L_DEBUG_TEXT, LCTX, "processText: page processed");
