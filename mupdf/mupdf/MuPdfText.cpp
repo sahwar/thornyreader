@@ -48,7 +48,7 @@ void toResponse(CmdResponse& response, fz_rect& bounds, fz_irect* rr, const char
 
     DEBUG_L(L_DEBUG_TEXT, LCTX, "processText: add word: %d %f %f %f %f %s", len, left, top, right, bottom, utf8);
     char path[100];
-    sprintf(path,"page[%d]/block[%d]/line[%d]/char[%d] = %s \n",pagenum,blocknum,linenum,charnum,utf8);
+    sprintf(path,"/page[%d]/block[%d]/line[%d]/char[%d] = %s \n",pagenum,blocknum,linenum,charnum,utf8);
     DEBUG_L(L_DEBUG_TEXT, LCTX,"processText: char path: %s",path);
 
     response.addFloat(left);
@@ -199,7 +199,7 @@ void MuPdfBridge::processText(int pageNo, const char* pattern, CmdResponse& resp
                             fz_rect bbbox = block.u.text->bbox;
                             float lastchar_width = (last_char.x1-last_char.x0);
                             float lastchar_height = (last_char.y1-last_char.y0);
-                            #if PDF_PARA_BLOCKS_DEBUG
+                            #ifdef PDF_PARA_BLOCKS_DEBUG
                             bbbox.x0 = last_char.x1 + lastchar_width;
                             bbbox.x1 = last_char.x1 + lastchar_width + lastchar_width;
                             bbbox.y0 = last_char.y0 + (lastchar_height/4);

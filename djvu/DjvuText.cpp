@@ -74,7 +74,7 @@ void djvu_get_djvu_words(miniexp_t expr, const char* pattern, ddjvu_pageinfo_t *
             {
                 char ch[2] = {text[i],0};
                 char path[100];
-                sprintf(path,"page[%d]/word[%d]/char[%d] = %s \n",pagenum,expnum,i,ch);
+                sprintf(path,"/page[%d]/word[%d]/char[%d] = %s \n",pagenum,expnum,i,ch);
                 //DEBUG_L(L_DEBUG_TEXT, LCTX,"djvu_get_djvu_words: char path: %s",path);
                 DEBUG_L(true, LCTX,"djvu_get_djvu_words: char path: %s",path);
 
