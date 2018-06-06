@@ -614,9 +614,17 @@ void CreBridge::processOutline(CmdRequest& request, CmdResponse& response)
     LVPtrVector<LvTocItem, false> outline;
     doc_view_->GetOutline(outline);
     CRLog::trace("processOutline size: %d", outline.length());
-    if (outline.length() > 5000) {
-        return;
+#ifdef TRDEBUG
+#if 0
+    for (int i = 0; i < 20000; i++) {
+        response.addWords((uint16_t) OUTLINE_TARGET_XPATH, 1);
+        response.addInt((uint32_t) 0);
+        responseAddString(response, lString16("chapter ").appendDecimal(i));
+        responseAddString(response, lString16("xpath"));
     }
+    return;
+#endif
+#endif
     for (int i = 0; i < outline.length(); i++) {
         LvTocItem* row = outline[i];
         uint16_t row_page = (uint16_t) ExportPage(columns, row->getPage());
@@ -625,6 +633,7 @@ void CreBridge::processOutline(CmdRequest& request, CmdResponse& response)
         responseAddString(response, row->getName());
         responseAddString(response, row->getPath());
     }
+
 }
 
 void CreBridge::processQuit(CmdRequest& request, CmdResponse& response)
