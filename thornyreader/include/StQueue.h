@@ -61,6 +61,13 @@ public:
 
     int readResponse(CmdResponse& response);
     void writeResponse(CmdResponse& response);
+    int readResponseHeader(CmdResponse& response, uint8_t& has_next);
+    bool readResponseHeader(int expected_cmd, uint8_t& has_next);
+    void mutexLock();
+    void mutexUnlock();
+    void resetData(CmdData* data);
+    void discardResponse(uint8_t next_data);
+    bool readDataWrap(CmdData* data, uint8_t type, uint8_t& has_next, bool require_next);
 };
 
 #endif
