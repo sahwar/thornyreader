@@ -629,7 +629,8 @@ void CreBridge::processOutline(CmdRequest& request, CmdResponse& response)
         LvTocItem* row = outline[i];
         uint16_t row_page = (uint16_t) ExportPage(columns, row->getPage());
         response.addWords((uint16_t) OUTLINE_TARGET_XPATH, row_page);
-        response.addInt((uint32_t) row->getLevel());
+        // Crengine level is one-based while ThornyReader using zero-based levels
+        response.addInt((uint32_t) row->getLevel() - 1);
         responseAddString(response, row->getName());
         responseAddString(response, row->getPath());
     }
