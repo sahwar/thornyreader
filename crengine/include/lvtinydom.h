@@ -1321,6 +1321,7 @@ public:
     static bool getWordRange( ldomXRange & range, ldomXPointer & p );
     /// run callback for each node in range
     void forEach( ldomNodeCallback * callback );
+    void forEach2( ldomNodeCallback * callback );
     /// returns rectangle (in doc coordinates) for range. Returns true if found.
     bool getRect( lvRect & rect );
     /// returns nearest common element for start and end points
