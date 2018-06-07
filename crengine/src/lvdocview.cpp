@@ -1858,11 +1858,12 @@ LVRef<ldomXRange> LVDocView::GetPageDocRange(int page_index)
 		if (GetColumns() > 1)
 		{
 			//end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + page->height + 100), 1);
-			end = cr_dom_->createXPointer(lvPoint(0, page->start + (page->height * 10)), 1);
+			CRLog::error("height = %d", height_);
+			end = cr_dom_->createXPointer(lvPoint(0, page->start + (height_ * 2)), 1);
 		}
 		else
 		{
-			end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + 50), 1);
+			end = cr_dom_->createXPointer(lvPoint(0, page->start + height_ + 50), 1);
 		}
 		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
 		if (start.isNull() || end.isNull())
@@ -1909,11 +1910,11 @@ LVRef<ldomXRange> LVDocView::GetPageParaDocRange(int page_index)
     ldomXPointer end;
     if (GetColumns() > 1)
     {
-        end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + page->height ));
+        end = cr_dom_->createXPointer(lvPoint(0, page->start + (height_ * 2) ));
     }
     else
     {
-        end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + 50 ));
+        end = cr_dom_->createXPointer(lvPoint(0, page->start + height_ + 50 ));
     }
     //ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
     if (start.isNull() || end.isNull())
@@ -2122,7 +2123,7 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 			lvRect end_rect;
 			if (!end.getRect(end_rect))
 			{
-				CRLog::warn("Unable to get node end coordinates. Ignoring,");
+				CRLog::warn("Unable to get node end coordinates. Ignoring");
 				para_rect_array.add(empty_rect);
 				return;
 			}
