@@ -732,3 +732,10 @@ void CreBridge::process(CmdRequest& request, CmdResponse& response)
     }
     //response.print(LCTX);
 }
+
+int main(int argc, char *argv[])
+{
+    ThornyStart("crengine");
+    CreBridge cre;
+    return cre.main(argc, argv);
+}
