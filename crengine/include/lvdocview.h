@@ -60,6 +60,32 @@ public:
     void SelectWord(int x, int y);
 };
 
+class TrHitbox
+{
+public:
+    float _left;
+    float _right;
+    float _top;
+    float _bottom;
+    lString16 _text;
+    lString16 _path;
+    TrHitbox() {};
+    TrHitbox(float left, float right, float top, float bottom, lString16 text, lString16 path=lString16("0"))
+    {
+        _left = left;
+        _right = right;
+        _top = top;
+        _bottom = bottom;
+        _text = text;
+        _path = path;
+    };
+    ~TrHitbox(){};
+    void TrHitboxesArrayModify()
+    {
+        //stub
+    };
+};
+
 class LVDocView
 {
 private:
@@ -225,6 +251,8 @@ public:
     /// load document from file
     bool LoadDoc(int doc_format, const char* file_name, uint32_t compressed_size,
                              bool smart_archive);
+    //returns array of TrHitbox objects that contain hitbox info about characters on current docview page
+    LVArray<TrHitbox> GetPageHitboxes();
     LVDocView();
     ~LVDocView();
 };

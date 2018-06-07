@@ -2694,3 +2694,286 @@ bool LVDocView::NeedCheckImage()
     }
     return false;
 }
+
+LVArray<TrHitbox> LVDocView::GetPageHitboxes()
+{
+    LVArray<TrHitbox> result;
+    float page_width = this->GetWidth();
+    float page_height = this->GetHeight();
+    int page_width_int = this->GetWidth();
+    int page_height_int = this->GetHeight();
+    bool two_columns = this->GetColumns() > 1;
+    float halfwidth = page_width_int / 2;
+
+    this->curr_page_para_array.clear();
+    //we need these lines to get list of paragraph ends. it passes it to doc_view->curr_page_para_array
+    ldomXRangeList unused;                      //this
+    this->GetCurrentPageParas(unused);          //this
+    unused.clear();                             //this
+    LVArray<lvRect> raw_para_array;
+    LVArray<lvRect> para_array;
+
+    raw_para_array.add(this->curr_page_para_array);
+    this->curr_page_para_array.clear();
+
+    LVRef<ldomXRange> range = this->GetPageDocRange();
+    int offset = this->GetOffset();
+    lvRect margins = this->cfg_margins_;
+
+    ldomXRange text = *range;
+
+    int strheight_last = 0;
+    int para_counter = 0;
+    bool lastline_check = false;
+
+    lvRect lastrect;
+    for (int i = 0; i < raw_para_array.length(); i++)
+    {
+        lvRect rawrect = raw_para_array.get(i);
+        if (rawrect.top < offset)
+        {
+            continue;
+        }
+        int bottom = (two_columns) ? offset + page_height_int + page_height_int - margins.bottom : offset + page_height_int - margins.bottom;
+        if (rawrect.bottom > bottom)
+        {
+            continue;
+        }
+        if (rawrect == lastrect)
+        {
+            continue;
+        }
+        para_array.add(rawrect);
+        lastrect = rawrect;
+    }
+
+    LVArray<ldomWord> word_chars;
+    text.getRangeChars(word_chars);
+    for (int i = 0; i < word_chars.length(); ++i)
+    {
+        lString16 word = word_chars.get(i).getText();
+        if (word.lastChar() == 0x0A) //skipping /n (newline feed) chars
+        {
+            continue;
+        }
+        //converting all different spaces to one type space
+		if (      (word.firstChar() == L'\u00A0')
+		          || (word.firstChar() == L'\u180E')
+		          || (word.firstChar() == L'\u2000')
+		          || (word.firstChar() == L'\u2001')
+		          || (word.firstChar() == L'\u2002')
+		          || (word.firstChar() == L'\u2003')
+		          || (word.firstChar() == L'\u2004')
+		          || (word.firstChar() == L'\u2005')
+		          || (word.firstChar() == L'\u2006')
+		          || (word.firstChar() == L'\u2007')
+		          || (word.firstChar() == L'\u2008')
+		          || (word.firstChar() == L'\u2009')
+		          || (word.firstChar() == L'\u200A')
+		          || (word.firstChar() == L'\u200B')
+		          || (word.firstChar() == L'\u202F')
+		          || (word.firstChar() == L'\u205F')
+		          || (word.firstChar() == L'\u3000')
+		          || (word.firstChar() == L'\uFEFF'))
+		{
+			word = lString16(" "); // L'\u0020' regular ascii space
+		}
+
+        ldomXPointer start = word_chars.get(i).getStartXPointer();
+        ldomXPointer end = word_chars.get(i).getEndXPointer();
+        ldomXPointerEx startex = start;
+        ldomXPointerEx endex = end;
+        lString16 startpath = start.toString();
+        ldomXRange ch;
+        ch.setStart(startex);
+        ch.setEnd(endex);
+
+        lvRect rect;
+        ch.getRect(rect);
+        int strheight_curr = rect.bottom - rect.top;
+
+        //CRLog::error("start: %s ",LCSTR(start.toString()));
+        //two columns last line on poge line break implementetaion
+        lvRect rect_n = lvRect(rect.left, rect.top, rect.right, rect.bottom);
+        this->DocToWindowRectSecondColumn(rect_n);
+        bool right_side = rect_n.left > halfwidth;
+
+        if (!lastline_check && two_columns && right_side)
+        {
+            // when line break happens between pages right side implementation
+            if (strheight_last != 0 && strheight_curr >= strheight_last * 2)
+            {
+                //check if top of block is on this page  and is in needed range
+                if (rect_n.top + margins.top < page_height_int)
+                {
+                    //check if bottom of block is out of this page
+                    if (rect_n.bottom + margins.top >= page_height_int)
+                    {
+                        float pre_r = page_width_int - margins.right;
+                        //top block add
+                        float l = (rect_n.right) / page_width;
+                        float t = (rect_n.top) / page_height;
+                        float r = pre_r / page_width;
+                        float b = (rect_n.top + strheight_last) / page_height;
+                        //word = word + lString16("++");
+                        //CRLog::error("jump letter = %s",LCSTR(word));
+                        TrHitbox *hitbox = new TrHitbox(l, r, t, b, word);
+                        result.add(*hitbox);
+                        lastline_check = true;
+                    }
+                }
+            }
+            else
+            {
+                strheight_last = strheight_curr;
+            }
+        }
+
+        //paragraph breaks implementation
+        if (para_counter < para_array.length() && rect.top > para_array.get(para_counter).top)
+        {
+            lvRect raw_rect_n = para_array.get(para_counter);
+            lvRect rect_n = lvRect(raw_rect_n.left, raw_rect_n.top, raw_rect_n.right, raw_rect_n.bottom);
+            this->DocToWindowRect(rect_n);
+#if DEBUG_CRE_PARA_END_BLOCKS
+            float l = (rect_n.left + (strheight_curr / 2)) / page_width;
+            float r = (rect_n.right + (strheight_curr * 2)) / page_width;
+            float t = (rect_n.top + 10) / page_height;
+            float b = (rect_n.bottom - 10) / page_height;
+#else
+            float l = rect_n.right / page_width;
+            float r = (rect_n.right + (strheight_curr / 4)) / page_width;
+            float t = rect_n.top / page_height;
+            float b = rect_n.bottom / page_height;
+#endif // DEBUG_PARA_END_BLOCKS
+
+            lString16 para_end = lString16("\n");// + lString16::itoa(para_counter);
+            TrHitbox *hitbox = new TrHitbox(l, r, t, b, para_end);
+            result.add(*hitbox);
+            para_counter++;
+        }
+
+        // line break implementation
+        if (strheight_last != 0 && strheight_curr >= strheight_last * 2)
+        {
+            lvRect rect_n = lvRect(rect.left, rect.top, rect.right, rect.bottom);
+            this->DocToWindowRectSecondColumn(rect_n);
+
+            //check if top of block is on this page  and is in needed range
+            if (rect.top + margins.top < offset + page_height_int)// && rect.top + strheight_curr < page_height_int - margins.bottom)
+            {
+                //check if bottom of block is out of this page
+                if (rect.bottom + margins.top >= page_height_int)
+                {
+                    float pre_r;
+                    if (two_columns)
+                    {
+                        pre_r = (right_side) ? page_width_int : halfwidth;
+                    }
+                    else
+                    {
+                        pre_r = page_width_int;
+                    }
+                    pre_r = pre_r - margins.right;
+                    //top block add
+                    float l = rect_n.right / page_width;
+                    float t = (rect_n.top) / page_height;
+                    float r = pre_r / page_width;
+                    float b = (rect_n.top + strheight_last) / page_height;
+                    //CRLog::error("jump letter = %s",LCSTR(word));
+                    TrHitbox *hitbox = new TrHitbox(l, r, t, b, word);
+                    result.add(*hitbox);
+                    continue;
+                }
+            }
+        }
+        else
+        {
+            strheight_last = strheight_curr;
+        }
+
+        if (!this->DocToWindowRect(rect))
+        {
+#ifdef TRDEBUG
+#if 0
+            CRLog::warn("processPageText DocToWindowRect fail");
+            CRLog::warn("letter '%s' is ignored", LCSTR(word));
+#endif
+#endif // TRDEBUG
+            continue;
+        }
+        //usual line break implementation
+        if (strheight_last != 0 && strheight_curr >= strheight_last * 2)
+        {
+
+            //top block
+            bool right_side = rect.left > halfwidth;
+
+            float pre_r = (two_columns) ? (halfwidth) : page_width_int;
+            pre_r = pre_r - margins.right;
+
+            if (right_side)
+            {
+                pre_r = pre_r + halfwidth;
+            }
+
+            float l = rect.right / page_width;
+            float r = pre_r / page_width;
+            float t = rect.top / page_height;
+            float b = (rect.top + strheight_last) / page_height;
+            if (rect.top < margins.top)
+            {
+                t = (rect.top - strheight_last) / page_height;
+                b = (rect.top + 10) / page_height;
+            }
+
+            // CRLog::error("word = %s",LCSTR(word));
+            TrHitbox *hitbox = new TrHitbox(l, r, t, b, word);
+            result.add(*hitbox);
+        }
+        else
+        { //usual single-line words
+            strheight_last = strheight_curr;
+            float l = rect.left / page_width;
+            float t = rect.top / page_height;
+            float r = rect.right / page_width;
+            float b = rect.bottom / page_height;
+            //CRLog::error("usual letter = %s", LCSTR(word));
+
+            /* RESPONSE PROTOCOL : left, top, right, bottom, text, path
+            response.addFloat(l);
+            response.addFloat(t);
+            response.addFloat(r);
+            response.addFloat(b);
+            responseAddString(response, word);
+            //responseAddString(response, startpath); //stub
+            */
+            TrHitbox *hitbox = new TrHitbox(l, r, t, b, word, startpath);
+            result.add(*hitbox);
+        }
+    }
+    //adding last para end on page if needed
+    if (para_counter < para_array.length())
+    {
+        lvRect rect = para_array.get(para_counter);
+
+        if (this->DocToWindowRect(rect))
+        {
+#ifdef DEBUG_CRE_PARA_END_BLOCKS
+            float l = (rect.right + (strheight_last / 2)) / page_width;
+            float r = (rect.right + (strheight_last)) / page_width;
+            float t = (rect.top + 10) / page_height;
+            float b = (rect.bottom - 10) / page_height;
+#else
+            float l = rect.right / page_width;
+            float r = (rect.right + (strheight_last / 4)) / page_width;
+            float t = rect.top / page_height;
+            float b = rect.bottom  / page_height;
+#endif // DEBUG_PARA_END_BLOCKS
+            lString16 para_end = lString16("\n");
+            TrHitbox *hitbox = new TrHitbox(l, r, t, b, para_end);
+            result.add(*hitbox);
+        }
+    }
+    return result;
+}
