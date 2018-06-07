@@ -3165,6 +3165,10 @@ int PreProcessXmlString(lChar16* str, int len, lUInt32 flags, const lChar16* enc
                 continue;
             }
         } else {
+            if (ch==173)  // add filtered chars here
+            {
+                continue;
+            }
             if (ch=='\r' || ch=='\n' || ch=='\t')
                 ch = ' ';
         }
