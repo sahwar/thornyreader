@@ -112,6 +112,8 @@
 #define LINK_TARGET_LAUNCH              4
 #define LINK_TARGET_UNKNOWN             10
 
+#define TEXT_NULL_PATH "0"
+
 class CmdData
 {
 public:

@@ -72,26 +72,25 @@ void djvu_get_djvu_words(miniexp_t expr, const char* pattern, ddjvu_pageinfo_t *
             float lastleft = coords[0];
             for (int i = 0; i < charnum ; ++i)
             {
-                char ch[2] = {text[i],0};
+                char ch[2] = {text[i], 0};
                 char path[100];
-                sprintf(path,"/page[%d]/word[%d]/char[%d] = %s \n",pagenum,expnum,i,ch);
-                //DEBUG_L(L_DEBUG_TEXT, LCTX,"djvu_get_djvu_words: char path: %s",path);
-                DEBUG_L(true, LCTX,"djvu_get_djvu_words: char path: %s",path);
-
+                sprintf(path, "/page[%d]/word[%d]/char[%d] = %s \n", pagenum,expnum, i, ch);
+                DEBUG_L(L_DEBUG_TEXT, LCTX, "djvu_get_djvu_words: char path: %s", path);
                 response.addFloat(lastleft / width);
                 response.addFloat(t < b ? t : b);
-                response.addFloat((lastleft+charwidth) / width);
+                response.addFloat((lastleft + charwidth) / width);
                 response.addFloat(t > b ? t : b);
                 response.addIpcString(ch, true);
-                //response.addIpcString(path,true);
-                lastleft = lastleft+charwidth;
+                response.addIpcString(path, true);
+                lastleft = lastleft + charwidth;
             }
-            char space[2] = {' ',0};
+            char space[2] = {' ', 0};
             response.addFloat(lastleft / width);
             response.addFloat(t < b ? t : b);
             response.addFloat((lastleft+(charwidth/4)) / width);
             response.addFloat(t > b ? t : b);
             response.addIpcString(space, true);
+            response.addIpcString(TEXT_NULL_PATH, true);
 
             DEBUG_L(L_DEBUG_TEXT, LCTX,
                 "processText: %d, %d, %d, %d: %s", coords[0], coords[1], coords[2], coords[3], text);

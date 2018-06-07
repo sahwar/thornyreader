@@ -14,6 +14,7 @@
 #include "lvdrawbuf.h"
 #include "lvptrvec.h"
 #include "bookmark.h"
+#include "StProtocol.h"
 
 /// document view mode: pages/scroll
 enum LVDocViewMode
@@ -70,14 +71,15 @@ public:
     lString16 _text;
     lString16 _path;
     TrHitbox() {};
-    TrHitbox(float left, float right, float top, float bottom, lString16 text, lString16 path=lString16("0"))
+    TrHitbox(float left, float right, float top, float bottom, lString16 text,
+             lString16 xpath = lString16(TEXT_NULL_PATH))
     {
         _left = left;
         _right = right;
         _top = top;
         _bottom = bottom;
         _text = text;
-        _path = path;
+        _path = xpath;
     };
     ~TrHitbox(){};
     void TrHitboxesArrayModify()

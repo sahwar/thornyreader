@@ -448,9 +448,7 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
     CRLog::debug("processPageText external_page=%d page=%d page_width=%d page_height=%d",
             external_page, page, doc_view_->GetWidth(), doc_view_->GetHeight());
 #endif
-
-LVArray<TrHitbox> hitboxes = doc_view_->GetPageHitboxes();
-
+    LVArray<TrHitbox> hitboxes = doc_view_->GetPageHitboxes();
     for (int i = 0; i < hitboxes.length() ; i++)
     {
         TrHitbox currHitbox = hitboxes.get(i);
@@ -459,8 +457,7 @@ LVArray<TrHitbox> hitboxes = doc_view_->GetPageHitboxes();
         response.addFloat(currHitbox._right);
         response.addFloat(currHitbox._bottom);
         responseAddString(response, currHitbox._text);
-        //responseAddString(response, currHitbox._path); //stub for hitbox path extraction
-        //default path = lString16("0")
+        responseAddString(response, currHitbox._path);
     }
 #undef DEBUG_TEXT
 }
@@ -616,7 +613,7 @@ void CreBridge::processOutline(CmdRequest& request, CmdResponse& response)
     CRLog::trace("processOutline size: %d", outline.length());
 #ifdef TRDEBUG
 #if 0
-    for (int i = 0; i < 20000; i++) {
+    for (int i = 0; i < 60000; i++) {
         response.addWords((uint16_t) OUTLINE_TARGET_XPATH, 1);
         response.addInt((uint32_t) 0);
         responseAddString(response, lString16("chapter ").appendDecimal(i));

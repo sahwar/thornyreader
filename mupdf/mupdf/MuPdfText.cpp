@@ -56,7 +56,7 @@ void toResponse(CmdResponse& response, fz_rect& bounds, fz_irect* rr, const char
     response.addFloat(right);
     response.addFloat(bottom);
     response.addIpcString(utf8, true);
-    //response.addIpcString(path,true);
+    response.addIpcString(TEXT_NULL_PATH, true);
 }
 
 void toResponseParaend(CmdResponse& response, fz_rect& bounds, fz_irect* rr, const char* str, int len)
@@ -73,6 +73,7 @@ void toResponseParaend(CmdResponse& response, fz_rect& bounds, fz_irect* rr, con
     response.addFloat(right);
     response.addFloat(bottom);
     response.addIpcString(str, true);
+    response.addIpcString(TEXT_NULL_PATH, true);
 }
 
 void processLine(CmdResponse& response, fz_context *ctx, fz_rect& bounds, fz_text_line& line)
