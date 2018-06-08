@@ -26,15 +26,16 @@
 #define L_DEBUG_CHARS false
 #define PDF_PARA_BLOCKS_DEBUG false
 
-char utf8[32 * 1024];
-char paraend[3] = { '\n',0};
-fz_rect last_char;
-int length;
+static char utf8[32 * 1024];
+static char paraend[3] = { '\n',0};
+static fz_rect last_char;
+static int length;
 
-int pagenum;
-int blocknum;
-int linenum;
-int charnum;
+static int pagenum;
+static int blocknum;
+static int linenum;
+static int charnum;
+
 void toResponse(CmdResponse& response, fz_rect& bounds, fz_irect* rr, const char* str, int len)
 {
     float width = bounds.x1 - bounds.x0;
@@ -46,17 +47,19 @@ void toResponse(CmdResponse& response, fz_rect& bounds, fz_irect* rr, const char
 
     utf8[length] = 0;
 
-    DEBUG_L(L_DEBUG_TEXT, LCTX, "processText: add word: %d %f %f %f %f %s", len, left, top, right, bottom, utf8);
+    DEBUG_L(L_DEBUG_TEXT, LCTX, "processText: add word: %d %f %f %f %f %s",
+            len, left, top, right, bottom, utf8);
     char path[100];
-    sprintf(path,"/page[%d]/block[%d]/line[%d]/char[%d] = %s \n",pagenum,blocknum,linenum,charnum,utf8);
-    DEBUG_L(L_DEBUG_TEXT, LCTX,"processText: char path: %s",path);
+    sprintf(path,"/page[%d]/block[%d]/line[%d]/char[%d] = %s \n",
+            pagenum, blocknum, linenum, charnum, utf8);
+    DEBUG_L(L_DEBUG_TEXT, LCTX,"processText: char path: %s", path);
 
     response.addFloat(left);
     response.addFloat(top);
     response.addFloat(right);
     response.addFloat(bottom);
     response.addIpcString(utf8, true);
-    response.addIpcString(TEXT_NULL_PATH, true);
+    response.addIpcString(path, true);
 }
 
 void toResponseParaend(CmdResponse& response, fz_rect& bounds, fz_irect* rr, const char* str, int len)

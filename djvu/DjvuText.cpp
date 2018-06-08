@@ -24,8 +24,8 @@
 
 #define LCTX "EBookDroid.DJVU.Decoder.Search"
 #define L_DEBUG_TEXT false
-int pagenum;
-int expnum;
+static int pagenum;
+static int expnum;
 void djvu_get_djvu_words(miniexp_t expr, const char* pattern, ddjvu_pageinfo_t *pi, CmdResponse& response)
 {
     if (!miniexp_consp(expr))
