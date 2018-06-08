@@ -5229,59 +5229,6 @@ void ldomXRange::forEach( ldomNodeCallback * callback )
             break;
     }
 }
-/// run callback for each node in range
-void ldomXRange::forEach2(ldomNodeCallback *callback)
-{
-    if (isNull())
-    {
-        return;
-    }
-    ldomXRange pos(_start, _end, 0);
-    bool allowGoRecurse = true;
-    while (!pos._start.isNull() && pos._start.compare(_end) < 0)
-    {
-        ldomNode *node = pos._start.getNode();
-        //CRLog::trace("path: %s", UnicodeToUtf8(pos._start.toString()).c_str());
-        if (node->isElement())
-        {
-            allowGoRecurse = callback->onElement(&pos.getStart());
-        }
-        else if (node->isText())
-        {
-            lString16 txt = node->getText();
-            pos._end = pos._start;
-            pos._start.setOffset(0);
-            pos._end.setOffset(txt.length());
-            if (_start.getNode() == node)
-            {
-                pos._start.setOffset(_start.getOffset());
-            }
-            if (_end.getNode() == node && pos._end.getOffset() > _end.getOffset())
-            {
-                pos._end.setOffset(_end.getOffset());
-            }
-            callback->onText(&pos);
-            allowGoRecurse = false;
-        }
-        // move to next item
-        bool stop = false;
-        if (!allowGoRecurse || !pos._start.child(0))
-        {
-            while (!pos._start.nextSibling())
-            {
-                if (!pos._start.parent())
-                {
-                    stop = true;
-                    break;
-                }
-            }
-        }
-        if (stop)
-        {
-            break;
-        }
-    }
-}
 
 /// get all words from specified range
 void ldomXRange::getRangeWords(LVArray<ldomWord>& words_list) {
@@ -5381,7 +5328,7 @@ void ldomXRange::getRangeChars(LVArray<ldomWord>& words_list) {
         }
     };
     WordsCollector collector(words_list);
-    forEach2(&collector);
+    forEach(&collector);
 }
 
 /// adds all visible words from range, returns number of added words
