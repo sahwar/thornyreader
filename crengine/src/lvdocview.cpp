@@ -1240,6 +1240,10 @@ bool LVDocView::DocToWindowRect(lvRect &rect)
 			{
 				index = 1;
 			}
+            if(rect.top+1 < pages_list_[page]->start) //upper borderline
+            {
+                index = -1;
+            }
 			if (index >= 0)
 			{
 				int right = rect.right + page_rects_[index].left + margins_.left;
@@ -1253,11 +1257,17 @@ bool LVDocView::DocToWindowRect(lvRect &rect)
                 }
                 else
                 {
+                    //CRLog::error("NOT PASSED BY HORIZONTAL CHECKS");
+                    //CRLog::error("right - 1 <= page_rects_[index].right - margins_.right");
+                    //CRLog::error("%d <= %d - %d", right - 1, page_rects_[index].right, margins_.right);
                     return false;
                 }
             }
             else
             {
+                //CRLog::error("NOT PASSED BY VERTICAL CHECKS. Index = %d",index);
+                //CRLog::error("rect.bottom <= (pages_list_[page]->start + pages_list_[page]->height)");
+                //CRLog::error("%d <= (%d + %d)",rect.bottom, pages_list_[page]->start, pages_list_[page]->height);
                 return false;
             }
 		}
@@ -1853,16 +1863,16 @@ LVRef<ldomXRange> LVDocView::GetPageDocRange(int page_index)
 		ldomXPointer start = cr_dom_->createXPointer(lvPoint(0, page->start));
 		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(m_dx + m_dy, page->start + page->height - 1));
 		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
-        //todo dynamically add two line heights instead of fixed 50 pixels
         ldomXPointer end;
 		if (GetColumns() > 1)
 		{
 			//end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + page->height + 100), 1);
-			end = cr_dom_->createXPointer(lvPoint(0, page->start + (page->height * 10)), 1);
+			CRLog::error("height = %d", height_);
+			end = cr_dom_->createXPointer(lvPoint(0, page->start + (height_ * 2)+50), 1);
 		}
 		else
 		{
-			end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + 50), 1);
+			end = cr_dom_->createXPointer(lvPoint(0, page->start + height_ + 50), 1);
 		}
 		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
 		if (start.isNull() || end.isNull())
@@ -1905,15 +1915,14 @@ LVRef<ldomXRange> LVDocView::GetPageParaDocRange(int page_index)
        start = cr_dom_->createXPointer(lvPoint(0, page->start - page->height));
     }//ldomXPointer end = cr_dom_->createXPointer(lvPoint(m_dx + m_dy, page->start + page->height - 1));
     //ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
-    //todo dynamically add two line heights instead of fixed 50 pixels
     ldomXPointer end;
     if (GetColumns() > 1)
     {
-        end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + page->height ));
+        end = cr_dom_->createXPointer(lvPoint(0, page->start + (height_ * 2) ));
     }
     else
     {
-        end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + 50 ));
+        end = cr_dom_->createXPointer(lvPoint(0, page->start + height_ + 50 ));
     }
     //ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
     if (start.isNull() || end.isNull())
@@ -2122,7 +2131,7 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 			lvRect end_rect;
 			if (!end.getRect(end_rect))
 			{
-				CRLog::warn("Unable to get node end coordinates. Ignoring,");
+				CRLog::warn("Unable to get node end coordinates. Ignoring");
 				para_rect_array.add(empty_rect);
 				return;
 			}
@@ -2705,6 +2714,16 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
     bool two_columns = this->GetColumns() > 1;
     float halfwidth = page_width_int / 2;
 
+    int footnoteslength = pages_list_[this->page_+1]->footnotes.length();
+    int footnotesheightr =0;
+    for (int fn = 0; fn < footnoteslength; fn++)
+    {
+        footnotesheightr = footnotesheightr + pages_list_[this->page_+1]->footnotes[fn].height;
+        //CRLog::error("footnote %d height = %d",fn,pages_list_[this->page_+1]->footnotes[fn].height);
+    }
+    //CRLog::error("footnotes on page %d = %d",this->page_+1,footnoteslength);
+    //CRLog::error("footnotesheightr = %d", footnotesheightr);
+
     this->curr_page_para_array.clear();
     //we need these lines to get list of paragraph ends. it passes it to doc_view->curr_page_para_array
     ldomXRangeList unused;                      //this
@@ -2798,21 +2817,21 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
         this->DocToWindowRectSecondColumn(rect_n);
         bool right_side = rect_n.left > halfwidth;
 
+        // when line break happens between pages right side implementation
         if (!lastline_check && two_columns && right_side)
         {
-            // when line break happens between pages right side implementation
-            if (strheight_last != 0 && strheight_curr >= strheight_last * 2)
+            if (strheight_last != 0 && strheight_curr >= strheight_last + (strheight_last / 2))
             {
                 //check if top of block is on this page  and is in needed range
-                if (rect_n.top + margins.top < page_height_int)
+                if (rect_n.top + strheight_last -1 < page_height_int - margins.bottom - footnotesheightr )
                 {
                     //check if bottom of block is out of this page
-                    if (rect_n.bottom + margins.top >= page_height_int)
+                    if (rect_n.bottom+1 > page_height_int - margins.bottom - footnotesheightr )
                     {
                         float pre_r = page_width_int - margins.right;
                         //top block add
                         float l = (rect_n.right) / page_width;
-                        float t = (rect_n.top) / page_height;
+                        float t = (rect_n.top ) / page_height;
                         float r = pre_r / page_width;
                         float b = (rect_n.top + strheight_last) / page_height;
                         //word = word + lString16("++");
@@ -2835,17 +2854,17 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
             lvRect raw_rect_n = para_array.get(para_counter);
             lvRect rect_n = lvRect(raw_rect_n.left, raw_rect_n.top, raw_rect_n.right, raw_rect_n.bottom);
             this->DocToWindowRect(rect_n);
-#if DEBUG_CRE_PARA_END_BLOCKS
+			#if DEBUG_CRE_PARA_END_BLOCKS
             float l = (rect_n.left + (strheight_curr / 2)) / page_width;
             float r = (rect_n.right + (strheight_curr * 2)) / page_width;
             float t = (rect_n.top + 10) / page_height;
             float b = (rect_n.bottom - 10) / page_height;
-#else
+			#else
             float l = rect_n.right / page_width;
             float r = (rect_n.right + (strheight_curr / 4)) / page_width;
             float t = rect_n.top / page_height;
             float b = rect_n.bottom / page_height;
-#endif // DEBUG_PARA_END_BLOCKS
+			#endif // DEBUG_PARA_END_BLOCKS
 
             lString16 para_end = lString16("\n");// + lString16::itoa(para_counter);
             TrHitbox *hitbox = new TrHitbox(l, r, t, b, para_end);
@@ -2853,8 +2872,8 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
             para_counter++;
         }
 
-        // line break implementation
-        if (strheight_last != 0 && strheight_curr >= strheight_last * 2)
+        // line break LEFT SIDE implementation  //todo decide if we need this (seems like no need in this one at all)
+        /*if (strheight_last != 0 && strheight_curr >= strheight_last * 2)
         {
             lvRect rect_n = lvRect(rect.left, rect.top, rect.right, rect.bottom);
             this->DocToWindowRectSecondColumn(rect_n);
@@ -2890,7 +2909,7 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
         else
         {
             strheight_last = strheight_curr;
-        }
+        }*/
 
         if (!this->DocToWindowRect(rect))
         {
@@ -2903,7 +2922,7 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
             continue;
         }
         //usual line break implementation
-        if (strheight_last != 0 && strheight_curr >= strheight_last * 2)
+        if (strheight_last != 0 && strheight_curr >= strheight_last + (strheight_last/2))
         {
 
             //top block

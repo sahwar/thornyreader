@@ -3342,13 +3342,14 @@ bool ldomXPointer::getRect(lvRect & rect) const
             lastIndex = i;
             lastLen =  isObject ? 0 : src->t.len;
             lastOffset = isObject ? 0 : src->t.offset;
-            ldomXPointerEx xp2((ldomNode*)src->object, lastOffset);
-            if ( xp2.compare(xp)>0 ) {
+            ldomXPointerEx xp2((ldomNode *) src->object, lastOffset);
+           /* if (xp2.compare(xp) > 0)
+            {
                 srcIndex = i;
                 srcLen = lastLen;
                 offset = lastOffset;
                 break;
-            }
+            }*/
         }
         if ( srcIndex == -1 ) {
             if ( lastIndex<0 )
