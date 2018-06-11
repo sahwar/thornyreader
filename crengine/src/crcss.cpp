@@ -73,6 +73,11 @@ p image, li image {
   padding-right: 1em;
 }
 
+/* for that inline images just putting them to block */
+cite p image{
+  display: block;
+}
+
 a, b, strong, q, u, del, s, strike, small, big, sub, sup, acronym, span, font {
   display: inline;
 }
@@ -356,7 +361,7 @@ document-info, publish-info, custom-info {
   display: none;
 }
 
-head, style, form, script {
+head, form, script {
   display: none;
 }
 
