@@ -1867,7 +1867,6 @@ LVRef<ldomXRange> LVDocView::GetPageDocRange(int page_index)
 		if (GetColumns() > 1)
 		{
 			//end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + page->height + 100), 1);
-			CRLog::error("height = %d", height_);
 			end = cr_dom_->createXPointer(lvPoint(0, page->start + (height_ * 2)+50), 1);
 		}
 		else
@@ -2769,7 +2768,11 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
     LVRef<ldomXRange> range = this->GetPageDocRange();
     int offset = this->GetOffset();
     lvRect margins = this->cfg_margins_;
-
+	bool nomargins = false; //todo take nomargins from docview, set nomargins in docview from bridge
+    if (margins.right<20)
+	{
+		nomargins = true;
+	}
     ldomXRange text = *range;
 
     int strheight_last = 0;
@@ -2959,13 +2962,16 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
             //top block
             bool right_side = two_columns ? rect.left > halfwidth : false;
             float pre_r = two_columns ? halfwidth : page_width_int;
-            pre_r = pre_r - (margins.right/2);
+            pre_r = pre_r - ((nomargins)?(margins.right/2):(margins.right));
 
             if (right_side)
             {
                 pre_r = pre_r + halfwidth;
             }
-
+            if (pre_r<rect.right)
+            {
+                pre_r = rect.right+5;
+            }
             float l = rect.right / page_width;
             float r = pre_r / page_width;
             float t = rect.top / page_height;
