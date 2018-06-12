@@ -2106,7 +2106,7 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
             allowed.add(lString16("h1"));
             allowed.add(lString16("h2"));
             allowed.add(lString16("h3"));
-            allowed.add(lString16("code"));
+            //allowed.add(lString16("code"));
             allowed.add(lString16("pagebreak"));
 
             lString16 nodename = node->getNodeName();
