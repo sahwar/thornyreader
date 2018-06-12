@@ -93,6 +93,7 @@ void processLine(CmdResponse& response, fz_context *ctx, fz_rect& bounds, fz_tex
         DEBUG_L(L_DEBUG_TEXT, LCTX, "processText: span processing: %d", spanIndex);
         if (span->text && span->len > 0)
         {
+            float lastright;
             int textIndex;
             for (textIndex = 0; textIndex < span->len;)
             {
@@ -107,12 +108,28 @@ void processLine(CmdResponse& response, fz_context *ctx, fz_rect& bounds, fz_tex
                 {
                     fz_rect bbox;
                     fz_text_char_bbox(ctx, &bbox, span, textIndex);
-                    fz_union_rect(&rr, &bbox);
+                    if (textIndex == 0)
+                    {
+                        lastright = bbox.x1;
+                    }
+                    else
+                    {
+                        bbox.x0 = lastright;
+                    }
+                    //fz_union_rect(&rr, &bbox);
                     last_char = bbox;
+                    lastright = bbox.x1;
                     length = fz_runetochar(utf8, text.c);
-                    DEBUG_L(L_DEBUG_CHARS, LCTX,
-                            "processText: char processing: %d %04x %f %f %f %f", index, text.c, rr.x0, rr.y0, rr.x1, rr.y1);
-                    toResponse(response, bounds, fz_round_rect(&box, &rr), utf8, 2);
+                    DEBUG_L(L_DEBUG_CHARS, LCTX,"processText: char processing: %d %lc %f %f %f %f", index, text.c, bbox.x0, bbox.y0, bbox.x1, bbox.y1);
+                    toResponse(response, bounds, fz_round_rect(&box, &bbox), utf8, 2);
+                    /* for rmemoving of coordinates rounding if needed
+                    fz_irect sas;
+                    sas.x0 = bbox.x0;
+                    sas.x1 = bbox.x1;
+                    sas.y0 = bbox.y0;
+                    sas.y1 = bbox.y1;
+                    toResponse(response, bounds, &sas, utf8, 2);
+                     */
                     charnum = textIndex;
                     textIndex++;
                 }
@@ -203,7 +220,7 @@ void MuPdfBridge::processText(int pageNo, const char* pattern, CmdResponse& resp
                             fz_rect bbbox = block.u.text->bbox;
                             float lastchar_width = (last_char.x1-last_char.x0);
                             float lastchar_height = (last_char.y1-last_char.y0);
-                            #ifdef PDF_PARA_BLOCKS_DEBUG
+                            #if PDF_PARA_BLOCKS_DEBUG
                             bbbox.x0 = last_char.x1 + lastchar_width;
                             bbbox.x1 = last_char.x1 + lastchar_width + lastchar_width;
                             bbbox.y0 = last_char.y0 + (lastchar_height/4);
