@@ -318,6 +318,7 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
             } else {
                 HyphMan::activateDictionary(lString16(HYPH_DICT_ID_ALGORITHM));
             }
+            doc_view_->UpdatePageMargins();
             doc_view_->RequestRender();
         } else if (key == CONFIG_CRE_FLOATING_PUNCTUATION) {
             int int_val = atoi(val);

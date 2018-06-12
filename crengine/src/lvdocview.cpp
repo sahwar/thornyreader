@@ -1266,8 +1266,8 @@ bool LVDocView::DocToWindowRect(lvRect &rect)
             else
             {
                 //CRLog::error("NOT PASSED BY VERTICAL CHECKS. Index = %d",index);
-                //CRLog::error("rect.bottom <= (pages_list_[page]->start + pages_list_[page]->height)");
-                //CRLog::error("%d <= (%d + %d)",rect.bottom, pages_list_[page]->start, pages_list_[page]->height);
+                //CRLog::error("rect.top+1 <= (pages_list_[page]->start + pages_list_[page]->height)");
+                //CRLog::error("%d <= (%d )",rect.top+1, pages_list_[page]->start + pages_list_[page]->height);
                 return false;
             }
 		}
@@ -1867,12 +1867,11 @@ LVRef<ldomXRange> LVDocView::GetPageDocRange(int page_index)
 		if (GetColumns() > 1)
 		{
 			//end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + page->height + 100), 1);
-			CRLog::error("height = %d", height_);
 			end = cr_dom_->createXPointer(lvPoint(0, page->start + (height_ * 2)+50), 1);
 		}
 		else
 		{
-			end = cr_dom_->createXPointer(lvPoint(0, page->start + height_ + 50), 1);
+			end = cr_dom_->createXPointer(lvPoint(0, page->start + height_ * 4), 1);
 		}
 		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
 		if (start.isNull() || end.isNull())
@@ -2099,20 +2098,51 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 		ldomXRangeList &list_;
 		LVArray<lvRect> para_rect_array;
 
+		bool NodeIsAllowed(ldomNode * node)
+        {
+            LVArray<lString16> allowed;
+            allowed.add(lString16("p"));
+            allowed.add(lString16("li"));
+            allowed.add(lString16("h1"));
+            allowed.add(lString16("h2"));
+            allowed.add(lString16("h3"));
+            allowed.add(lString16("code"));
+            allowed.add(lString16("pagebreak"));
+
+            lString16 nodename = node->getNodeName();
+
+            for (int i = 0; i < allowed.length(); i++)
+            {
+                if (nodename.compare(allowed.get(i))==0)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
 		void ProcessLinkNode(ldomNode *node)
 		{
-			for (lUInt32 i = 0; i < node->getChildCount(); i++)
-			{
-				ldomNode *child = node->getChildNode(i);
-				if (child->isText())
-				{
-					ProcessFinalNode_GetNodeEnd(child);
-				}
-				else
-				{
-					ProcessLinkNode(child);
-				}
-			}
+            if (NodeIsAllowed(node))
+            {
+                //CRLog::error("node = %s",LCSTR(node->getNodeName()));
+                for (lUInt32 i = 0; i < node->getChildCount(); i++)
+                {
+                    ldomNode *child = node->getChildNode(i);
+                    if (child->isText())
+                    {
+                        ProcessFinalNode_GetNodeEnd(child);
+                    }
+                    else
+                    {
+                        ProcessLinkNode(child);
+                    }
+                }
+            }
+            //else
+            //{
+            //    CRLog::error("node %s IGNORED",LCSTR(node->getNodeName()));
+            //}
 		}
 
 		void ProcessFinalNode_GetNodeEnd(ldomNode *node)
@@ -2738,7 +2768,11 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
     LVRef<ldomXRange> range = this->GetPageDocRange();
     int offset = this->GetOffset();
     lvRect margins = this->cfg_margins_;
-
+	bool nomargins = false; //todo take nomargins from docview, set nomargins in docview from bridge
+    if (margins.right<20)
+	{
+		nomargins = true;
+	}
     ldomXRange text = *range;
 
     int strheight_last = 0;
@@ -2926,16 +2960,18 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
         {
 
             //top block
-            bool right_side = rect.left > halfwidth;
-
-            float pre_r = (two_columns) ? (halfwidth) : page_width_int;
-            pre_r = pre_r - margins.right;
+            bool right_side = two_columns ? rect.left > halfwidth : false;
+            float pre_r = two_columns ? halfwidth : page_width_int;
+            pre_r = pre_r - ((nomargins)?(margins.right/2):(margins.right));
 
             if (right_side)
             {
                 pre_r = pre_r + halfwidth;
             }
-
+            if (pre_r<rect.right)
+            {
+                pre_r = rect.right+5;
+            }
             float l = rect.right / page_width;
             float r = pre_r / page_width;
             float t = rect.top / page_height;
@@ -2978,7 +3014,7 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
 
         if (this->DocToWindowRect(rect))
         {
-#ifdef DEBUG_CRE_PARA_END_BLOCKS
+#if DEBUG_CRE_PARA_END_BLOCKS
             float l = (rect.right + (strheight_last / 2)) / page_width;
             float r = (rect.right + (strheight_last)) / page_width;
             float t = (rect.top + 10) / page_height;
