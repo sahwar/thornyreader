@@ -306,6 +306,7 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
                 return;
             }
             doc_view_->SetTextAlign(int_val);
+            doc_view_->UpdatePageMargins();
             doc_view_->RequestRender();
         } else if (key == CONFIG_CRE_HYPHENATION) {
             int int_val = atoi(val);
@@ -330,6 +331,8 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
             if (bool_val != gFlgFloatingPunctuationEnabled) {
                 gFlgFloatingPunctuationEnabled = bool_val;
             }
+            doc_view_->UpdatePageMargins();
+            doc_view_->RequestRender();
         } else if (key == CONFIG_CRE_FIRSTPAGE_THUMB) {
             int int_val = atoi(val);
             if (int_val < 0 || int_val > 1) {
