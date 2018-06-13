@@ -2822,7 +2822,8 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
     for (int i = 0; i < word_chars.length(); ++i)
     {
         lString16 word = word_chars.get(i).getText();
-        if (word.lastChar() == 0x0A) //skipping /n (newline feed) chars
+        //CRLog::error("letter = %s",LCSTR(word));
+        if ( word.lastChar() == 0x0A || word.lastChar() == 0x0D ) //skipping /n (newline feed) chars
         {
             continue;
         }
@@ -2999,18 +3000,21 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
                 b = (rect.top + 10) / page_height;
             }
 
-            // CRLog::error("word = %s",LCSTR(word));
+             CRLog::error("linebreak letter = %s",LCSTR(word));
             TrHitbox *hitbox = new TrHitbox(l, r, t, b, word);
             result.add(*hitbox);
         }
         else
         { //usual single-line words
-            strheight_last = strheight_curr;
+            if (strheight_curr>5)
+            {
+	            strheight_last = strheight_curr;
+            }
             float l = rect.left / page_width;
             float t = rect.top / page_height;
             float r = rect.right / page_width;
             float b = rect.bottom / page_height;
-            //CRLog::error("usual letter = %s", LCSTR(word));
+            CRLog::error("usual letter = %s", LCSTR(word));
 
             /* RESPONSE PROTOCOL : left, top, right, bottom, text, path
             response.addFloat(l);
