@@ -2106,7 +2106,7 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
             allowed.add(lString16("h1"));
             allowed.add(lString16("h2"));
             allowed.add(lString16("h3"));
-            //allowed.add(lString16("code"));
+            allowed.add(lString16("code"));
             allowed.add(lString16("pagebreak"));
 
             lString16 nodename = node->getNodeName();
@@ -2780,6 +2780,8 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
     bool lastline_check = false;
 
     lvRect lastrect;
+    LVArray<lvRect> on_string_paras;
+    bool is_on_string_paras = false;
     for (int i = 0; i < raw_para_array.length(); i++)
     {
         lvRect rawrect = raw_para_array.get(i);
@@ -2795,6 +2797,21 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
         if (rawrect == lastrect)
         {
             continue;
+        }
+	    if ( rawrect.top == lastrect.top || rawrect.bottom == lastrect.bottom )
+	    {
+	        if(on_string_paras.length()==0)
+            {
+                on_string_paras.add(lastrect);
+            }
+		    on_string_paras.add(rawrect);
+	        is_on_string_paras = true;
+	        continue;
+	    }
+        if(is_on_string_paras)
+        {
+            para_array.add(on_string_paras.get(on_string_paras.length()-1));
+            is_on_string_paras = false;
         }
         para_array.add(rawrect);
         lastrect = rawrect;
