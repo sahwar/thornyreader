@@ -14,6 +14,7 @@
 #define FALLBACK_FONTS_ENABLE 1
 
 #define META_MAX_LENGTH 2000
+#define CHAR_HEIGHT_MIN 5
 
 #ifdef TRDEBUG
 #define DUMP_DOMTREE 0

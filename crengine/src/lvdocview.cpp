@@ -2106,6 +2106,7 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
             allowed.add(lString16("h1"));
             allowed.add(lString16("h2"));
             allowed.add(lString16("h3"));
+            //allowed.add(lString16("br"));
             allowed.add(lString16("code"));
             allowed.add(lString16("pagebreak"));
 
@@ -2113,9 +2114,12 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 
             for (int i = 0; i < allowed.length(); i++)
             {
-                if (nodename.compare(allowed.get(i))==0)
+                //if (node->isText()))
                 {
+                    if (nodename.compare(allowed.get(i))==0)
+                    {
                     return true;
+                    }
                 }
             }
             return false;
@@ -2812,6 +2816,7 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
         {
             para_array.add(on_string_paras.get(on_string_paras.length()-1));
             is_on_string_paras = false;
+            on_string_paras.clear();
         }
         para_array.add(rawrect);
         lastrect = rawrect;
@@ -2822,8 +2827,8 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
     for (int i = 0; i < word_chars.length(); ++i)
     {
         lString16 word = word_chars.get(i).getText();
-        //CRLog::error("letter = %s",LCSTR(word));
-        if ( word.lastChar() == 0x0A || word.lastChar() == 0x0D ) //skipping /n (newline feed) chars
+        CRLog::error("letter = %s",LCSTR(word));
+        if ( word.lastChar() == 0x0A || word.lastChar() == 0x0D || word.firstChar() == L'\u200B' ) //skipping /n (newline feed) chars
         {
             continue;
         }
@@ -2896,7 +2901,7 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
             }
             else
             {
-                strheight_last = strheight_curr;
+                //strheight_last = strheight_curr;
             }
         }
 
@@ -3000,15 +3005,22 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
                 b = (rect.top + 10) / page_height;
             }
 
-             CRLog::error("linebreak letter = %s",LCSTR(word));
+	        CRLog::error("linebreak letter = %s",LCSTR(word));
             TrHitbox *hitbox = new TrHitbox(l, r, t, b, word);
             result.add(*hitbox);
         }
         else
         { //usual single-line words
-            if (strheight_curr>5)
+            if (strheight_curr > CHAR_HEIGHT_MIN)
             {
 	            strheight_last = strheight_curr;
+            }
+            else
+            {
+                #ifdef TRDEBUG
+                CRLog::error("invalid character [%s] %x : too short height!",LCSTR(word),word.firstChar());
+                #endif
+                continue;
             }
             float l = rect.left / page_width;
             float t = rect.top / page_height;
