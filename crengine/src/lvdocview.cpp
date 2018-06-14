@@ -2135,7 +2135,19 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
                     ldomNode *child = node->getChildNode(i);
                     if (child->isText())
                     {
-                        ProcessFinalNode_GetNodeEnd(child);
+	                    if (!NodeIsAllowed(child->getParentNode()))
+	                    {
+		                    continue;
+	                    }
+	                    if (i != node->getChildCount() - 1)
+	                    {
+		                    continue;
+	                    }
+	                    if (child->getText().length() <= 1)
+	                    {
+		                    continue;
+	                    }
+	                    ProcessFinalNode_GetNodeEnd(child);
                     }
                     else
                     {
@@ -2748,15 +2760,18 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
     bool two_columns = this->GetColumns() > 1;
     float halfwidth = page_width_int / 2;
 
-    int footnoteslength = pages_list_[this->page_+1]->footnotes.length();
-    int footnotesheightr =0;
-    for (int fn = 0; fn < footnoteslength; fn++)
+	int footnotesheightr = 0;
+	//checking whether this is the last page in document, to prevent sigsegv crashes
+    if(this->page_ < this->pages_list_.length()-1)
     {
-        footnotesheightr = footnotesheightr + pages_list_[this->page_+1]->footnotes[fn].height;
-        //CRLog::error("footnote %d height = %d",fn,pages_list_[this->page_+1]->footnotes[fn].height);
+
+	    int footnoteslength = pages_list_[this->page_ + 1]->footnotes.length();
+	    for (int fn = 0; fn < footnoteslength; fn++)
+        {
+            footnotesheightr = footnotesheightr + pages_list_[this->page_+1]->footnotes[fn].height;
+            //CRLog::error("footnote %d height = %d",fn,pages_list_[this->page_+1]->footnotes[fn].height);
+        }
     }
-    //CRLog::error("footnotes on page %d = %d",this->page_+1,footnoteslength);
-    //CRLog::error("footnotesheightr = %d", footnotesheightr);
 
     this->curr_page_para_array.clear();
     //we need these lines to get list of paragraph ends. it passes it to doc_view->curr_page_para_array
@@ -2827,7 +2842,7 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
     for (int i = 0; i < word_chars.length(); ++i)
     {
         lString16 word = word_chars.get(i).getText();
-        CRLog::error("letter = %s",LCSTR(word));
+        //CRLog::error("letter = %s",LCSTR(word));
         if ( word.lastChar() == 0x0A || word.lastChar() == 0x0D || word.firstChar() == L'\u200B' ) //skipping /n (newline feed) chars
         {
             continue;
@@ -3005,7 +3020,7 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
                 b = (rect.top + 10) / page_height;
             }
 
-	        CRLog::error("linebreak letter = %s",LCSTR(word));
+	        //CRLog::error("linebreak letter = %s",LCSTR(word));
             TrHitbox *hitbox = new TrHitbox(l, r, t, b, word);
             result.add(*hitbox);
         }
@@ -3026,7 +3041,7 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
             float t = rect.top / page_height;
             float r = rect.right / page_width;
             float b = rect.bottom / page_height;
-            CRLog::error("usual letter = %s", LCSTR(word));
+            //CRLog::error("usual letter = %s", LCSTR(word));
 
             /* RESPONSE PROTOCOL : left, top, right, bottom, text, path
             response.addFloat(l);
