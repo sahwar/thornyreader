@@ -2127,42 +2127,45 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 
 		void ProcessLinkNode(ldomNode *node)
 		{
-            if (NodeIsAllowed(node))
-            {
-                //CRLog::error("node = %s",LCSTR(node->getNodeName()));
-                for (lUInt32 i = 0; i < node->getChildCount(); i++)
+			LVArray<lvRect> nodeends;
+			//CRLog::error("node = %s",LCSTR(node->getNodeName()));
+			for (lUInt32 i = 0; i < node->getChildCount(); i++)
+			{
+				ldomNode *child = node->getChildNode(i);
+				if (child->isText())
+				{
+					lvRect paraend = ProcessFinalNode_GetNodeEnd(child);
+					if(NodeIsAllowed(node))
+					{
+						//para_rect_array.add(paraend);
+						nodeends.add(paraend);
+						CRLog::error("ADDED NODE parentnodetype =  %s",LCSTR(node->getNodeName()));
+						CRLog::error("ADDED NODE childtext =  %s",LCSTR(child->getText()));
+					}
+					else
+					{
+						CRLog::error("IGNORED NODE parentnodetype =  %s",LCSTR(node->getNodeName()));
+						CRLog::error("IGNORED NODE childtext =  %s",LCSTR(child->getText()));
+					}
+				}
+				else
+				{
+					ProcessLinkNode(child);
+				}
+			}
+			if (NodeIsAllowed(node))
+			{
+			    if (nodeends.length()>0)
                 {
-                    ldomNode *child = node->getChildNode(i);
-                    if (child->isText())
-                    {
-	                    if (!NodeIsAllowed(child->getParentNode()))
-	                    {
-		                    continue;
-	                    }
-	                    if (i != node->getChildCount() - 1)
-	                    {
-		                    continue;
-	                    }
-	                    if (child->getText().length() <= 1)
-	                    {
-		                    continue;
-	                    }
-	                    ProcessFinalNode_GetNodeEnd(child);
-                    }
-                    else
-                    {
-                        ProcessLinkNode(child);
-                    }
+			    para_rect_array.add(nodeends.get(nodeends.length()-1));
                 }
-            }
-            //else
-            //{
-            //    CRLog::error("node %s IGNORED",LCSTR(node->getNodeName()));
-            //}
+			}
+			nodeends.clear();
 		}
 
-		void ProcessFinalNode_GetNodeEnd(ldomNode *node)
+		lvRect ProcessFinalNode_GetNodeEnd(ldomNode *node)
 		{
+			lvRect empty_rect(0, 0, 0, 0);
 			ldomXPointerEx end;
 			if (node->isText())
 			{
@@ -2171,18 +2174,18 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 			}
 			else
 			{
-				return;
+				return empty_rect;
 			}
-			lvRect empty_rect(0, 0, 0, 0);
+
 			lvRect end_rect;
 			if (!end.getRect(end_rect))
 			{
 				CRLog::warn("Unable to get node end coordinates. Ignoring");
-				para_rect_array.add(empty_rect);
-				return;
+				//para_rect_array.add(empty_rect);
+				return empty_rect;
 			}
-			para_rect_array.add(end_rect);
-			return;
+			//para_rect_array.add(end_rect);
+			return end_rect;
 		}
 
 	public:
@@ -2204,7 +2207,7 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 				return;
 			}
 			ProcessLinkNode(element_node);
-#ifdef TRDEBUG
+			#ifdef TRDEBUG
 			lString16 text = element_node->getText();
 			int start = node_range->getStart().getOffset();
 			int end = node_range->getEnd().getOffset();
@@ -2214,19 +2217,19 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 			}
 			ldomNode *end_node = node_range->getEnd().getNode();
 			//CRLog::debug("GetCurrentPageParas first text on page: %d-%d %s", node->getDataIndex(), end_node->getDataIndex(), LCSTR(text));
-#endif
+			#endif
 		}
 		// Called for each node in range
 		virtual bool onElement(ldomXPointerEx *ptr)
 		{
 			ldomNode *element_node = ptr->getNode();
-#ifdef TRDEBUG
+			#ifdef TRDEBUG
 			if (element_node->getChildCount() == 0)
 			{
 				// Empty link in malformed doc, example: <a name="sync_on_demand"></a>
 				CRLog::trace("GetCurrentPageParas empty link in malformed doc");
 			}
-#endif
+			#endif
 			ProcessLinkNode(element_node);
 			return true;
 		}
