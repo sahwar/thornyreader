@@ -11,6 +11,7 @@
 
  *******************************************************/
 
+#include <map>
 #include "thornyreader/include/thornyreader.h"
 #include "include/lvdocview.h"
 #include "include/CreBridge.h"
@@ -2137,15 +2138,12 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 					lvRect paraend = ProcessFinalNode_GetNodeEnd(child);
 					if(NodeIsAllowed(node))
 					{
-						//para_rect_array.add(paraend);
 						nodeends.add(paraend);
-						CRLog::error("ADDED NODE parentnodetype =  %s",LCSTR(node->getNodeName()));
-						CRLog::error("ADDED NODE childtext =  %s",LCSTR(child->getText()));
 					}
 					else
 					{
-						CRLog::error("IGNORED NODE parentnodetype =  %s",LCSTR(node->getNodeName()));
-						CRLog::error("IGNORED NODE childtext =  %s",LCSTR(child->getText()));
+						//CRLog::error("IGNORED NODE parentnodetype =  %s",LCSTR(node->getNodeName()));
+						//CRLog::error("IGNORED NODE childtext =  %s",LCSTR(child->getText()));
 					}
 				}
 				else
@@ -2753,6 +2751,22 @@ bool LVDocView::NeedCheckImage()
     return false;
 }
 
+unsigned long long int getkey(lvRect rect)
+{
+    lString16 key;
+    //int llength = lString16(key.itoa(rect.left)).length();
+    //int rlength = lString16(key.itoa(rect.right)).length();
+    //int tlength = lString16(key.itoa(rect.top)).length();
+    //int blength = lString16(key.itoa(rect.bottom)).length();
+
+	unsigned long long int a;
+    /*a =(rect.left*(pow(10,rlength)))+rect.right;
+    a =(a*(pow(10,tlength))) +rect.top;
+    a =(a*(pow(10,blength))) +rect.bottom;*/
+    a=rect.left+rect.right+rect.top+rect.bottom;
+    return a;
+}
+
 LVArray<TrHitbox> LVDocView::GetPageHitboxes()
 {
     LVArray<TrHitbox> result;
@@ -2804,40 +2818,67 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
     lvRect lastrect;
     LVArray<lvRect> on_string_paras;
     bool is_on_string_paras = false;
-    for (int i = 0; i < raw_para_array.length(); i++)
+
+    typedef std::map< unsigned long long int, int> Rectmap;
+    unsigned long long int key;
+	Rectmap m;
+	for (int i = 0; i < raw_para_array.length(); i++)
     {
-        lvRect rawrect = raw_para_array.get(i);
-        if (rawrect.top < offset)
-        {
-            continue;
-        }
-        int bottom = (two_columns) ? offset + page_height_int + page_height_int - margins.bottom : offset + page_height_int - margins.bottom;
-        if (rawrect.bottom > bottom)
-        {
-            continue;
-        }
-        if (rawrect == lastrect)
-        {
-            continue;
-        }
-	    if ( rawrect.top == lastrect.top || rawrect.bottom == lastrect.bottom )
+	    lvRect rawrect = raw_para_array.get(i);
+	    if (rawrect == lvRect(0, 0, 0, 0))
 	    {
-	        if(on_string_paras.length()==0)
-            {
-                on_string_paras.add(lastrect);
-            }
-		    on_string_paras.add(rawrect);
-	        is_on_string_paras = true;
-	        continue;
+		    continue;
 	    }
-        if(is_on_string_paras)
+	    if (rawrect.top < offset)
+	    {
+		    continue;
+	    }
+	    int bottom = (two_columns) ? offset + page_height_int + page_height_int - margins.bottom : offset + page_height_int - margins.bottom;
+	    if (rawrect.bottom > bottom)
+	    {
+		    continue;
+	    }
+
+	    if (rawrect == lastrect)
+	    {
+		    continue;
+	    }
+
+        key = getkey(rawrect);
+
+        if (m.find(key) != m.end())
         {
-            para_array.add(on_string_paras.get(on_string_paras.length()-1));
-            is_on_string_paras = false;
-            on_string_paras.clear();
+            continue;
         }
-        para_array.add(rawrect);
-        lastrect = rawrect;
+	    m[key]= i;
+
+	    lvRect rect_tmp;
+	    rect_tmp= rawrect;
+	    this->DocToWindowRect(rect_tmp);
+	    if(rect_tmp.bottom>page_height_int)
+	    {
+		    continue;
+	    }
+
+        if (rawrect.top == lastrect.top || rawrect.bottom == lastrect.bottom)
+	    {
+		    if (on_string_paras.length() == 0)
+		    {
+			    on_string_paras.add(lastrect);
+		    }
+		    on_string_paras.add(rawrect);
+		    is_on_string_paras = true;
+		    continue;
+	    }
+	    if (is_on_string_paras)
+	    {
+		    para_array.add(on_string_paras.get(on_string_paras.length() - 1));
+		    is_on_string_paras = false;
+		    on_string_paras.clear();
+	    }
+	    //CRLog::error("pararect: [%d:%d] [%d:%d]", rawrect.left, rawrect.right, rawrect.top-offset, rawrect.bottom-offset);
+	    para_array.add(rawrect);
+	    lastrect = rawrect;
     }
 
     LVArray<ldomWord> word_chars;
@@ -2898,7 +2939,7 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
             if (strheight_last != 0 && strheight_curr >= strheight_last + (strheight_last / 2))
             {
                 //check if top of block is on this page  and is in needed range
-                if (rect_n.top + strheight_last -1 < page_height_int - margins.bottom - footnotesheightr )
+                if (rect_n.top + strheight_last +1 < page_height_int - margins.bottom - footnotesheightr )
                 {
                     //check if bottom of block is out of this page
                     if (rect_n.bottom+1 > page_height_int - margins.bottom - footnotesheightr )
