@@ -2115,13 +2115,13 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 
             for (int i = 0; i < allowed.length(); i++)
             {
-                //if (node->isText()))
-                {
-                    if (nodename.compare(allowed.get(i))==0)
-                    {
-                    return true;
-                    }
-                }
+	            //if (node->isText()))
+	            //{
+	            if (nodename.compare(allowed.get(i))==0)
+	            {
+		            return true;
+	            }
+	            //}
             }
             return false;
         }
@@ -2754,15 +2754,7 @@ bool LVDocView::NeedCheckImage()
 unsigned long long int getkey(lvRect rect)
 {
     lString16 key;
-    //int llength = lString16(key.itoa(rect.left)).length();
-    //int rlength = lString16(key.itoa(rect.right)).length();
-    //int tlength = lString16(key.itoa(rect.top)).length();
-    //int blength = lString16(key.itoa(rect.bottom)).length();
-
 	unsigned long long int a;
-    /*a =(rect.left*(pow(10,rlength)))+rect.right;
-    a =(a*(pow(10,tlength))) +rect.top;
-    a =(a*(pow(10,blength))) +rect.bottom;*/
     a=rect.left+rect.right+rect.top+rect.bottom;
     return a;
 }
