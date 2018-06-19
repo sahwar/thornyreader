@@ -1868,11 +1868,11 @@ LVRef<ldomXRange> LVDocView::GetPageDocRange(int page_index)
 		if (GetColumns() > 1)
 		{
 			//end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + page->height + 100), 1);
-			end = cr_dom_->createXPointer(lvPoint(0, page->start + (height_ * 2)+50), 1);
+			end = cr_dom_->createXPointer(lvPoint(0, page->start + (height_ * 2)+1), 1);
 		}
 		else
 		{
-			end = cr_dom_->createXPointer(lvPoint(0, page->start + height_ * 4), 1);
+			end = cr_dom_->createXPointer(lvPoint(0, page->start + (height_ * 1)), 1);
 		}
 		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
 		if (start.isNull() || end.isNull())
@@ -2089,7 +2089,7 @@ void LVDocView::GetCurrentPageLinks(ldomXRangeList &links_list)
 void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 {
 	list.clear();
-	LVRef<ldomXRange> page_range = GetPageParaDocRange();
+	LVRef<ldomXRange> page_range = GetPageDocRange();
 	if (page_range.isNull())
 	{
 		return;
@@ -2103,13 +2103,16 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
         {
             LVArray<lString16> allowed;
             allowed.add(lString16("p"));
+            //allowed.add(lString16("ul"));
             allowed.add(lString16("li"));
             allowed.add(lString16("h1"));
             allowed.add(lString16("h2"));
             allowed.add(lString16("h3"));
+            allowed.add(lString16("blockquote"));
+            allowed.add(lString16("autoBoxing"));
             //allowed.add(lString16("br"));
             allowed.add(lString16("code"));
-            allowed.add(lString16("pagebreak"));
+            //allowed.add(lString16("pagebreak"));
 
             lString16 nodename = node->getNodeName();
 
@@ -2126,39 +2129,35 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
             return false;
         }
 
-		void ProcessLinkNode(ldomNode *node)
+		lvRect ProcessNodeParaends(ldomNode *node)
 		{
-			LVArray<lvRect> nodeends;
+            //CRLog::error("in node = %s",LCSTR(node->getNodeName()));
+            lvRect paraend;
 			//CRLog::error("node = %s",LCSTR(node->getNodeName()));
 			for (lUInt32 i = 0; i < node->getChildCount(); i++)
 			{
 				ldomNode *child = node->getChildNode(i);
 				if (child->isText())
 				{
-					lvRect paraend = ProcessFinalNode_GetNodeEnd(child);
-					if(NodeIsAllowed(node))
-					{
-						nodeends.add(paraend);
-					}
-					else
-					{
-						//CRLog::error("IGNORED NODE parentnodetype =  %s",LCSTR(node->getNodeName()));
-						//CRLog::error("IGNORED NODE childtext =  %s",LCSTR(child->getText()));
-					}
+					paraend = ProcessFinalNode_GetNodeEnd(child);
+                  //  CRLog::error("Final node processed");
+                  //  CRLog::error("final node = %s",LCSTR(node->getNodeName()));
+                  //  CRLog::error("final text = %s",LCSTR(child->getText()));
 				}
 				else
 				{
-					ProcessLinkNode(child);
-				}
-			}
-			if (NodeIsAllowed(node))
-			{
-			    if (nodeends.length()>0)
-                {
-			    para_rect_array.add(nodeends.get(nodeends.length()-1));
+                //    CRLog::error("diving deeper");
+					paraend = ProcessNodeParaends(child);
                 }
+              //  CRLog::error("node ended");
 			}
-			nodeends.clear();
+            if(NodeIsAllowed(node))
+            {
+             //   CRLog::error("Node added");
+                para_rect_array.add(paraend);
+             //   CRLog::error("paraend = [%d:%d][%d:%d]",paraend.left,paraend.right,paraend.top,paraend.bottom);
+            }
+            return paraend;
 		}
 
 		lvRect ProcessFinalNode_GetNodeEnd(ldomNode *node)
@@ -2182,6 +2181,9 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 				//para_rect_array.add(empty_rect);
 				return empty_rect;
 			}
+            //CRLog::error("node = %s",LCSTR(node->getNodeName()));
+            //CRLog::error("text = %s",LCSTR(node->getText()));
+            //CRLog::error("rect = [%d:%d][%d:%d]",end_rect.left,end_rect.right,end_rect.top,end_rect.bottom);
 			//para_rect_array.add(end_rect);
 			return end_rect;
 		}
@@ -2204,7 +2206,7 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 			{
 				return;
 			}
-			ProcessLinkNode(element_node);
+            ProcessNodeParaends(element_node);
 			#ifdef TRDEBUG
 			lString16 text = element_node->getText();
 			int start = node_range->getStart().getOffset();
@@ -2228,7 +2230,7 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 				CRLog::trace("GetCurrentPageParas empty link in malformed doc");
 			}
 			#endif
-			ProcessLinkNode(element_node);
+            ProcessNodeParaends(element_node);
 			return true;
 		}
 		LVArray<lvRect> GetParaArray()
@@ -2816,7 +2818,8 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
 	Rectmap m;
 	for (int i = 0; i < raw_para_array.length(); i++)
     {
-	    lvRect rawrect = raw_para_array.get(i);
+        lvRect rawrect = raw_para_array.get(i);
+        //CRLog::error("raw_pararect = [%d:%d][%d:%d]",rawrect.left,rawrect.right,rawrect.top,rawrect.bottom);
 	    if (rawrect == lvRect(0, 0, 0, 0))
 	    {
 		    continue;
@@ -2872,6 +2875,7 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
 	    para_array.add(rawrect);
 	    lastrect = rawrect;
     }
+    raw_para_array.clear();
 
     LVArray<ldomWord> word_chars;
     text.getRangeChars(word_chars);
@@ -2959,25 +2963,28 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
         //paragraph breaks implementation
         if (para_counter < para_array.length() && rect.top > para_array.get(para_counter).top)
         {
-            lvRect raw_rect_n = para_array.get(para_counter);
-            lvRect rect_n = lvRect(raw_rect_n.left, raw_rect_n.top, raw_rect_n.right, raw_rect_n.bottom);
-            this->DocToWindowRect(rect_n);
-			#if DEBUG_CRE_PARA_END_BLOCKS
-            float l = (rect_n.left + (strheight_curr / 2)) / page_width;
-            float r = (rect_n.right + (strheight_curr * 2)) / page_width;
-            float t = (rect_n.top + 10) / page_height;
-            float b = (rect_n.bottom - 10) / page_height;
-			#else
-            float l = rect_n.right / page_width;
-            float r = (rect_n.right + (strheight_curr / 4)) / page_width;
-            float t = rect_n.top / page_height;
-            float b = rect_n.bottom / page_height;
-			#endif // DEBUG_PARA_END_BLOCKS
+            lvRect rect_n = para_array.get(para_counter);
 
-            lString16 para_end = lString16("\n");// + lString16::itoa(para_counter);
-            TrHitbox *hitbox = new TrHitbox(l, r, t, b, para_end);
-            result.add(*hitbox);
-            para_counter++;
+            this->DocToWindowRect(rect_n);
+            if( rect_n.bottom - rect_n.top > CHAR_HEIGHT_MIN)
+            {
+                #if DEBUG_CRE_PARA_END_BLOCKS
+                float l = (rect_n.left + (strheight_curr / 2)) / page_width;
+                float r = (rect_n.right + (strheight_curr * 2)) / page_width;
+                float t = (rect_n.top + 10) / page_height;
+                float b = (rect_n.bottom - 10) / page_height;
+                #else
+                float l = rect_n.right / page_width;
+                float r = (rect_n.right + (strheight_curr / 4)) / page_width;
+                float t = rect_n.top / page_height;
+                float b = rect_n.bottom / page_height;
+                #endif // DEBUG_PARA_END_BLOCKS
+
+                lString16 para_end = lString16("\n");// + lString16::itoa(para_counter);
+                TrHitbox *hitbox = new TrHitbox(l, r, t, b, para_end);
+                result.add(*hitbox);
+                para_counter++;
+            }
         }
 
         // line break LEFT SIDE implementation  //todo decide if we need this (seems like no need in this one at all)
@@ -3096,22 +3103,25 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
     {
         lvRect rect = para_array.get(para_counter);
 
-        if (this->DocToWindowRect(rect))
+        if (this->DocToWindowRect(rect) && two_columns)
         {
+            if( rect.bottom - rect.top > CHAR_HEIGHT_MIN)
+            {
 #if DEBUG_CRE_PARA_END_BLOCKS
-            float l = (rect.right + (strheight_last / 2)) / page_width;
-            float r = (rect.right + (strheight_last)) / page_width;
-            float t = (rect.top + 10) / page_height;
-            float b = (rect.bottom - 10) / page_height;
+                float l = (rect.right + (strheight_last / 2)) / page_width;
+                float r = (rect.right + (strheight_last)) / page_width;
+                float t = (rect.top + 10) / page_height;
+                float b = (rect.bottom - 10) / page_height;
 #else
-            float l = rect.right / page_width;
-            float r = (rect.right + (strheight_last / 4)) / page_width;
-            float t = rect.top / page_height;
-            float b = rect.bottom  / page_height;
+                float l = rect.right / page_width;
+                float r = (rect.right + (strheight_last / 4)) / page_width;
+                float t = rect.top / page_height;
+                float b = rect.bottom / page_height;
 #endif // DEBUG_PARA_END_BLOCKS
-            lString16 para_end = lString16("\n");
-            TrHitbox *hitbox = new TrHitbox(l, r, t, b, para_end);
-            result.add(*hitbox);
+                lString16 para_end = lString16("\n");
+                TrHitbox *hitbox = new TrHitbox(l, r, t, b, para_end);
+                result.add(*hitbox);
+            }
         }
     }
     return result;
