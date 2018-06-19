@@ -202,8 +202,7 @@ public:
     /// converts point from window to document coordinates, returns true if success
     bool WindowToDocPoint(lvPoint& pt);
     /// converts rect from document to window coordinates, returns true if success
-    bool DocToWindowRect(lvRect& rect);
-    bool DocToWindowRectSecondColumn(lvRect &rect);
+    bool DocToWindowRect(lvRect &rect, bool double_height = false);
     /// returns document
     CrDom* GetCrDom() { return cr_dom_; }
     /// draws scaled image into buffer, clear background according to current settings

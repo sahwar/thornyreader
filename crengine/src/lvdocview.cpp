@@ -1215,106 +1215,66 @@ bool LVDocView::WindowToDocPoint(lvPoint &pt)
 }
 
 /// converts point from document to window coordinates, returns true if success
-bool LVDocView::DocToWindowRect(lvRect &rect)
+bool LVDocView::DocToWindowRect(lvRect &rect, bool double_height)
 {
-	CHECK_RENDER("DocToWindowRect()")
-	if (IsScrollMode())
-	{
-		rect.top -= offset_;
-		rect.bottom -= offset_;
-		rect.left += margins_.left;
-		rect.right += margins_.left;
-		return true;
-	}
-	else
-	{
-		int page = GetCurrPage();
-		if (page >= 0 && page < pages_list_.length())// && rect.top+1 >= pages_list_[page]->start)
-		{
-			int index = -1;
-			if (rect.top+1 <= (pages_list_[page]->start + pages_list_[page]->height))
-			{
-				index = 0;
-			}
-			else if (GetColumns() == 2 && page + 1 < pages_list_.length() &&
-			         rect.bottom <= (pages_list_[page + 1]->start + pages_list_[page + 1]->height))
-			{
-				index = 1;
-			}
-            if(rect.top+1 < pages_list_[page]->start) //upper borderline
-            {
-                index = -1;
-            }
-			if (index >= 0)
-			{
-				int right = rect.right + page_rects_[index].left + margins_.left;
-				if (right-1 <= page_rects_[index].right - margins_.right)
-				{
-					rect.left = rect.left + page_rects_[index].left + margins_.left;
-                    rect.right = right;
-                    rect.top = rect.top + margins_.top - pages_list_[page + index]->start;
-                    rect.bottom = rect.bottom + margins_.top - pages_list_[page + index]->start;
-                    return true;
-                }
-                else
-                {
-                    //CRLog::error("NOT PASSED BY HORIZONTAL CHECKS");
-                    //CRLog::error("right - 1 <= page_rects_[index].right - margins_.right");
-                    //CRLog::error("%d <= %d - %d", right - 1, page_rects_[index].right, margins_.right);
-                    return false;
-                }
-            }
-            else
-            {
-                //CRLog::error("NOT PASSED BY VERTICAL CHECKS. Index = %d",index);
-                //CRLog::error("rect.top+1 <= (pages_list_[page]->start + pages_list_[page]->height)");
-                //CRLog::error("%d <= (%d )",rect.top+1, pages_list_[page]->start + pages_list_[page]->height);
-                return false;
-            }
-		}
-		return false;
-	}
-	return false;
+    CHECK_RENDER("DocToWindowRect()")
+    int page = GetCurrPage();
+    if (page < 0 || page > pages_list_.length())
+    {
+        return false; // went out of bounds of pages array
+    }
+    int index = -1;
+
+    if(rect.top+1 < pages_list_[page]->start)
+    {
+        return false;  //upper borderline check
+    }
+    else if (rect.top + 1 <= (pages_list_[page]->start + pages_list_[page]->height))
+    {
+        index = 0; // Left side of double-column page
+    }
+    else if (GetColumns() != 2 ||  page + 1 > pages_list_.length())
+    {
+        //CRLog::error("NOT PASSED BY VERTICAL CHECKS. Index = %d",index);
+        //CRLog::error("rect.top+1 <= (pages_list_[page]->start + pages_list_[page]->height)");
+        //CRLog::error("%d <= (%d )",rect.top+1, pages_list_[page]->start + pages_list_[page]->height);
+        return false; // went out of bounds of pages array
+    }
+    else if(double_height)
+    {
+        if (rect.bottom <= (pages_list_[page + 1]->start + (pages_list_[page + 1]->height * 2)))
+        {
+            index = 1; // Right side of double-column page
+        }
+    }
+    else
+    {
+        if (rect.bottom <= (pages_list_[page + 1]->start + (pages_list_[page + 1]->height)))
+        {
+            index = 1; // Right side of double-column page
+        }
+    }
+    if (index < 0)
+    {
+        return false;
+    }
+    lvRect page_rect = page_rects_[index];
+    int right = rect.right + page_rect.left + margins_.left;
+
+    if (right - 1 > page_rect.right - margins_.right)
+    {
+        //CRLog::error("NOT PASSED BY HORIZONTAL CHECKS");
+        //CRLog::error("right - 1 <= page_rects_[index].right - margins_.right");
+        //CRLog::error("%d <= %d - %d", right - 1, page_rects_[index].right, margins_.right);
+        return false; // out of right side of current page
+    }
+    rect.left   = rect.left + page_rect.left + margins_.left;
+    rect.right  = right;
+    rect.top    = rect.top    + margins_.top - pages_list_[page + index]->start;
+    rect.bottom = rect.bottom + margins_.top - pages_list_[page + index]->start;
+    return true;
 }
 
-bool LVDocView::DocToWindowRectSecondColumn(lvRect &rect)
-{
-	CHECK_RENDER("DocToWindowRect()")
-	int page = GetCurrPage();
-	if (page >= 0 && page < pages_list_.length())
-	{
-		int index = -1;
-		if (rect.top + 1 <= (pages_list_[page]->start + pages_list_[page]->height))
-		{
-			index = 0;
-		}
-		else if (GetColumns() == 2 && page + 1 < pages_list_.length() && rect.bottom <= (pages_list_[page + 1]->start + pages_list_[page + 1]->height + pages_list_[page + 1]->height))
-		{
-			index = 1;
-		}
-		if (index >= 0)
-		{
-			int right = rect.right + page_rects_[index].left + margins_.left;
-			if (right - 1 <= page_rects_[index].right - margins_.right)
-			{
-				rect.left = rect.left + page_rects_[index].left + margins_.left;
-				rect.right = right;
-				rect.top = rect.top + margins_.top - pages_list_[page + index]->start;
-				rect.bottom = rect.bottom + margins_.top - pages_list_[page + index]->start;
-				return true;
-			}
-			else
-			{
-				return false;
-			}
-		}
-		else
-		{
-			return false;
-		}
-	}
-	return false;
-}
 
 void LVDocView::UpdateLayout()
 {
@@ -2756,7 +2716,7 @@ bool LVDocView::NeedCheckImage()
 unsigned long long int getkey(lvRect rect)
 {
     lString16 key;
-	unsigned long long int a;
+	unsigned long long int a; //so huge num to avoid overfloating
     a=rect.left+rect.right+rect.top+rect.bottom;
     return a;
 }
@@ -2926,7 +2886,7 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
         //CRLog::error("start: %s ",LCSTR(start.toString()));
         //two columns last line on poge line break implementetaion
         lvRect rect_n = lvRect(rect.left, rect.top, rect.right, rect.bottom);
-        this->DocToWindowRectSecondColumn(rect_n);
+        this->DocToWindowRect(rect_n, true);
         bool right_side = rect_n.left > halfwidth;
 
         // when line break happens between pages right side implementation
@@ -2946,7 +2906,7 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
                         float t = (rect_n.top ) / page_height;
                         float r = pre_r / page_width;
                         float b = (rect_n.top + strheight_last) / page_height;
-                        //word = word + lString16("++");
+                        word = word + lString16("++");
                         //CRLog::error("jump letter = %s",LCSTR(word));
                         TrHitbox *hitbox = new TrHitbox(l, r, t, b, word);
                         result.add(*hitbox);
