@@ -2882,29 +2882,40 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
         ch.getRect(rect);
         int strheight_curr = rect.bottom - rect.top;
         //paragraph breaks implementation
-        if (para_counter < para_array.length() && rect.top > para_array.get(para_counter).top)
+        lvRect rect2=rect;
+        if(this->DocToWindowRect(rect2))
         {
-            lvRect rect_n = para_array.get(para_counter);
-
-            this->DocToWindowRect(rect_n);
-            if( rect_n.bottom - rect_n.top > CHAR_HEIGHT_MIN)
+            if (para_counter < para_array.length() && rect.top > para_array.get(para_counter).top)
             {
-                #if DEBUG_CRE_PARA_END_BLOCKS
-                float l = (rect_n.left + (strheight_curr / 2)) / page_width;
-                float r = (rect_n.right + (strheight_curr * 2)) / page_width;
-                float t = (rect_n.top + 10) / page_height;
-                float b = (rect_n.bottom - 10) / page_height;
-                #else
-                float l = rect_n.right / page_width;
-                float r = (rect_n.right + (strheight_curr / 4)) / page_width;
-                float t = rect_n.top / page_height;
-                float b = rect_n.bottom / page_height;
-                #endif // DEBUG_PARA_END_BLOCKS
+                lvRect rect_n = para_array.get(para_counter);
 
-                lString16 para_end = lString16("\n");// + lString16::itoa(para_counter);
-                TrHitbox *hitbox = new TrHitbox(l, r, t, b, para_end);
-                result.add(*hitbox);
-                para_counter++;
+                this->DocToWindowRect(rect_n);
+                if( rect_n.bottom - rect_n.top > CHAR_HEIGHT_MIN)
+                {
+                    #if DEBUG_CRE_PARA_END_BLOCKS
+                    float l = (rect_n.left + (strheight_curr / 2)) / page_width;
+                    float r = (rect_n.right + (strheight_curr * 2)) / page_width;
+                    float t = (rect_n.top + 10) / page_height;
+                    float b = (rect_n.bottom - 10) / page_height;
+                    #else
+                    float l = rect_n.right / page_width;
+                    float r = (rect_n.right + (strheight_curr / 4)) / page_width;
+                    float t = rect_n.top / page_height;
+                    float b = rect_n.bottom / page_height;
+                    #endif // DEBUG_PARA_END_BLOCKS
+	                #ifdef TRDEBUG
+                    //CRLog::error("paraend before letters %s%s%s%s%s",
+                    //        LCSTR(word_chars.get(i).getText()),
+                    //        LCSTR(word_chars.get(i+1).getText()),
+                    //        LCSTR(word_chars.get(i+2).getText()),
+                    //        LCSTR(word_chars.get(i+3).getText()),
+                    //        LCSTR(word_chars.get(i+4).getText()));
+                    #endif //TRDEBUG
+                    lString16 para_end = lString16("\n");// + lString16::itoa(para_counter);
+                    TrHitbox *hitbox = new TrHitbox(l, r, t, b, para_end);
+                    result.add(*hitbox);
+                    para_counter++;
+                }
             }
         }
         if (!this->DocToWindowRect(rect))
@@ -2984,7 +2995,7 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
     {
         lvRect rect = para_array.get(para_counter);
 
-        if (this->DocToWindowRect(rect) && two_columns)
+        if (this->DocToWindowRect(rect))
         {
             if( rect.bottom - rect.top > CHAR_HEIGHT_MIN)
             {
