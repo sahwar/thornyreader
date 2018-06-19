@@ -2083,7 +2083,6 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 		{
             //CRLog::error("in node = %s",LCSTR(node->getNodeName()));
             lvRect paraend;
-			//CRLog::error("node = %s",LCSTR(node->getNodeName()));
 			for (lUInt32 i = 0; i < node->getChildCount(); i++)
 			{
 				ldomNode *child = node->getChildNode(i);
@@ -2151,14 +2150,25 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 			}
 			text_is_first_ = false;
 			ldomNode *node = node_range->getStart().getNode();
-			ldomNode *element_node = node->getParentNode();
-			if (element_node->isNull())
+			if (node->isNull())
 			{
 				return;
 			}
-            ProcessNodeParaends(element_node);
+            while (node != NULL && node->getParentNode() != NULL )
+            {
+                node = node->getParentNode();
+                if(NodeIsAllowed(node))
+                {
+                    break;
+                }
+            }
+            if(node->getParentNode()==NULL)
+            {
+                return;
+            }
+            ProcessNodeParaends(node);
 			#ifdef TRDEBUG
-			lString16 text = element_node->getText();
+			lString16 text = node->getText();
 			int start = node_range->getStart().getOffset();
 			int end = node_range->getEnd().getOffset();
 			if (start < end)
@@ -2176,8 +2186,7 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 			#ifdef TRDEBUG
 			if (element_node->getChildCount() == 0)
 			{
-				// Empty link in malformed doc, example: <a name="sync_on_demand"></a>
-				CRLog::trace("GetCurrentPageParas empty link in malformed doc");
+				CRLog::trace("GetCurrentPageParas empty: no children found");
 			}
 			#endif
             ProcessNodeParaends(element_node);
