@@ -2872,38 +2872,6 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
         lvRect rect;
         ch.getRect(rect);
         int strheight_curr = rect.bottom - rect.top;
-        //two columns last line on poge line break implementetaion
-        lvRect rect_n = lvRect(rect.left, rect.top, rect.right, rect.bottom);
-        if (this->DocToWindowRect(rect_n))
-        {
-            bool right_side = rect_n.left > halfwidth;
-            // when line break happens between pages right side implementation
-            if (!lastline_check && two_columns && right_side)
-            {
-                if (strheight_last != 0 && strheight_curr >= strheight_last + (strheight_last / 2))
-                {
-                    //check if top of block is on this page  and is in needed range
-                    if (rect_n.top + strheight_last + 1 < page_height_int - margins.bottom - footnotesheightr)
-                    {
-                        //check if bottom of block is out of this page
-                        if (rect_n.bottom + 1 > page_height_int - margins.bottom - footnotesheightr)
-                        {
-                            float pre_r = page_width_int - margins.right;
-                            //top block add
-                            float l = (rect_n.right) / page_width;
-                            float t = (rect_n.top) / page_height;
-                            float r = pre_r / page_width;
-                            float b = (rect_n.top + strheight_last) / page_height;
-                            //word = word + lString16("++");
-                            //CRLog::error("jump letter = %s",LCSTR(word));
-                            TrHitbox *hitbox = new TrHitbox(l, r, t, b, word);
-                            result.add(*hitbox);
-                            lastline_check = true;
-                        }
-                    }
-                }
-            }
-        }
         //paragraph breaks implementation
         if (para_counter < para_array.length() && rect.top > para_array.get(para_counter).top)
         {
@@ -2930,46 +2898,6 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
                 para_counter++;
             }
         }
-
-        // line break LEFT SIDE implementation  //todo decide if we need this (seems like no need in this one at all)
-        /*if (strheight_last != 0 && strheight_curr >= strheight_last * 2)
-        {
-            lvRect rect_n = lvRect(rect.left, rect.top, rect.right, rect.bottom);
-            this->DocToWindowRectSecondColumn(rect_n);
-
-            //check if top of block is on this page  and is in needed range
-            if (rect.top + margins.top < offset + page_height_int)// && rect.top + strheight_curr < page_height_int - margins.bottom)
-            {
-                //check if bottom of block is out of this page
-                if (rect.bottom + margins.top >= page_height_int)
-                {
-                    float pre_r;
-                    if (two_columns)
-                    {
-                        pre_r = (right_side) ? page_width_int : halfwidth;
-                    }
-                    else
-                    {
-                        pre_r = page_width_int;
-                    }
-                    pre_r = pre_r - margins.right;
-                    //top block add
-                    float l = rect_n.right / page_width;
-                    float t = (rect_n.top) / page_height;
-                    float r = pre_r / page_width;
-                    float b = (rect_n.top + strheight_last) / page_height;
-                    //CRLog::error("jump letter = %s",LCSTR(word));
-                    TrHitbox *hitbox = new TrHitbox(l, r, t, b, word);
-                    result.add(*hitbox);
-                    continue;
-                }
-            }
-        }
-        else
-        {
-            strheight_last = strheight_curr;
-        }*/
-
         if (!this->DocToWindowRect(rect))
         {
 #ifdef TRDEBUG
