@@ -1215,7 +1215,7 @@ bool LVDocView::WindowToDocPoint(lvPoint &pt)
 }
 
 /// converts point from document to window coordinates, returns true if success
-bool LVDocView::DocToWindowRect(lvRect &rect, bool double_height)
+bool LVDocView::DocToWindowRect(lvRect &rect)
 {
     CHECK_RENDER("DocToWindowRect()")
     int page = GetCurrPage();
@@ -1240,19 +1240,9 @@ bool LVDocView::DocToWindowRect(lvRect &rect, bool double_height)
         //CRLog::error("%d <= (%d )",rect.top+1, pages_list_[page]->start + pages_list_[page]->height);
         return false; // went out of bounds of pages array
     }
-    else if(double_height)
+    else  if (rect.top + 1 <= (pages_list_[page + 1]->start + (pages_list_[page + 1]->height)))
     {
-        if (rect.bottom <= (pages_list_[page + 1]->start + (pages_list_[page + 1]->height * 2)))
-        {
-            index = 1; // Right side of double-column page
-        }
-    }
-    else
-    {
-        if (rect.bottom <= (pages_list_[page + 1]->start + (pages_list_[page + 1]->height)))
-        {
-            index = 1; // Right side of double-column page
-        }
+        index = 1; // Right side of double-column page
     }
     if (index < 0)
     {
@@ -2882,44 +2872,38 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
         lvRect rect;
         ch.getRect(rect);
         int strheight_curr = rect.bottom - rect.top;
-
-        //CRLog::error("start: %s ",LCSTR(start.toString()));
         //two columns last line on poge line break implementetaion
         lvRect rect_n = lvRect(rect.left, rect.top, rect.right, rect.bottom);
-        this->DocToWindowRect(rect_n, true);
-        bool right_side = rect_n.left > halfwidth;
-
-        // when line break happens between pages right side implementation
-        if (!lastline_check && two_columns && right_side)
+        if (this->DocToWindowRect(rect_n))
         {
-            if (strheight_last != 0 && strheight_curr >= strheight_last + (strheight_last / 2))
+            bool right_side = rect_n.left > halfwidth;
+            // when line break happens between pages right side implementation
+            if (!lastline_check && two_columns && right_side)
             {
-                //check if top of block is on this page  and is in needed range
-                if (rect_n.top + strheight_last +1 < page_height_int - margins.bottom - footnotesheightr )
+                if (strheight_last != 0 && strheight_curr >= strheight_last + (strheight_last / 2))
                 {
-                    //check if bottom of block is out of this page
-                    if (rect_n.bottom+1 > page_height_int - margins.bottom - footnotesheightr )
+                    //check if top of block is on this page  and is in needed range
+                    if (rect_n.top + strheight_last + 1 < page_height_int - margins.bottom - footnotesheightr)
                     {
-                        float pre_r = page_width_int - margins.right;
-                        //top block add
-                        float l = (rect_n.right) / page_width;
-                        float t = (rect_n.top ) / page_height;
-                        float r = pre_r / page_width;
-                        float b = (rect_n.top + strheight_last) / page_height;
-                        word = word + lString16("++");
-                        //CRLog::error("jump letter = %s",LCSTR(word));
-                        TrHitbox *hitbox = new TrHitbox(l, r, t, b, word);
-                        result.add(*hitbox);
-                        lastline_check = true;
+                        //check if bottom of block is out of this page
+                        if (rect_n.bottom + 1 > page_height_int - margins.bottom - footnotesheightr)
+                        {
+                            float pre_r = page_width_int - margins.right;
+                            //top block add
+                            float l = (rect_n.right) / page_width;
+                            float t = (rect_n.top) / page_height;
+                            float r = pre_r / page_width;
+                            float b = (rect_n.top + strheight_last) / page_height;
+                            //word = word + lString16("++");
+                            //CRLog::error("jump letter = %s",LCSTR(word));
+                            TrHitbox *hitbox = new TrHitbox(l, r, t, b, word);
+                            result.add(*hitbox);
+                            lastline_check = true;
+                        }
                     }
                 }
             }
-            else
-            {
-                //strheight_last = strheight_curr;
-            }
         }
-
         //paragraph breaks implementation
         if (para_counter < para_array.length() && rect.top > para_array.get(para_counter).top)
         {
