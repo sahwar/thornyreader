@@ -730,7 +730,7 @@ public:
         if ( _fallbackFontIsSet )
         {return _fallbackFont.get();}
 
-        if ( fontMan->GetFallbackFontFace()!=_faceName ) // to avoid circular link, disable fallback for fallback font
+        //if ( fontMan->GetFallbackFontFace()!=_faceName ) // to avoid circular link, disable fallback for fallback font
             _fallbackFont = fontMan->GetFallbackFont(_size);
         _fallbackFontIsSet = true;
         return _fallbackFont.get();

@@ -1217,104 +1217,54 @@ bool LVDocView::WindowToDocPoint(lvPoint &pt)
 /// converts point from document to window coordinates, returns true if success
 bool LVDocView::DocToWindowRect(lvRect &rect)
 {
-	CHECK_RENDER("DocToWindowRect()")
-	if (IsScrollMode())
-	{
-		rect.top -= offset_;
-		rect.bottom -= offset_;
-		rect.left += margins_.left;
-		rect.right += margins_.left;
-		return true;
-	}
-	else
-	{
-		int page = GetCurrPage();
-		if (page >= 0 && page < pages_list_.length())// && rect.top+1 >= pages_list_[page]->start)
-		{
-			int index = -1;
-			if (rect.top+1 <= (pages_list_[page]->start + pages_list_[page]->height))
-			{
-				index = 0;
-			}
-			else if (GetColumns() == 2 && page + 1 < pages_list_.length() &&
-			         rect.bottom <= (pages_list_[page + 1]->start + pages_list_[page + 1]->height))
-			{
-				index = 1;
-			}
-            if(rect.top+1 < pages_list_[page]->start) //upper borderline
-            {
-                index = -1;
-            }
-			if (index >= 0)
-			{
-				int right = rect.right + page_rects_[index].left + margins_.left;
-				if (right-1 <= page_rects_[index].right - margins_.right)
-				{
-					rect.left = rect.left + page_rects_[index].left + margins_.left;
-                    rect.right = right;
-                    rect.top = rect.top + margins_.top - pages_list_[page + index]->start;
-                    rect.bottom = rect.bottom + margins_.top - pages_list_[page + index]->start;
-                    return true;
-                }
-                else
-                {
-                    //CRLog::error("NOT PASSED BY HORIZONTAL CHECKS");
-                    //CRLog::error("right - 1 <= page_rects_[index].right - margins_.right");
-                    //CRLog::error("%d <= %d - %d", right - 1, page_rects_[index].right, margins_.right);
-                    return false;
-                }
-            }
-            else
-            {
-                //CRLog::error("NOT PASSED BY VERTICAL CHECKS. Index = %d",index);
-                //CRLog::error("rect.top+1 <= (pages_list_[page]->start + pages_list_[page]->height)");
-                //CRLog::error("%d <= (%d )",rect.top+1, pages_list_[page]->start + pages_list_[page]->height);
-                return false;
-            }
-		}
-		return false;
-	}
-	return false;
+    CHECK_RENDER("DocToWindowRect()")
+    int page = GetCurrPage();
+    if (page < 0 || page > pages_list_.length())
+    {
+        return false; // went out of bounds of pages array
+    }
+    int index = -1;
+
+    if(rect.top+1 < pages_list_[page]->start)
+    {
+        return false;  //upper borderline check
+    }
+    else if (rect.top + 1 <= (pages_list_[page]->start + pages_list_[page]->height))
+    {
+        index = 0; // Left side of double-column page
+    }
+    else if (GetColumns() != 2 ||  page + 1 > pages_list_.length())
+    {
+        //CRLog::error("NOT PASSED BY VERTICAL CHECKS. Index = %d",index);
+        //CRLog::error("rect.top+1 <= (pages_list_[page]->start + pages_list_[page]->height)");
+        //CRLog::error("%d <= (%d )",rect.top+1, pages_list_[page]->start + pages_list_[page]->height);
+        return false; // went out of bounds of pages array
+    }
+    else  if (rect.top + 1 <= (pages_list_[page + 1]->start + (pages_list_[page + 1]->height)))
+    {
+        index = 1; // Right side of double-column page
+    }
+    if (index < 0)
+    {
+        return false;
+    }
+    lvRect page_rect = page_rects_[index];
+    int right = rect.right + page_rect.left + margins_.left;
+
+    if (right - 1 > page_rect.right - margins_.right)
+    {
+        //CRLog::error("NOT PASSED BY HORIZONTAL CHECKS");
+        //CRLog::error("right - 1 <= page_rects_[index].right - margins_.right");
+        //CRLog::error("%d <= %d - %d", right - 1, page_rects_[index].right, margins_.right);
+        return false; // out of right side of current page
+    }
+    rect.left   = rect.left + page_rect.left + margins_.left;
+    rect.right  = right;
+    rect.top    = rect.top    + margins_.top - pages_list_[page + index]->start;
+    rect.bottom = rect.bottom + margins_.top - pages_list_[page + index]->start;
+    return true;
 }
 
-bool LVDocView::DocToWindowRectSecondColumn(lvRect &rect)
-{
-	CHECK_RENDER("DocToWindowRect()")
-	int page = GetCurrPage();
-	if (page >= 0 && page < pages_list_.length())
-	{
-		int index = -1;
-		if (rect.top + 1 <= (pages_list_[page]->start + pages_list_[page]->height))
-		{
-			index = 0;
-		}
-		else if (GetColumns() == 2 && page + 1 < pages_list_.length() && rect.bottom <= (pages_list_[page + 1]->start + pages_list_[page + 1]->height + pages_list_[page + 1]->height))
-		{
-			index = 1;
-		}
-		if (index >= 0)
-		{
-			int right = rect.right + page_rects_[index].left + margins_.left;
-			if (right - 1 <= page_rects_[index].right - margins_.right)
-			{
-				rect.left = rect.left + page_rects_[index].left + margins_.left;
-				rect.right = right;
-				rect.top = rect.top + margins_.top - pages_list_[page + index]->start;
-				rect.bottom = rect.bottom + margins_.top - pages_list_[page + index]->start;
-				return true;
-			}
-			else
-			{
-				return false;
-			}
-		}
-		else
-		{
-			return false;
-		}
-	}
-	return false;
-}
 
 void LVDocView::UpdateLayout()
 {
@@ -1868,11 +1818,11 @@ LVRef<ldomXRange> LVDocView::GetPageDocRange(int page_index)
 		if (GetColumns() > 1)
 		{
 			//end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + page->height + 100), 1);
-			end = cr_dom_->createXPointer(lvPoint(0, page->start + (height_ * 2)+50), 1);
+			end = cr_dom_->createXPointer(lvPoint(0, page->start + (height_ * 3)), 1);
 		}
 		else
 		{
-			end = cr_dom_->createXPointer(lvPoint(0, page->start + height_ * 4), 1);
+			end = cr_dom_->createXPointer(lvPoint(0, page->start + (height_ * 2)), 1);
 		}
 		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
 		if (start.isNull() || end.isNull())
@@ -2089,7 +2039,7 @@ void LVDocView::GetCurrentPageLinks(ldomXRangeList &links_list)
 void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 {
 	list.clear();
-	LVRef<ldomXRange> page_range = GetPageParaDocRange();
+	LVRef<ldomXRange> page_range = GetPageDocRange();
 	if (page_range.isNull())
 	{
 		return;
@@ -2103,62 +2053,61 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
         {
             LVArray<lString16> allowed;
             allowed.add(lString16("p"));
+            //allowed.add(lString16("ul"));
             allowed.add(lString16("li"));
             allowed.add(lString16("h1"));
             allowed.add(lString16("h2"));
             allowed.add(lString16("h3"));
-            //allowed.add(lString16("br"));
-            allowed.add(lString16("code"));
-            allowed.add(lString16("pagebreak"));
+            allowed.add(lString16("blockquote"));
+            allowed.add(lString16("autoBoxing"));
+            allowed.add(lString16("br"));
+            allowed.add(lString16("date"));
+            //allowed.add(lString16("code"));
+            //allowed.add(lString16("pagebreak"));
 
             lString16 nodename = node->getNodeName();
 
             for (int i = 0; i < allowed.length(); i++)
             {
-                //if (node->isText()))
-                {
-                    if (nodename.compare(allowed.get(i))==0)
-                    {
-                    return true;
-                    }
-                }
+	            //if (node->isText()))
+	            //{
+	            if (nodename.compare(allowed.get(i))==0)
+	            {
+		            return true;
+	            }
+	            //}
             }
             return false;
         }
 
-		void ProcessLinkNode(ldomNode *node)
+		lvRect ProcessNodeParaends(ldomNode *node)
 		{
-			LVArray<lvRect> nodeends;
-			//CRLog::error("node = %s",LCSTR(node->getNodeName()));
+            //CRLog::error("in node = %s",LCSTR(node->getNodeName()));
+            lvRect paraend;
 			for (lUInt32 i = 0; i < node->getChildCount(); i++)
 			{
 				ldomNode *child = node->getChildNode(i);
 				if (child->isText())
 				{
-					lvRect paraend = ProcessFinalNode_GetNodeEnd(child);
-					if(NodeIsAllowed(node))
-					{
-						nodeends.add(paraend);
-					}
-					else
-					{
-						//CRLog::error("IGNORED NODE parentnodetype =  %s",LCSTR(node->getNodeName()));
-						//CRLog::error("IGNORED NODE childtext =  %s",LCSTR(child->getText()));
-					}
+					paraend = ProcessFinalNode_GetNodeEnd(child);
+                  //  CRLog::error("Final node processed");
+                  //  CRLog::error("final node = %s",LCSTR(node->getNodeName()));
+                  //  CRLog::error("final text = %s",LCSTR(child->getText()));
 				}
 				else
 				{
-					ProcessLinkNode(child);
-				}
-			}
-			if (NodeIsAllowed(node))
-			{
-			    if (nodeends.length()>0)
-                {
-			    para_rect_array.add(nodeends.get(nodeends.length()-1));
+                //    CRLog::error("diving deeper");
+					paraend = ProcessNodeParaends(child);
                 }
+              //  CRLog::error("node ended");
 			}
-			nodeends.clear();
+            if(NodeIsAllowed(node))
+            {
+             //   CRLog::error("Node added");
+                para_rect_array.add(paraend);
+             //   CRLog::error("paraend = [%d:%d][%d:%d]",paraend.left,paraend.right,paraend.top,paraend.bottom);
+            }
+            return paraend;
 		}
 
 		lvRect ProcessFinalNode_GetNodeEnd(ldomNode *node)
@@ -2182,6 +2131,9 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 				//para_rect_array.add(empty_rect);
 				return empty_rect;
 			}
+            //CRLog::error("node = %s",LCSTR(node->getNodeName()));
+            //CRLog::error("text = %s",LCSTR(node->getText()));
+            //CRLog::error("rect = [%d:%d][%d:%d]",end_rect.left,end_rect.right,end_rect.top,end_rect.bottom);
 			//para_rect_array.add(end_rect);
 			return end_rect;
 		}
@@ -2199,14 +2151,25 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 			}
 			text_is_first_ = false;
 			ldomNode *node = node_range->getStart().getNode();
-			ldomNode *element_node = node->getParentNode();
-			if (element_node->isNull())
+			if (node->isNull())
 			{
 				return;
 			}
-			ProcessLinkNode(element_node);
+            while (node != NULL && node->getParentNode() != NULL )
+            {
+                node = node->getParentNode();
+                if(NodeIsAllowed(node))
+                {
+                    break;
+                }
+            }
+            if(node->getParentNode()==NULL)
+            {
+                return;
+            }
+            ProcessNodeParaends(node);
 			#ifdef TRDEBUG
-			lString16 text = element_node->getText();
+			lString16 text = node->getText();
 			int start = node_range->getStart().getOffset();
 			int end = node_range->getEnd().getOffset();
 			if (start < end)
@@ -2224,12 +2187,11 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 			#ifdef TRDEBUG
 			if (element_node->getChildCount() == 0)
 			{
-				// Empty link in malformed doc, example: <a name="sync_on_demand"></a>
-				CRLog::trace("GetCurrentPageParas empty link in malformed doc");
+				CRLog::trace("GetCurrentPageParas empty: no children found");
 			}
 			#endif
-			ProcessLinkNode(element_node);
-			return true;
+            ProcessNodeParaends(element_node);
+			return false;
 		}
 		LVArray<lvRect> GetParaArray()
 		{
@@ -2754,15 +2716,7 @@ bool LVDocView::NeedCheckImage()
 unsigned long long int getkey(lvRect rect)
 {
     lString16 key;
-    //int llength = lString16(key.itoa(rect.left)).length();
-    //int rlength = lString16(key.itoa(rect.right)).length();
-    //int tlength = lString16(key.itoa(rect.top)).length();
-    //int blength = lString16(key.itoa(rect.bottom)).length();
-
-	unsigned long long int a;
-    /*a =(rect.left*(pow(10,rlength)))+rect.right;
-    a =(a*(pow(10,tlength))) +rect.top;
-    a =(a*(pow(10,blength))) +rect.bottom;*/
+	unsigned long long int a; //so huge num to avoid overfloating
     a=rect.left+rect.right+rect.top+rect.bottom;
     return a;
 }
@@ -2815,7 +2769,6 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
     int para_counter = 0;
     bool lastline_check = false;
 
-    lvRect lastrect;
     LVArray<lvRect> on_string_paras;
     bool is_on_string_paras = false;
 
@@ -2824,7 +2777,8 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
 	Rectmap m;
 	for (int i = 0; i < raw_para_array.length(); i++)
     {
-	    lvRect rawrect = raw_para_array.get(i);
+        lvRect rawrect = raw_para_array.get(i);
+        //CRLog::error("raw_pararect = [%d:%d][%d:%d]",rawrect.left,rawrect.right,rawrect.top,rawrect.bottom);
 	    if (rawrect == lvRect(0, 0, 0, 0))
 	    {
 		    continue;
@@ -2835,11 +2789,6 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
 	    }
 	    int bottom = (two_columns) ? offset + page_height_int + page_height_int - margins.bottom : offset + page_height_int - margins.bottom;
 	    if (rawrect.bottom > bottom)
-	    {
-		    continue;
-	    }
-
-	    if (rawrect == lastrect)
 	    {
 		    continue;
 	    }
@@ -2859,27 +2808,11 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
 	    {
 		    continue;
 	    }
-
-        if (rawrect.top == lastrect.top || rawrect.bottom == lastrect.bottom)
-	    {
-		    if (on_string_paras.length() == 0)
-		    {
-			    on_string_paras.add(lastrect);
-		    }
-		    on_string_paras.add(rawrect);
-		    is_on_string_paras = true;
-		    continue;
-	    }
-	    if (is_on_string_paras)
-	    {
-		    para_array.add(on_string_paras.get(on_string_paras.length() - 1));
-		    is_on_string_paras = false;
-		    on_string_paras.clear();
-	    }
+        //if there's double paraends ion one line - write reverse cycle map filtering
 	    //CRLog::error("pararect: [%d:%d] [%d:%d]", rawrect.left, rawrect.right, rawrect.top-offset, rawrect.bottom-offset);
 	    para_array.add(rawrect);
-	    lastrect = rawrect;
     }
+    raw_para_array.clear();
 
     LVArray<ldomWord> word_chars;
     text.getRangeChars(word_chars);
@@ -2926,107 +2859,43 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
         lvRect rect;
         ch.getRect(rect);
         int strheight_curr = rect.bottom - rect.top;
-
-        //CRLog::error("start: %s ",LCSTR(start.toString()));
-        //two columns last line on poge line break implementetaion
-        lvRect rect_n = lvRect(rect.left, rect.top, rect.right, rect.bottom);
-        this->DocToWindowRectSecondColumn(rect_n);
-        bool right_side = rect_n.left > halfwidth;
-
-        // when line break happens between pages right side implementation
-        if (!lastline_check && two_columns && right_side)
-        {
-            if (strheight_last != 0 && strheight_curr >= strheight_last + (strheight_last / 2))
-            {
-                //check if top of block is on this page  and is in needed range
-                if (rect_n.top + strheight_last +1 < page_height_int - margins.bottom - footnotesheightr )
-                {
-                    //check if bottom of block is out of this page
-                    if (rect_n.bottom+1 > page_height_int - margins.bottom - footnotesheightr )
-                    {
-                        float pre_r = page_width_int - margins.right;
-                        //top block add
-                        float l = (rect_n.right) / page_width;
-                        float t = (rect_n.top ) / page_height;
-                        float r = pre_r / page_width;
-                        float b = (rect_n.top + strheight_last) / page_height;
-                        //word = word + lString16("++");
-                        //CRLog::error("jump letter = %s",LCSTR(word));
-                        TrHitbox *hitbox = new TrHitbox(l, r, t, b, word);
-                        result.add(*hitbox);
-                        lastline_check = true;
-                    }
-                }
-            }
-            else
-            {
-                //strheight_last = strheight_curr;
-            }
-        }
-
         //paragraph breaks implementation
-        if (para_counter < para_array.length() && rect.top > para_array.get(para_counter).top)
+        lvRect rect2=rect;
+        if(this->DocToWindowRect(rect2))
         {
-            lvRect raw_rect_n = para_array.get(para_counter);
-            lvRect rect_n = lvRect(raw_rect_n.left, raw_rect_n.top, raw_rect_n.right, raw_rect_n.bottom);
-            this->DocToWindowRect(rect_n);
-			#if DEBUG_CRE_PARA_END_BLOCKS
-            float l = (rect_n.left + (strheight_curr / 2)) / page_width;
-            float r = (rect_n.right + (strheight_curr * 2)) / page_width;
-            float t = (rect_n.top + 10) / page_height;
-            float b = (rect_n.bottom - 10) / page_height;
-			#else
-            float l = rect_n.right / page_width;
-            float r = (rect_n.right + (strheight_curr / 4)) / page_width;
-            float t = rect_n.top / page_height;
-            float b = rect_n.bottom / page_height;
-			#endif // DEBUG_PARA_END_BLOCKS
-
-            lString16 para_end = lString16("\n");// + lString16::itoa(para_counter);
-            TrHitbox *hitbox = new TrHitbox(l, r, t, b, para_end);
-            result.add(*hitbox);
-            para_counter++;
-        }
-
-        // line break LEFT SIDE implementation  //todo decide if we need this (seems like no need in this one at all)
-        /*if (strheight_last != 0 && strheight_curr >= strheight_last * 2)
-        {
-            lvRect rect_n = lvRect(rect.left, rect.top, rect.right, rect.bottom);
-            this->DocToWindowRectSecondColumn(rect_n);
-
-            //check if top of block is on this page  and is in needed range
-            if (rect.top + margins.top < offset + page_height_int)// && rect.top + strheight_curr < page_height_int - margins.bottom)
+            if (para_counter < para_array.length() && rect.top > para_array.get(para_counter).top)
             {
-                //check if bottom of block is out of this page
-                if (rect.bottom + margins.top >= page_height_int)
+                lvRect rect_n = para_array.get(para_counter);
+
+                this->DocToWindowRect(rect_n);
+                if( rect_n.bottom - rect_n.top > CHAR_HEIGHT_MIN)
                 {
-                    float pre_r;
-                    if (two_columns)
-                    {
-                        pre_r = (right_side) ? page_width_int : halfwidth;
-                    }
-                    else
-                    {
-                        pre_r = page_width_int;
-                    }
-                    pre_r = pre_r - margins.right;
-                    //top block add
+                    #if DEBUG_CRE_PARA_END_BLOCKS
+                    float l = (rect_n.left + (strheight_curr / 2)) / page_width;
+                    float r = (rect_n.right + (strheight_curr * 2)) / page_width;
+                    float t = (rect_n.top + 10) / page_height;
+                    float b = (rect_n.bottom - 10) / page_height;
+                    #else
                     float l = rect_n.right / page_width;
-                    float t = (rect_n.top) / page_height;
-                    float r = pre_r / page_width;
-                    float b = (rect_n.top + strheight_last) / page_height;
-                    //CRLog::error("jump letter = %s",LCSTR(word));
-                    TrHitbox *hitbox = new TrHitbox(l, r, t, b, word);
+                    float r = (rect_n.right + (strheight_curr / 4)) / page_width;
+                    float t = rect_n.top / page_height;
+                    float b = rect_n.bottom / page_height;
+                    #endif // DEBUG_PARA_END_BLOCKS
+	                #ifdef TRDEBUG
+                    //CRLog::error("paraend before letters %s%s%s%s%s",
+                    //        LCSTR(word_chars.get(i).getText()),
+                    //        LCSTR(word_chars.get(i+1).getText()),
+                    //        LCSTR(word_chars.get(i+2).getText()),
+                    //        LCSTR(word_chars.get(i+3).getText()),
+                    //        LCSTR(word_chars.get(i+4).getText()));
+                    #endif //TRDEBUG
+                    lString16 para_end = lString16("\n");// + lString16::itoa(para_counter);
+                    TrHitbox *hitbox = new TrHitbox(l, r, t, b, para_end);
                     result.add(*hitbox);
-                    continue;
+                    para_counter++;
                 }
             }
         }
-        else
-        {
-            strheight_last = strheight_curr;
-        }*/
-
         if (!this->DocToWindowRect(rect))
         {
 #ifdef TRDEBUG
@@ -3106,20 +2975,23 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
 
         if (this->DocToWindowRect(rect))
         {
+            if( rect.bottom - rect.top > CHAR_HEIGHT_MIN)
+            {
 #if DEBUG_CRE_PARA_END_BLOCKS
-            float l = (rect.right + (strheight_last / 2)) / page_width;
-            float r = (rect.right + (strheight_last)) / page_width;
-            float t = (rect.top + 10) / page_height;
-            float b = (rect.bottom - 10) / page_height;
+                float l = (rect.right + (strheight_last / 2)) / page_width;
+                float r = (rect.right + (strheight_last)) / page_width;
+                float t = (rect.top + 10) / page_height;
+                float b = (rect.bottom - 10) / page_height;
 #else
-            float l = rect.right / page_width;
-            float r = (rect.right + (strheight_last / 4)) / page_width;
-            float t = rect.top / page_height;
-            float b = rect.bottom  / page_height;
+                float l = rect.right / page_width;
+                float r = (rect.right + (strheight_last / 4)) / page_width;
+                float t = rect.top / page_height;
+                float b = rect.bottom / page_height;
 #endif // DEBUG_PARA_END_BLOCKS
-            lString16 para_end = lString16("\n");
-            TrHitbox *hitbox = new TrHitbox(l, r, t, b, para_end);
-            result.add(*hitbox);
+                lString16 para_end = lString16("\n");
+                TrHitbox *hitbox = new TrHitbox(l, r, t, b, para_end);
+                result.add(*hitbox);
+            }
         }
     }
     return result;
