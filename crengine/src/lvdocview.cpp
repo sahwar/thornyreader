@@ -1818,11 +1818,11 @@ LVRef<ldomXRange> LVDocView::GetPageDocRange(int page_index)
 		if (GetColumns() > 1)
 		{
 			//end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + page->height + 100), 1);
-			end = cr_dom_->createXPointer(lvPoint(0, page->start + (height_ * 2)+1), 1);
+			end = cr_dom_->createXPointer(lvPoint(0, page->start + (height_ * 3)), 1);
 		}
 		else
 		{
-			end = cr_dom_->createXPointer(lvPoint(0, page->start + (height_ * 1)), 1);
+			end = cr_dom_->createXPointer(lvPoint(0, page->start + (height_ * 2)), 1);
 		}
 		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
 		if (start.isNull() || end.isNull())
@@ -2061,6 +2061,7 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
             allowed.add(lString16("blockquote"));
             allowed.add(lString16("autoBoxing"));
             allowed.add(lString16("br"));
+            allowed.add(lString16("date"));
             //allowed.add(lString16("code"));
             //allowed.add(lString16("pagebreak"));
 
@@ -2768,7 +2769,6 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
     int para_counter = 0;
     bool lastline_check = false;
 
-    lvRect lastrect;
     LVArray<lvRect> on_string_paras;
     bool is_on_string_paras = false;
 
@@ -2793,11 +2793,6 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
 		    continue;
 	    }
 
-	    if (rawrect == lastrect)
-	    {
-		    continue;
-	    }
-
         key = getkey(rawrect);
 
         if (m.find(key) != m.end())
@@ -2813,26 +2808,9 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
 	    {
 		    continue;
 	    }
-
-        if (rawrect.top == lastrect.top || rawrect.bottom == lastrect.bottom)
-	    {
-		    if (on_string_paras.length() == 0)
-		    {
-			    on_string_paras.add(lastrect);
-		    }
-		    on_string_paras.add(rawrect);
-		    is_on_string_paras = true;
-		    continue;
-	    }
-	    if (is_on_string_paras)
-	    {
-		    para_array.add(on_string_paras.get(on_string_paras.length() - 1));
-		    is_on_string_paras = false;
-		    on_string_paras.clear();
-	    }
+        //if there's double paraends ion one line - write reverse cycle map filtering
 	    //CRLog::error("pararect: [%d:%d] [%d:%d]", rawrect.left, rawrect.right, rawrect.top-offset, rawrect.bottom-offset);
 	    para_array.add(rawrect);
-	    lastrect = rawrect;
     }
     raw_para_array.clear();
 
