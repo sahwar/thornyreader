@@ -2691,6 +2691,11 @@ bool LvXmlParser::Parse()
                     //}}
                 }*/
 
+                if (tagname=="br" && close_flag)
+                {
+                    callback_->OnText(L"\u200B", 1, flags);
+                    //callback_->OnText(L"&", 1, flags);
+                }
                 if(tagname=="blockquote")
                 {
                     if (!in_blockquote && !close_flag)

@@ -2060,8 +2060,8 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
             allowed.add(lString16("h3"));
             allowed.add(lString16("blockquote"));
             allowed.add(lString16("autoBoxing"));
-            //allowed.add(lString16("br"));
-            allowed.add(lString16("code"));
+            allowed.add(lString16("br"));
+            //allowed.add(lString16("code"));
             //allowed.add(lString16("pagebreak"));
 
             lString16 nodename = node->getNodeName();
@@ -2190,7 +2190,7 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 			}
 			#endif
             ProcessNodeParaends(element_node);
-			return true;
+			return false;
 		}
 		LVArray<lvRect> GetParaArray()
 		{
