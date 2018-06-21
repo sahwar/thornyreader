@@ -2770,33 +2770,26 @@ LVArray<lvRect> LVDocView::GetPageParaEnds()
 
 LVArray<TrHitbox> LVDocView::GetPageHitboxes()
 {
-	CRLog::error("HITBOXES BEGIN");
     LVArray<TrHitbox> result;
-    float page_width = this->GetWidth();
-    float page_height = this->GetHeight();
-    int page_width_int = this->GetWidth();
+    float page_width    = this->GetWidth();
+    float page_height   = this->GetHeight();
+    int page_width_int  = this->GetWidth();
     int page_height_int = this->GetHeight();
-    bool two_columns = this->GetColumns() > 1;
-    float halfwidth = page_width_int / 2;
+    bool two_columns    = this->GetColumns() > 1;
+    float halfwidth     = page_width_int / 2;
 
 	int footnotesheightr = 0;
 	//checking whether this is the last page in document, to prevent sigsegv crashes
     if(this->page_ < this->pages_list_.length()-1)
     {
-
 	    int footnoteslength = pages_list_[this->page_ + 1]->footnotes.length();
 	    for (int fn = 0; fn < footnoteslength; fn++)
         {
             footnotesheightr = footnotesheightr + pages_list_[this->page_+1]->footnotes[fn].height;
-            //CRLog::error("footnote %d height = %d",fn,pages_list_[this->page_+1]->footnotes[fn].height);
         }
     }
-
-	LVArray<lvRect> para_array;
-	para_array.add(this->GetPageParaEnds());
-
-    LVRef<ldomXRange> range = this->GetPageDocRange();
-    int offset = this->GetOffset();
+	LVArray<lvRect> para_array = this->GetPageParaEnds();
+	LVRef<ldomXRange> range = this->GetPageDocRange();
     lvRect margins = this->cfg_margins_;
 	bool nomargins = false; //todo take nomargins from docview, set nomargins in docview from bridge
     if (margins.right<20)
@@ -2813,52 +2806,16 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
     for (int i = 0; i < word_chars.length(); ++i)
     {
         lString16 word = word_chars.get(i).getText();
-        //CRLog::error("letter = %s",LCSTR(word));
-        if ( word.lastChar() == 0x0A || word.lastChar() == 0x0D || word.firstChar() == L'\u200B' ) //skipping /n (newline feed) chars
-        {
-            continue;
-        }
-        //converting all different spaces to one type space
-		if (      (word.firstChar() == L'\u00A0')
-		          || (word.firstChar() == L'\u180E')
-		          || (word.firstChar() == L'\u2000')
-		          || (word.firstChar() == L'\u2001')
-		          || (word.firstChar() == L'\u2002')
-		          || (word.firstChar() == L'\u2003')
-		          || (word.firstChar() == L'\u2004')
-		          || (word.firstChar() == L'\u2005')
-		          || (word.firstChar() == L'\u2006')
-		          || (word.firstChar() == L'\u2007')
-		          || (word.firstChar() == L'\u2008')
-		          || (word.firstChar() == L'\u2009')
-		          || (word.firstChar() == L'\u200A')
-		          || (word.firstChar() == L'\u200B')
-		          || (word.firstChar() == L'\u202F')
-		          || (word.firstChar() == L'\u205F')
-		          || (word.firstChar() == L'\u3000')
-		          || (word.firstChar() == L'\uFEFF'))
-		{
-			word = lString16(" "); // L'\u0020' regular ascii space
-		}
-
-        ldomXPointer start = word_chars.get(i).getStartXPointer();
-        ldomXPointer end = word_chars.get(i).getEndXPointer();
-        ldomXPointerEx startex = start;
-        ldomXPointerEx endex = end;
-        lString16 startpath = start.toString();
-        ldomXRange ch;
-        ch.setStart(startex);
-        ch.setEnd(endex);
-
-        lvRect rect;
-        ch.getRect(rect);
+        //CRLog::error("letter = %s",LCSTR(word))
+        word.ReplaceUnusualSpaces();
+        lvRect rect = word_chars.get(i).getRect();
+        //lString16 startpath = word_chars.get(i).getStartXPointer().toString();
+        lString16 startpath = lString16("0"); //TODO fix here
         int strheight_curr = rect.bottom - rect.top;
 
         //paragraph breaks implementation
         if(!this->DocToWindowRect(rect,false))
         {
-            //CRLog::warn("processPageText DocToWindowRect fail");
-            //CRLog::warn("letter '%s' is ignored", LCSTR(word));
             continue;
         }
 
@@ -2880,8 +2837,8 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
 			    float t = para_rect.top / page_height;
 			    float b = para_rect.bottom / page_height;
 			    #endif // DEBUG_PARA_END_BLOCKS
-				#ifdef TRDEBUG
-			    //CRLog::error("paraend before letters %s%s%s%s%s",
+
+			    #ifdef TRDEBUG
 			    //        LCSTR(word_chars.get(i).getText()),
 			    //        LCSTR(word_chars.get(i+1).getText()),
 			    //        LCSTR(word_chars.get(i+2).getText()),
@@ -2891,8 +2848,8 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
 			    lString16 para_end = lString16("\n");// + lString16::itoa(para_counter);
 			    TrHitbox *hitbox = new TrHitbox(l, r, t, b, para_end);
 			    result.add(*hitbox);
-			    para_counter++;
 		    }
+		para_counter++;
 	    }
 
 	    this->DocToWindowRect(rect);
@@ -2945,14 +2902,6 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
             float b = rect.bottom / page_height;
             //CRLog::error("usual letter = %s", LCSTR(word));
 
-            /* RESPONSE PROTOCOL : left, top, right, bottom, text, path
-            response.addFloat(l);
-            response.addFloat(t);
-            response.addFloat(r);
-            response.addFloat(b);
-            responseAddString(response, word);
-            //responseAddString(response, startpath); //stub
-            */
             TrHitbox *hitbox = new TrHitbox(l, r, t, b, word, startpath);
             result.add(*hitbox);
         }
