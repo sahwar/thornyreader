@@ -1248,20 +1248,11 @@ bool LVDocView::DocToWindowRect(lvRect &rect)
     {
         return false;
     }
-    lvRect page_rect = page_rects_[index];
-    int right = rect.right + page_rect.left + margins_.left;
 
-    if (right - 1 > page_rect.right - margins_.right)
-    {
-        //CRLog::error("NOT PASSED BY HORIZONTAL CHECKS");
-        //CRLog::error("right - 1 <= page_rects_[index].right - margins_.right");
-        //CRLog::error("%d <= %d - %d", right - 1, page_rects_[index].right, margins_.right);
-        return false; // out of right side of current page
-    }
-    rect.left   = rect.left + page_rect.left + margins_.left;
-    rect.right  = right;
-    rect.top    = rect.top    + margins_.top - pages_list_[page + index]->start;
-    rect.bottom = rect.bottom + margins_.top - pages_list_[page + index]->start;
+    rect.left   = rect.left   + margins_.left + page_rects_[index].left;
+    rect.right  = rect.right  + margins_.left + page_rects_[index].left;
+    rect.top    = rect.top    + margins_.top  - pages_list_[page + index]->start;
+    rect.bottom = rect.bottom + margins_.top  - pages_list_[page + index]->start;
     return true;
 }
 
@@ -1818,11 +1809,11 @@ LVRef<ldomXRange> LVDocView::GetPageDocRange(int page_index)
 		if (GetColumns() > 1)
 		{
 			//end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + page->height + 100), 1);
-			end = cr_dom_->createXPointer(lvPoint(0, page->start + (height_ * 3)), 1);
+			end = cr_dom_->createXPointer(lvPoint(0, page->start + (height_ * 2)), 1);
 		}
 		else
 		{
-			end = cr_dom_->createXPointer(lvPoint(0, page->start + (height_ * 2)), 1);
+			end = cr_dom_->createXPointer(lvPoint(0, page->start + (height_ * 1)), 1);
 		}
 		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
 		if (start.isNull() || end.isNull())
@@ -2723,6 +2714,7 @@ unsigned long long int getkey(lvRect rect)
 
 LVArray<TrHitbox> LVDocView::GetPageHitboxes()
 {
+	CRLog::error("HITBOXES BEGIN");
     LVArray<TrHitbox> result;
     float page_width = this->GetWidth();
     float page_height = this->GetHeight();
@@ -2994,5 +2986,6 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
             }
         }
     }
+	CRLog::error("HITBOXES END");
     return result;
 }
