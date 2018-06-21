@@ -1215,7 +1215,7 @@ bool LVDocView::WindowToDocPoint(lvPoint &pt)
 }
 
 /// converts point from document to window coordinates, returns true if success
-bool LVDocView::DocToWindowRect(lvRect &rect)
+bool LVDocView::DocToWindowRect(lvRect &rect, bool modify)
 {
     CHECK_RENDER("DocToWindowRect()")
     int page = GetCurrPage();
@@ -1248,12 +1248,14 @@ bool LVDocView::DocToWindowRect(lvRect &rect)
     {
         return false;
     }
-
-    rect.left   = rect.left   + margins_.left + page_rects_[index].left;
-    rect.right  = rect.right  + margins_.left + page_rects_[index].left;
-    rect.top    = rect.top    + margins_.top  - pages_list_[page + index]->start;
-    rect.bottom = rect.bottom + margins_.top  - pages_list_[page + index]->start;
-    return true;
+	if(modify)
+	{
+		rect.left = rect.left + margins_.left + page_rects_[index].left;
+		rect.right = rect.right + margins_.left + page_rects_[index].left;
+		rect.top = rect.top + margins_.top - pages_list_[page + index]->start;
+		rect.bottom = rect.bottom + margins_.top - pages_list_[page + index]->start;
+	}
+	return true;
 }
 
 
@@ -2027,17 +2029,17 @@ void LVDocView::GetCurrentPageLinks(ldomXRangeList &links_list)
 	}
 }
 
-void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
+LVArray<lvRect> LVDocView::GetCurrentPageParas(int unused)
 {
-	list.clear();
+	LVArray<lvRect> result;
 	LVRef<ldomXRange> page_range = GetPageDocRange();
 	if (page_range.isNull())
 	{
-		return;
+		return result;
 	}
 	class TextKeeper : public ldomNodeCallback
 	{
-		ldomXRangeList &list_;
+		int &unused;
 		LVArray<lvRect> para_rect_array;
 
 		bool NodeIsAllowed(ldomNode * node)
@@ -2132,7 +2134,7 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 	public:
 		bool text_is_first_ = true;
 
-		TextKeeper(ldomXRangeList &list) : list_(list)	{	}
+		TextKeeper(int &unused) : unused(unused)	{	}
 		// Called for each text fragment in range
 		virtual void onText(ldomXRange *node_range)
 		{
@@ -2190,10 +2192,9 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 		}
 	};
 
-    this->curr_page_para_array.clear();
-	TextKeeper callback(list);
+	TextKeeper callback(unused);
 	page_range->forEach(&callback);
-	this->curr_page_para_array= callback.GetParaArray();
+	result = callback.GetParaArray();
 
 	if (viewport_mode_ == MODE_PAGES && GetColumns() > 1)
 	{
@@ -2204,9 +2205,10 @@ void LVDocView::GetCurrentPageParas(ldomXRangeList &list)
 		{
 			callback.text_is_first_ = true;
 			page_range->forEach(&callback);
-            this->curr_page_para_array.add(callback.GetParaArray());
+			result.add(callback.GetParaArray());
 		}
 	}
+	return result;
 }
 
 /// get page text, -1 for current page
@@ -2712,6 +2714,60 @@ unsigned long long int getkey(lvRect rect)
     return a;
 }
 
+LVArray<lvRect> LVDocView::GetPageParaEnds()
+{
+	LVArray<lvRect> result;
+	LVArray<lvRect> raw_para_array = this->GetCurrentPageParas();
+
+	int offset = this->GetOffset();
+	int page_height_int = this->GetHeight();
+	bool two_columns = this->GetColumns() > 1;
+	unsigned long long int key;
+	lvRect margins = this->cfg_margins_;
+
+	typedef std::map< unsigned long long int, int> Rectmap;
+	Rectmap m;
+
+	for (int i = 0; i < raw_para_array.length(); i++)
+	{
+		lvRect rawrect = raw_para_array.get(i);
+		//CRLog::error("raw_pararect = [%d:%d][%d:%d]",rawrect.left,rawrect.right,rawrect.top,rawrect.bottom);
+		if (rawrect == lvRect(0, 0, 0, 0))
+		{
+			continue;
+		}
+		if (rawrect.top < offset)
+		{
+			continue;
+		}
+		int bottom = (two_columns) ? offset + page_height_int + page_height_int - margins.bottom : offset + page_height_int - margins.bottom;
+		if (rawrect.bottom > bottom)
+		{
+			continue;
+		}
+
+		key = getkey(rawrect);
+
+		if (m.find(key) != m.end())
+		{
+			continue;
+		}
+		m[key]= i;
+
+		if( !this->DocToWindowRect(rawrect,false))
+		{
+			continue;
+		}
+		//if there's double paraends ion one line - write reverse cycle map filtering
+		//CRLog::error("pararect: [%d:%d] [%d:%d]", rawrect.left, rawrect.right, rawrect.top-offset, rawrect.bottom-offset);
+		result.add(rawrect);
+	}
+	raw_para_array.clear();
+
+	return result;
+}
+
+
 LVArray<TrHitbox> LVDocView::GetPageHitboxes()
 {
 	CRLog::error("HITBOXES BEGIN");
@@ -2736,16 +2792,8 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
         }
     }
 
-    this->curr_page_para_array.clear();
-    //we need these lines to get list of paragraph ends. it passes it to doc_view->curr_page_para_array
-    ldomXRangeList unused;                      //this
-    this->GetCurrentPageParas(unused);          //this
-    unused.clear();                             //this
-    LVArray<lvRect> raw_para_array;
-    LVArray<lvRect> para_array;
-
-    raw_para_array.add(this->curr_page_para_array);
-    this->curr_page_para_array.clear();
+	LVArray<lvRect> para_array;
+	para_array.add(this->GetPageParaEnds());
 
     LVRef<ldomXRange> range = this->GetPageDocRange();
     int offset = this->GetOffset();
@@ -2759,52 +2807,6 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
 
     int strheight_last = 0;
     int para_counter = 0;
-    bool lastline_check = false;
-
-    LVArray<lvRect> on_string_paras;
-    bool is_on_string_paras = false;
-
-    typedef std::map< unsigned long long int, int> Rectmap;
-    unsigned long long int key;
-	Rectmap m;
-	for (int i = 0; i < raw_para_array.length(); i++)
-    {
-        lvRect rawrect = raw_para_array.get(i);
-        //CRLog::error("raw_pararect = [%d:%d][%d:%d]",rawrect.left,rawrect.right,rawrect.top,rawrect.bottom);
-	    if (rawrect == lvRect(0, 0, 0, 0))
-	    {
-		    continue;
-	    }
-	    if (rawrect.top < offset)
-	    {
-		    continue;
-	    }
-	    int bottom = (two_columns) ? offset + page_height_int + page_height_int - margins.bottom : offset + page_height_int - margins.bottom;
-	    if (rawrect.bottom > bottom)
-	    {
-		    continue;
-	    }
-
-        key = getkey(rawrect);
-
-        if (m.find(key) != m.end())
-        {
-            continue;
-        }
-	    m[key]= i;
-
-	    lvRect rect_tmp;
-	    rect_tmp= rawrect;
-	    this->DocToWindowRect(rect_tmp);
-	    if(rect_tmp.bottom>page_height_int)
-	    {
-		    continue;
-	    }
-        //if there's double paraends ion one line - write reverse cycle map filtering
-	    //CRLog::error("pararect: [%d:%d] [%d:%d]", rawrect.left, rawrect.right, rawrect.top-offset, rawrect.bottom-offset);
-	    para_array.add(rawrect);
-    }
-    raw_para_array.clear();
 
     LVArray<ldomWord> word_chars;
     text.getRangeChars(word_chars);
@@ -2851,58 +2853,53 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
         lvRect rect;
         ch.getRect(rect);
         int strheight_curr = rect.bottom - rect.top;
-        //paragraph breaks implementation
-        lvRect rect2=rect;
-        if(this->DocToWindowRect(rect2))
-        {
-            while (para_counter < para_array.length() && rect.top > para_array.get(para_counter).top)
-            {
-                lvRect rect_n = para_array.get(para_counter);
 
-                this->DocToWindowRect(rect_n);
-                if( rect_n.bottom - rect_n.top > CHAR_HEIGHT_MIN)
-                {
-                    #if DEBUG_CRE_PARA_END_BLOCKS
-                    float l = (rect_n.left + (strheight_curr / 2)) / page_width;
-                    float r = (rect_n.right + (strheight_curr * 2)) / page_width;
-                    float t = (rect_n.top + 10) / page_height;
-                    float b = (rect_n.bottom - 10) / page_height;
-                    #else
-                    float l = rect_n.right / page_width;
-                    float r = (rect_n.right + (strheight_curr / 4)) / page_width;
-                    float t = rect_n.top / page_height;
-                    float b = rect_n.bottom / page_height;
-                    #endif // DEBUG_PARA_END_BLOCKS
-	                #ifdef TRDEBUG
-                    //CRLog::error("paraend before letters %s%s%s%s%s",
-                    //        LCSTR(word_chars.get(i).getText()),
-                    //        LCSTR(word_chars.get(i+1).getText()),
-                    //        LCSTR(word_chars.get(i+2).getText()),
-                    //        LCSTR(word_chars.get(i+3).getText()),
-                    //        LCSTR(word_chars.get(i+4).getText()));
-                    #endif //TRDEBUG
-                    lString16 para_end = lString16("\n");// + lString16::itoa(para_counter);
-                    TrHitbox *hitbox = new TrHitbox(l, r, t, b, para_end);
-                    result.add(*hitbox);
-                    para_counter++;
-                }
-            }
-        }
-        if (!this->DocToWindowRect(rect))
+        //paragraph breaks implementation
+        if(!this->DocToWindowRect(rect,false))
         {
-#ifdef TRDEBUG
-#if 0
-            CRLog::warn("processPageText DocToWindowRect fail");
-            CRLog::warn("letter '%s' is ignored", LCSTR(word));
-#endif
-#endif // TRDEBUG
+            //CRLog::warn("processPageText DocToWindowRect fail");
+            //CRLog::warn("letter '%s' is ignored", LCSTR(word));
             continue;
         }
+
+	    while (para_counter < para_array.length() && rect.top > para_array.get(para_counter).top)
+	    {
+		    lvRect para_rect = para_array.get(para_counter);
+
+		    this->DocToWindowRect(para_rect);
+		    if( para_rect.bottom - para_rect.top > CHAR_HEIGHT_MIN)
+		    {
+				#if DEBUG_CRE_PARA_END_BLOCKS
+			    float l = (para_rect.left + (strheight_curr / 2)) / page_width;
+                float r = (para_rect.right + (strheight_curr * 2)) / page_width;
+                float t = (para_rect.top + 10) / page_height;
+                float b = (para_rect.bottom - 10) / page_height;
+				#else
+			    float l = para_rect.right / page_width;
+			    float r = (para_rect.right + (strheight_curr / 4)) / page_width;
+			    float t = para_rect.top / page_height;
+			    float b = para_rect.bottom / page_height;
+			    #endif // DEBUG_PARA_END_BLOCKS
+				#ifdef TRDEBUG
+			    //CRLog::error("paraend before letters %s%s%s%s%s",
+			    //        LCSTR(word_chars.get(i).getText()),
+			    //        LCSTR(word_chars.get(i+1).getText()),
+			    //        LCSTR(word_chars.get(i+2).getText()),
+			    //        LCSTR(word_chars.get(i+3).getText()),
+			    //        LCSTR(word_chars.get(i+4).getText()));
+				#endif //TRDEBUG
+			    lString16 para_end = lString16("\n");// + lString16::itoa(para_counter);
+			    TrHitbox *hitbox = new TrHitbox(l, r, t, b, para_end);
+			    result.add(*hitbox);
+			    para_counter++;
+		    }
+	    }
+
+	    this->DocToWindowRect(rect);
+
         //usual line break implementation
         if (strheight_last != 0 && strheight_curr >= strheight_last + (strheight_last/2))
         {
-
-            //top block
             bool right_side = two_columns ? rect.left > halfwidth : false;
             float pre_r = two_columns ? halfwidth : page_width_int;
             pre_r = pre_r - ((nomargins)?(margins.right/2):(margins.right));
@@ -2969,17 +2966,17 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
         {
             if( rect.bottom - rect.top > CHAR_HEIGHT_MIN)
             {
-#if DEBUG_CRE_PARA_END_BLOCKS
+				#if DEBUG_CRE_PARA_END_BLOCKS
                 float l = (rect.right + (strheight_last / 2)) / page_width;
                 float r = (rect.right + (strheight_last)) / page_width;
                 float t = (rect.top + 10) / page_height;
                 float b = (rect.bottom - 10) / page_height;
-#else
+				#else
                 float l = rect.right / page_width;
                 float r = (rect.right + (strheight_last / 4)) / page_width;
                 float t = rect.top / page_height;
                 float b = rect.bottom / page_height;
-#endif // DEBUG_PARA_END_BLOCKS
+				#endif // DEBUG_PARA_END_BLOCKS
                 lString16 para_end = lString16("\n");
                 TrHitbox *hitbox = new TrHitbox(l, r, t, b, para_end);
                 result.add(*hitbox);
