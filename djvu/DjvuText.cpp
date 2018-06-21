@@ -81,7 +81,7 @@ void djvu_get_djvu_words(miniexp_t expr, const char* pattern, ddjvu_pageinfo_t *
                 response.addFloat((lastleft + charwidth) / width);
                 response.addFloat(t > b ? t : b);
                 response.addIpcString(ch, true);
-                response.addIpcString(path, true);
+                //response.addIpcString(path, true);
                 lastleft = lastleft + charwidth;
             }
             char space[2] = {' ', 0};
@@ -90,7 +90,7 @@ void djvu_get_djvu_words(miniexp_t expr, const char* pattern, ddjvu_pageinfo_t *
             response.addFloat((lastleft+(charwidth/4)) / width);
             response.addFloat(t > b ? t : b);
             response.addIpcString(space, true);
-            response.addIpcString(TEXT_NULL_PATH, true);
+            //response.addIpcString(TEXT_NULL_PATH, true);
 
             DEBUG_L(L_DEBUG_TEXT, LCTX,
                 "processText: %d, %d, %d, %d: %s", coords[0], coords[1], coords[2], coords[3], text);
