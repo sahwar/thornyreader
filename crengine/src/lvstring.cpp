@@ -4204,6 +4204,20 @@ lString16 lString16::TrimEndQuestionChar(lString16 & str){
     //CRLog::debug("TrimEndQUestionChar: %s", UnicodeToUtf8(str).c_str());
     return str;
 }
+//converting all different spaces to one type space
+void lString16::ReplaceUnusualSpaces()
+{
+    if ((this->firstChar() == L'\u00A0')
+     || (this->firstChar() == L'\u180E')
+     || ((this->firstChar() >= L'\u2000') && (this->firstChar() <= L'\u200B'))
+     || (this->firstChar() == L'\u202F')
+     || (this->firstChar() == L'\u205F')
+     || (this->firstChar() == L'\u3000')
+     || (this->firstChar() == L'\uFEFF'))
+    {
+        this->replace(0,1,lString16(" "));
+    }
+}
 
 
 /// serialization/deserialization buffer

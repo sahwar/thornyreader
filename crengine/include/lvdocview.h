@@ -145,7 +145,6 @@ public:
     bool cfg_enable_footnotes_;
     bool cfg_firstpage_thumb_;
     bool cfg_txt_smart_format_;
-    LVArray<lvRect> curr_page_para_array;
 
     inline bool IsPagesMode() { return viewport_mode_ == MODE_PAGES; }
     inline bool IsScrollMode() { return viewport_mode_ == MODE_SCROLL; }
@@ -178,7 +177,7 @@ public:
     void ClearSelection();
     /// get list of links
     void GetCurrentPageLinks(ldomXRangeList& list);
-    void GetCurrentPageParas(ldomXRangeList &list);
+    LVArray<lvRect> GetCurrentPageParas(int unused=0);
     /// selects first link on page, if any. returns selected link range, null if no links.
     ldomXRange* SelectFirstPageLink();
     /// invalidate formatted data, request render
@@ -202,7 +201,7 @@ public:
     /// converts point from window to document coordinates, returns true if success
     bool WindowToDocPoint(lvPoint& pt);
     /// converts rect from document to window coordinates, returns true if success
-    bool DocToWindowRect(lvRect &rect);
+    bool DocToWindowRect(lvRect &rect, bool modify=true);
     /// returns document
     CrDom* GetCrDom() { return cr_dom_; }
     /// draws scaled image into buffer, clear background according to current settings
@@ -252,6 +251,8 @@ public:
     /// load document from file
     bool LoadDoc(int doc_format, const char* file_name, uint32_t compressed_size,
                              bool smart_archive);
+    //returns array of lvRect-s containing para ends location within page
+    LVArray<lvRect> GetPageParaEnds();
     //returns array of TrHitbox objects that contain hitbox info about characters on current docview page
     LVArray<TrHitbox> GetPageHitboxes();
     LVDocView();
