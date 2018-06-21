@@ -1230,6 +1230,7 @@ public:
         lString16 txt = _node->getText();
         return txt.substr( _start, _end-_start );
     }
+    lvRect getRect();
 };
 
 /// DOM range

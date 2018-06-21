@@ -8569,3 +8569,17 @@ void CrDomBase::dumpStatistics() {
                 _tinyElementCount * (sizeof(tinyElement) + 8 * 4) / 1024);
 #endif //TINYNODECOLLECTION_DUMPSTATISTICS
 }
+
+lvRect ldomWord::getRect()
+{
+    lvRect result;
+    ldomXPointer start = this->getStartXPointer();
+    ldomXPointer end =this->getEndXPointer();
+    ldomXPointerEx startex = start;
+    ldomXPointerEx endex = end;
+    ldomXRange range;
+    range.setStart(startex);
+    range.setEnd(endex);
+    range.getRect(result);
+    return result;
+}
