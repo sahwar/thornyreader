@@ -69,17 +69,14 @@ public:
     float _top;
     float _bottom;
     lString16 _text;
-    lString16 _path;
     TrHitbox() {};
-    TrHitbox(float left, float right, float top, float bottom, lString16 text,
-             lString16 xpath = lString16(TEXT_NULL_PATH))
+    TrHitbox(float left, float right, float top, float bottom, lString16 text)
     {
         _left = left;
         _right = right;
         _top = top;
         _bottom = bottom;
         _text = text;
-        _path = xpath;
     };
     ~TrHitbox(){};
     void TrHitboxesArrayModify()

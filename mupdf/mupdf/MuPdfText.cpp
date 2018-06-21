@@ -31,10 +31,6 @@ static char paraend[3] = { '\n',0};
 static fz_rect last_char;
 static int length;
 
-static int pagenum;
-static int blocknum;
-static int linenum;
-static int charnum;
 
 void toResponse(CmdResponse& response, fz_rect& bounds, fz_irect* rr, const char* str, int len)
 {
@@ -49,17 +45,12 @@ void toResponse(CmdResponse& response, fz_rect& bounds, fz_irect* rr, const char
 
     DEBUG_L(L_DEBUG_TEXT, LCTX, "processText: add word: %d %f %f %f %f %s",
             len, left, top, right, bottom, utf8);
-    char path[100];
-    sprintf(path,"/page[%d]/block[%d]/line[%d]/char[%d] = %s \n",
-            pagenum, blocknum, linenum, charnum, utf8);
-    DEBUG_L(L_DEBUG_TEXT, LCTX,"processText: char path: %s", path);
 
     response.addFloat(left);
     response.addFloat(top);
     response.addFloat(right);
     response.addFloat(bottom);
     response.addIpcString(utf8, true);
-    //response.addIpcString(path, true);
 }
 
 void toResponseParaend(CmdResponse& response, fz_rect& bounds, fz_irect* rr, const char* str, int len)
@@ -84,7 +75,6 @@ void processLine(CmdResponse& response, fz_context *ctx, fz_rect& bounds, fz_tex
     int index = 0;
     fz_rect rr = fz_empty_rect;
     fz_irect box = fz_empty_irect;
-    charnum = 0;
     int spanIndex;
     fz_text_span* span = line.first_span;
     for (span = line.first_span; span != NULL; span = span->next)
@@ -130,7 +120,6 @@ void processLine(CmdResponse& response, fz_context *ctx, fz_rect& bounds, fz_tex
                     sas.y1 = bbox.y1;
                     toResponse(response, bounds, &sas, utf8, 2);
                      */
-                    charnum = textIndex;
                     textIndex++;
                 }
                 else
@@ -157,7 +146,6 @@ void processLine(CmdResponse& response, fz_context *ctx, fz_rect& bounds, fz_tex
 
 void MuPdfBridge::processText(int pageNo, const char* pattern, CmdResponse& response)
 {
-    pagenum = pageNo;
     fz_page *page = getPage(pageNo, false);
     if (page == NULL)
     {
@@ -201,13 +189,11 @@ void MuPdfBridge::processText(int pageNo, const char* pattern, CmdResponse& resp
                         }
                         if (block.u.text->lines && block.u.text->len > 0)
                         {
-                            blocknum = blockIndex;
                             DEBUG_L(L_DEBUG_TEXT, LCTX,
                                 "processText: block processing: %d, %d/%d lines", blockIndex, block.u.text->len, block.u.text->cap);
                             int lineIndex;
                             for (lineIndex = 0; lineIndex < block.u.text->len; lineIndex++)
                             {
-                                linenum = lineIndex;
                                 fz_text_line& line = block.u.text->lines[lineIndex];
                                 if (line.first_span)
                                 {

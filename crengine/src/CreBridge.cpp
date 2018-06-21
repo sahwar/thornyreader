@@ -461,7 +461,6 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
         response.addFloat(currHitbox._right);
         response.addFloat(currHitbox._bottom);
         responseAddString(response, currHitbox._text);
-        //responseAddString(response, currHitbox._path);
     }
 #undef DEBUG_TEXT
 }

@@ -2809,8 +2809,6 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
         //CRLog::error("letter = %s",LCSTR(word))
         word.ReplaceUnusualSpaces();
         lvRect rect = word_chars.get(i).getRect();
-        //lString16 startpath = word_chars.get(i).getStartXPointer().toString();
-        lString16 startpath = lString16("0"); //TODO fix here
         int strheight_curr = rect.bottom - rect.top;
 
         //paragraph breaks implementation
@@ -2902,7 +2900,7 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
             float b = rect.bottom / page_height;
             //CRLog::error("usual letter = %s", LCSTR(word));
 
-            TrHitbox *hitbox = new TrHitbox(l, r, t, b, word, startpath);
+            TrHitbox *hitbox = new TrHitbox(l, r, t, b, word);
             result.add(*hitbox);
         }
     }
@@ -2932,6 +2930,5 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
             }
         }
     }
-	CRLog::error("HITBOXES END");
     return result;
 }
