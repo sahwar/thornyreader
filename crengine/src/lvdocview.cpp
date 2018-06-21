@@ -2855,7 +2855,7 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
         lvRect rect2=rect;
         if(this->DocToWindowRect(rect2))
         {
-            if (para_counter < para_array.length() && rect.top > para_array.get(para_counter).top)
+            while (para_counter < para_array.length() && rect.top > para_array.get(para_counter).top)
             {
                 lvRect rect_n = para_array.get(para_counter);
 
