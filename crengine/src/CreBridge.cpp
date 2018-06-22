@@ -452,10 +452,10 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
     CRLog::debug("processPageText external_page=%d page=%d page_width=%d page_height=%d",
             external_page, page, doc_view_->GetWidth(), doc_view_->GetHeight());
 #endif
-    LVArray<TrHitbox> hitboxes = doc_view_->GetPageHitboxes();
+    LVArray<Hitbox> hitboxes = doc_view_->GetPageHitboxes();
     for (int i = 0; i < hitboxes.length(); i++)
     {
-        TrHitbox currHitbox = hitboxes.get(i);
+        Hitbox currHitbox = hitboxes.get(i);
         response.addFloat(currHitbox._left);
         response.addFloat(currHitbox._top);
         response.addFloat(currHitbox._right);
