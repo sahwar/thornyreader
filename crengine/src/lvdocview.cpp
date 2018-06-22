@@ -2768,9 +2768,9 @@ LVArray<lvRect> LVDocView::GetPageParaEnds()
 }
 
 
-LVArray<TrHitbox> LVDocView::GetPageHitboxes()
+LVArray<Hitbox> LVDocView::GetPageHitboxes()
 {
-    LVArray<TrHitbox> result;
+    LVArray<Hitbox> result;
     float page_width    = this->GetWidth();
     float page_height   = this->GetHeight();
     int page_width_int  = this->GetWidth();
@@ -2801,7 +2801,7 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
     int strheight_last = 0;
     int para_counter = 0;
 
-    LVArray<ldomWord> word_chars;
+    LVArray<TextRect> word_chars;
     text.getRangeChars(word_chars);
     for (int i = 0; i < word_chars.length(); ++i)
     {
@@ -2844,7 +2844,7 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
 			    //        LCSTR(word_chars.get(i+4).getText()));
 				#endif //TRDEBUG
 			    lString16 para_end = lString16("\n");// + lString16::itoa(para_counter);
-			    TrHitbox *hitbox = new TrHitbox(l, r, t, b, para_end);
+			    Hitbox *hitbox = new Hitbox(l, r, t, b, para_end);
 			    result.add(*hitbox);
 		    }
 		para_counter++;
@@ -2878,7 +2878,7 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
             }
 
 	        //CRLog::error("linebreak letter = %s",LCSTR(word));
-            TrHitbox *hitbox = new TrHitbox(l, r, t, b, word);
+            Hitbox *hitbox = new Hitbox(l, r, t, b, word);
             result.add(*hitbox);
         }
         else
@@ -2900,7 +2900,7 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
             float b = rect.bottom / page_height;
             //CRLog::error("usual letter = %s", LCSTR(word));
 
-            TrHitbox *hitbox = new TrHitbox(l, r, t, b, word);
+            Hitbox *hitbox = new Hitbox(l, r, t, b, word);
             result.add(*hitbox);
         }
     }
@@ -2925,7 +2925,7 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
                 float b = rect.bottom / page_height;
 				#endif // DEBUG_PARA_END_BLOCKS
                 lString16 para_end = lString16("\n");
-                TrHitbox *hitbox = new TrHitbox(l, r, t, b, para_end);
+                Hitbox *hitbox = new Hitbox(l, r, t, b, para_end);
                 result.add(*hitbox);
             }
         }

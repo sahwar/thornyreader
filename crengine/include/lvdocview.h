@@ -61,7 +61,7 @@ public:
     void SelectWord(int x, int y);
 };
 
-class TrHitbox
+class Hitbox
 {
 public:
     float _left;
@@ -69,8 +69,8 @@ public:
     float _top;
     float _bottom;
     lString16 _text;
-    TrHitbox() {};
-    TrHitbox(float left, float right, float top, float bottom, lString16 text)
+    Hitbox() {};
+    Hitbox(float left, float right, float top, float bottom, lString16 text)
     {
         _left = left;
         _right = right;
@@ -78,7 +78,7 @@ public:
         _bottom = bottom;
         _text = text;
     };
-    ~TrHitbox(){};
+    ~Hitbox(){};
     void TrHitboxesArrayModify()
     {
         //stub
@@ -250,8 +250,8 @@ public:
                              bool smart_archive);
     //returns array of lvRect-s containing para ends location within page
     LVArray<lvRect> GetPageParaEnds();
-    //returns array of TrHitbox objects that contain hitbox info about characters on current docview page
-    LVArray<TrHitbox> GetPageHitboxes();
+    //returns array of Hitbox objects that contain hitbox info about characters on current docview page
+    LVArray<Hitbox> GetPageHitboxes();
     LVDocView();
     ~LVDocView();
 };
