@@ -5284,14 +5284,15 @@ void ldomXRange::getRangeWords(LVArray<ldomWord>& words_list) {
 
 
 /// get all words from specified range
-void ldomXRange::getRangeChars(LVArray<ldomWord>& words_list) {
+void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
     class WordsCollector : public ldomNodeCallback {
-        LVArray<ldomWord>& list_;
+        LVArray<TextRect>& list_;
     public:
-        WordsCollector(LVArray<ldomWord>& list) : list_(list) {}
+        WordsCollector(LVArray<TextRect>& list) : list_(list) {}
         /// called for each found text fragment in range
         virtual void onText(ldomXRange* nodeRange) {
             ldomNode* node = nodeRange->getStart().getNode();
+            ldomNode* parentnode = node->getParentNode();
             lString16 text = node->getText();
             int len = text.length();
             int end = nodeRange->getEnd().getOffset();
@@ -5311,10 +5312,58 @@ void ldomXRange::getRangeChars(LVArray<ldomWord>& words_list) {
             TRFLAGS |= CH_PROP_DASH;
             TRFLAGS |= CH_PROP_HIEROGLYPH;
 
-            for (int i = nodeRange->getStart().getOffset(); i <= len; i++) {
-                int alpha = lGetCharProps(text[i]) & TRFLAGS; //  words check here
-                if (alpha) {
-                    list_.add(ldomWord(node, i, i+1));
+            int leftshift = 0;
+            int i = nodeRange->getStart().getOffset();
+            css_style_rec_t *style = node->getParentNode()->getStyle().get();
+            if (style != nullptr)
+            {CRLog::error("left margin = %d",style->margin[0]);
+
+                int whitespace = style->white_space;
+                if (style->white_space == css_ws_normal && node->getNodeIndex() == 0)
+                {
+                    for (i ; i < len; i++)
+                    {
+                        ldomWord word = ldomWord(node, i, i + 1);
+                        lvRect rect = word.getRect();
+                        lString16 string = word.getText();
+                        if (text[i] == ' ')
+                        {
+                            leftshift = leftshift + (rect.right - rect.left);
+                            continue;
+                        }
+                        if (text[i] == '\t')
+                        {
+                            leftshift = leftshift + (rect.right - rect.left);
+                            continue;
+                        }
+                        break;
+                    }
+                }
+                for (i; i < len - 1; i++)
+                {
+                    ldomWord word = ldomWord(node, i, i + 1);
+                    lvRect rect = word.getRect();
+                    lString16 string = word.getText();
+                    int alpha = lGetCharProps(text[i]) & TRFLAGS; //  words check here
+                    if (alpha)
+                    {
+                        rect.left = rect.left - leftshift;
+                        rect.right = rect.right - leftshift;
+                        list_.add(TextRect(rect, string));
+                    }
+                }
+                //last char zero width fix
+                ldomWord word = ldomWord(node, len - 1, len);
+                lvRect rect = word.getRect();
+                lString16 string = word.getText();
+                if ( len > 1 || string != " ")
+                {
+                    int alpha = lGetCharProps(text[len - 1]) & TRFLAGS; //  words check here
+                    if (alpha)
+                    {
+                        rect.left = rect.left - leftshift;
+                        list_.add(TextRect(rect, string));
+                    }
                 }
             }
         }

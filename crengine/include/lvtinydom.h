@@ -1193,6 +1193,19 @@ public:
     virtual bool onElement(ldomXPointerEx*) { return true; }
 };
 
+class TextRect
+{
+private:
+    lvRect rect_;
+    lString16 string_;
+public:
+    TextRect() : rect_(lvRect(0,0,0,0)),string_(lString16::empty_str) {}
+    TextRect(lvRect rect, lString16 string) : rect_(rect),string_(string){}
+
+    lString16 getText(){ return string_;};
+    lvRect getRect(){ return rect_;};
+};
+
 /// range for word inside text node
 class ldomWord
 {
@@ -1315,7 +1328,7 @@ public:
     /// get all words from specified range
     void getRangeWords( LVArray<ldomWord> & list );
 
-    void getRangeChars( LVArray<ldomWord> & list );
+    void getRangeChars( LVArray<TextRect> & list );
     /// returns href attribute of <A> element, null string if not found
     lString16 getHRef();
     /// sets range to nearest word bounds, returns true if success
