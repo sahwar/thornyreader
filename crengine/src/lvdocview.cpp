@@ -2809,6 +2809,7 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
         //CRLog::error("letter = %s",LCSTR(word))
         word.ReplaceUnusualSpaces();
         lvRect rect = word_chars.get(i).getRect();
+        ldomNode* node = word_chars.get(i).getNode();
         int strheight_curr = rect.bottom - rect.top;
 
         //paragraph breaks implementation
@@ -2855,20 +2856,26 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
         //usual line break implementation
         if (strheight_last != 0 && strheight_curr >= strheight_last + (strheight_last/2))
         {
-            bool right_side = two_columns ? rect.left > halfwidth : false;
-            float pre_r = two_columns ? halfwidth : page_width_int;
-            pre_r = pre_r - ((nomargins)?(margins.right/2):(margins.right));
+            css_style_rec_t* style = node->getParentNode()->getStyle().get();
+            CRLog::error("fontsize pack = %d",style->font_size.value);
+            float pre_r = style->font_size.value;
+            pre_r = pre_r * 4/5;
+            /*
+             bool right_side = two_columns ? rect.left > halfwidth : false;
+             float pre_r = two_columns ? halfwidth : page_width_int;
+             pre_r = pre_r - ((nomargins)?(margins.right/2):(margins.right));
 
-            if (right_side)
-            {
-                pre_r = pre_r + halfwidth;
-            }
-            if (pre_r<rect.right)
-            {
-                pre_r = rect.right+5;
-            }
+             if (right_side)
+             {
+                 pre_r = pre_r + halfwidth;
+             }
+             if (pre_r<rect.right)
+             {
+                 pre_r = rect.right+5;
+             }
+             */
             float l = rect.right / page_width;
-            float r = pre_r / page_width;
+            float r = (rect.right + pre_r) / page_width;
             float t = rect.top / page_height;
             float b = (rect.top + strheight_last) / page_height;
             if (rect.top < margins.top)

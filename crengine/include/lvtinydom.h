@@ -1196,14 +1196,16 @@ public:
 class TextRect
 {
 private:
+    ldomNode* node_;
     lvRect rect_;
     lString16 string_;
 public:
-    TextRect() : rect_(lvRect(0,0,0,0)),string_(lString16::empty_str) {}
-    TextRect(lvRect rect, lString16 string) : rect_(rect),string_(string){}
+    TextRect() :  node_(nullptr),rect_(lvRect(0,0,0,0)),string_(lString16::empty_str) {}
+    TextRect(ldomNode* node,lvRect rect, lString16 string) :node_(node),rect_(rect),string_(string){}
 
     lString16 getText(){ return string_;};
     lvRect getRect(){ return rect_;};
+    ldomNode* getNode(){ return node_;};
 };
 
 /// range for word inside text node
