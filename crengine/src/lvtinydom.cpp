@@ -5289,11 +5289,61 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
         LVArray<TextRect>& list_;
     public:
         WordsCollector(LVArray<TextRect>& list) : list_(list) {}
+
+        bool AllowTextNodeShift(ldomNode* node)
+        {
+
+            ldomNode* parentnode = node->getParentNode();
+            css_style_rec_t *style = parentnode->getStyle().get();
+            if (style == nullptr)
+            {
+                return false;
+            }
+            int whitespace = style->white_space;
+            if (style->white_space != css_ws_normal)
+            {
+                return false;
+            }
+            while (parentnode!=NULL)
+            {
+                if (parentnode == NULL)
+                {
+                    return false;
+                }
+                lString16 name = parentnode->getNodeName();
+                int index = node->getNodeIndex();
+                if(name == "style" && index !=0)
+                {
+                    return false;
+                }
+                if(name == "style" && index ==0)
+                {
+                    return true;
+                }
+                if(name == "body" || name == "section")
+                {
+                    return false;
+                }
+                if(name == "p" && index == 0)
+                {
+                    return true;
+                }
+                if(name == "blockquote" && index == 0)
+                {
+                    return true;
+                }
+                node = parentnode;
+                parentnode = parentnode->getParentNode();
+            }
+            return false;
+        };
+
         /// called for each found text fragment in range
         virtual void onText(ldomXRange* nodeRange) {
             ldomNode* node = nodeRange->getStart().getNode();
             ldomNode* parentnode = node->getParentNode();
             lString16 text = node->getText();
+            int pos = nodeRange->getStart().getOffset();
             int len = text.length();
             int end = nodeRange->getEnd().getOffset();
             if (len > end) {
@@ -5313,58 +5363,52 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
             TRFLAGS |= CH_PROP_HIEROGLYPH;
 
             int leftshift = 0;
-            int i = nodeRange->getStart().getOffset();
-            css_style_rec_t *style = node->getParentNode()->getStyle().get();
-            if (style != nullptr)
-            {CRLog::error("left margin = %d",style->margin[0]);
 
-                int whitespace = style->white_space;
-                if (style->white_space == css_ws_normal && node->getNodeIndex() == 0)
-                {
-                    for (i ; i < len; i++)
-                    {
-                        ldomWord word = ldomWord(node, i, i + 1);
-                        lvRect rect = word.getRect();
-                        lString16 string = word.getText();
-                        if (text[i] == ' ')
-                        {
-                            leftshift = leftshift + (rect.right - rect.left);
-                            continue;
-                        }
-                        if (text[i] == '\t')
-                        {
-                            leftshift = leftshift + (rect.right - rect.left);
-                            continue;
-                        }
-                        break;
-                    }
-                }
-                for (i; i < len - 1; i++)
-                {
-                    ldomWord word = ldomWord(node, i, i + 1);
-                    lvRect rect = word.getRect();
-                    lString16 string = word.getText();
-                    int alpha = lGetCharProps(text[i]) & TRFLAGS; //  words check here
-                    if (alpha)
-                    {
-                        rect.left = rect.left - leftshift;
-                        rect.right = rect.right - leftshift;
-                        list_.add(TextRect(rect, string));
-                    }
-                }
-                //last char zero width fix
-                ldomWord word = ldomWord(node, len - 1, len);
+
+            for (; pos < len; pos++)
+            {
+                ldomWord word = ldomWord(node, pos, pos + 1);
                 lvRect rect = word.getRect();
                 lString16 string = word.getText();
-                if ( len > 1 || string != " ")
+                if (text[pos] == ' ' || text[pos] == '\t' || string == L"\u200B" )
                 {
-                    int alpha = lGetCharProps(text[len - 1]) & TRFLAGS; //  words check here
-                    if (alpha)
-                    {
-                        rect.left = rect.left - leftshift;
-                        list_.add(TextRect(rect, string));
-                    }
+                    leftshift = leftshift + (rect.right - rect.left);
+                    continue;
                 }
+                break;
+            }
+            if (pos == len)
+            {
+                return;
+            }
+
+            if (!AllowTextNodeShift(node))
+            {
+               leftshift =0;
+               pos= nodeRange->getStart().getOffset();
+            }
+            for (; pos < len - 1; pos++)
+            {
+                ldomWord word = ldomWord(node, pos, pos + 1);
+                lvRect rect = word.getRect();
+                lString16 string = word.getText();
+                int alpha = lGetCharProps(text[pos]) & TRFLAGS; //  words check here
+                if (alpha)
+                {
+                    rect.left = rect.left - leftshift;
+                    rect.right = rect.right - leftshift;
+                    list_.add(TextRect(node, rect, string));
+                }
+            }
+            //last char zero width fix
+            ldomWord word = ldomWord(node, len - 1, len);
+            lvRect rect = word.getRect();
+            lString16 string = word.getText();
+            int alpha = lGetCharProps(text[pos]) & TRFLAGS; //  words check here
+            if (alpha)
+            {
+                rect.left = rect.left - leftshift;
+                list_.add(TextRect(node, rect, string));
             }
         }
         /// called for each found node in range
