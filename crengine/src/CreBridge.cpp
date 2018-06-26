@@ -468,7 +468,7 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
 void CreBridge::processPageLinks(CmdRequest& request, CmdResponse& response)
 {
 #ifdef TRDEBUG
-#define DEBUG_LINKS
+//#define DEBUG_LINKS
 #endif //TRDEBUG
     response.cmd = CMD_RES_LINKS;
     CmdDataIterator iter(request.first);
