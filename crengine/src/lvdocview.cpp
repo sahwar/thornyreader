@@ -2745,7 +2745,10 @@ LVArray<lvRect> LVDocView::GetPageParaEnds()
 		{
 			continue;
 		}
-
+		if( rawrect.bottom - rawrect.top <= CHAR_HEIGHT_MIN)
+		{
+			continue;
+		}
 		key = getkey(rawrect);
 
 		if (m.find(key) != m.end())
@@ -2818,12 +2821,13 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
             continue;
         }
 
+	    int para_repeat_counter = 0;
 	    while (para_counter < para_array.length() && rect.top > para_array.get(para_counter).top)
 	    {
 		    lvRect para_rect = para_array.get(para_counter);
 
 		    this->DocToWindowRect(para_rect);
-		    if( para_rect.bottom - para_rect.top > CHAR_HEIGHT_MIN)
+		    if(para_repeat_counter < PARAEND_REPEAT_MAX)
 		    {
 				#if DEBUG_CRE_PARA_END_BLOCKS
 			    float l = (para_rect.left + (strheight_curr / 2)) / page_width;
@@ -2847,6 +2851,7 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
 			    lString16 para_end = lString16("\n");// + lString16::itoa(para_counter);
 			    Hitbox *hitbox = new Hitbox(l, r, t, b, para_end);
 			    result.add(*hitbox);
+			    para_repeat_counter++;
 		    }
 		para_counter++;
 	    }
@@ -2856,37 +2861,39 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
         //usual line break implementation
         if (strheight_last != 0 && strheight_curr >= strheight_last + (strheight_last/2))
         {
-            css_style_rec_t* style = node->getParentNode()->getStyle().get();
-            CRLog::error("fontsize pack = %d",style->font_size.value);
-            float pre_r = style->font_size.value;
-            pre_r = pre_r * 4/5;
-            /*
-             bool right_side = two_columns ? rect.left > halfwidth : false;
-             float pre_r = two_columns ? halfwidth : page_width_int;
-             pre_r = pre_r - ((nomargins)?(margins.right/2):(margins.right));
+	        bool right_side = two_columns ? rect.left > halfwidth : false;
+	        float pre_r;
+	        if( two_columns)
+	        {
+		        pre_r = right_side ? page_width_int : halfwidth ;
+	        }
+			else
+	        {
+		        pre_r = page_width_int;
+	        }
 
-             if (right_side)
-             {
-                 pre_r = pre_r + halfwidth;
-             }
-             if (pre_r<rect.right)
-             {
-                 pre_r = rect.right+5;
-             }
-             */
-            float l = rect.right / page_width;
-            float r = (rect.right + pre_r) / page_width;
-            float t = rect.top / page_height;
-            float b = (rect.top + strheight_last) / page_height;
-            if (rect.top < margins.top)
+	        pre_r = pre_r - rect.left;
+	        if (right_side)
+	        {
+		        pre_r = pre_r + halfwidth;
+	        }
+            if(pre_r< rect.right)
             {
-                t = (rect.top - strheight_last) / page_height;
-                b = (rect.top + 10) / page_height;
+                pre_r = rect.right+5;
             }
+	        float l = rect.right / page_width;
+	        float r = pre_r / page_width;
+	        float t = rect.top / page_height;
+	        float b = (rect.top + strheight_last) / page_height;
+	        if (rect.top < margins.top)
+	        {
+		        t = (rect.top - strheight_last) / page_height;
+		        b = (rect.top + 10) / page_height;
+	        }
 
 	        //CRLog::error("linebreak letter = %s",LCSTR(word));
-            Hitbox *hitbox = new Hitbox(l, r, t, b, word);
-            result.add(*hitbox);
+	        Hitbox *hitbox = new Hitbox(l, r, t, b, word);
+	        result.add(*hitbox);
         }
         else
         { //usual single-line words
