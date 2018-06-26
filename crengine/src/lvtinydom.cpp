@@ -3029,9 +3029,11 @@ img_scaling_option_t::img_scaling_option_t()
 img_scaling_options_t::img_scaling_options_t()
 {
     img_scaling_option_t option;
-    zoom_in_inline = option;
+    img_scaling_option_t option_inline;
+    option_inline.mode=IMG_NO_SCALE;
+    zoom_in_inline = option_inline;
     zoom_in_block = option;
-    zoom_out_inline = option;
+    zoom_out_inline = option_inline;
     zoom_out_block = option;
 }
 
