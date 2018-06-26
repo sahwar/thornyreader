@@ -2211,6 +2211,108 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas(int unused)
 	return result;
 }
 
+LVArray<lvRect> LVDocView::GetCurrentPageImages(int unused, int maxw, int maxh)
+{
+
+	LVArray<lvRect> result;
+	LVRef<ldomXRange> page_range = GetPageDocRange();
+	if (page_range.isNull())
+	{
+		return result;
+	}
+	class ImageKeeper : public ldomNodeCallback
+	{
+		int &unused_;
+		int maxw_;
+		int maxh_;
+		LVArray<lvRect> para_rect_array;
+
+		bool NodeIsAllowed(ldomNode * node)
+        {
+           return true;
+        }
+
+
+	public:
+
+		ImageKeeper(int &unused, int maxw, int maxh) : unused_(unused),maxw_(maxw),maxh_(maxh) {	}
+		// Called for each text fragment in range
+		virtual void onText(ldomXRange *node_range)
+		{
+			return;
+		}
+		// Called for each node in range
+		virtual bool onElement(ldomXPointerEx *ptr)
+		{
+			ldomNode *node = ptr->getNode();
+
+			if (!node->isImage())
+			{
+				return true;
+			}
+
+			//CRLog::error("in node = %s", LCSTR(node->getNodeName()));
+
+			int end_index = node->getText().length();
+            ldomXPointerEx end = ldomXPointerEx(node, end_index);
+            ldomXPointer xp = ldomXPointer(node,end_index);
+
+            LVImageSource* image = node->getObjectImageSource().get();
+            int imgheight = image->GetHeight();
+            int imgwidth = image->GetWidth();
+            css_style_rec_t* style = node->getStyle().get();
+			lvRect imgrect;
+			if (!xp.getRect(imgrect))
+			{
+				CRLog::error("4");
+			}
+
+            if (style->display == css_d_block)
+            {
+			int pscale_x = 1000 * maxw_ / imgwidth;
+			int pscale_y = 1000 * maxh_ / imgheight;
+			int pscale = pscale_x < pscale_y ? pscale_x : pscale_y;
+			int maxscale = 3 * 1000;
+			if ( pscale>maxscale )
+				pscale = maxscale;
+			imgheight = imgheight * pscale / 1000;
+			imgwidth  = imgwidth * pscale / 1000;
+
+			imgrect.top= imgrect.top+style->font_size.value;
+            }
+
+            imgrect.right=imgrect.left+imgwidth;
+            imgrect.bottom=imgrect.top+imgheight;
+            para_rect_array.add(imgrect);
+            CRLog::error("imgrect = [%d:%d][%d:%d]", imgrect.left, imgrect.right, imgrect.top, imgrect.bottom);
+
+			return false;
+		}
+		LVArray<lvRect> GetImgArray()
+		{
+			return para_rect_array;
+		}
+	};
+
+
+	ImageKeeper callback(unused,maxw,maxh);
+	page_range->forEach(&callback);
+	result = callback.GetImgArray();
+
+	if (viewport_mode_ == MODE_PAGES && GetColumns() > 1)
+	{
+		// Process second page
+		int page_index = GetCurrPage();
+		page_range = GetPageDocRange(page_index + 1);
+		if (!page_range.isNull())
+		{
+			page_range->forEach(&callback);
+			result.add(callback.GetImgArray());
+		}
+	}
+	return result;
+}
+
 /// get page text, -1 for current page
 lString16 LVDocView::GetPageText(int page_index)
 {
@@ -2770,6 +2872,46 @@ LVArray<lvRect> LVDocView::GetPageParaEnds()
 	return result;
 }
 
+LVArray<lvRect> LVDocView::GetPageImages()
+{
+	LVArray<lvRect> result ;
+	lvRect margins = this->cfg_margins_;
+
+    int width = (viewport_mode_ == MODE_PAGES && GetColumns() > 1)?(this->GetWidth()/2):this->GetWidth();
+    int maxheight = this->GetHeight() - (margins.bottom + margins.top);
+    int	maxwidth  = width - (margins.left + margins.right);
+
+    LVArray<lvRect> raw_image_array= this->GetCurrentPageImages(0,maxwidth,maxheight);
+
+	int offset = this->GetOffset();
+
+	bool two_columns = this->GetColumns() > 1;
+
+
+	typedef std::map< unsigned long long int, int> Rectmap;
+	Rectmap m;
+	unsigned long long int key;
+
+	for (int i = 0; i < raw_image_array.length(); i++)
+	{
+		lvRect rawrect = raw_image_array.get(i);
+		if (rawrect == lvRect(0,0,0,0))
+        {
+            continue;
+        }
+		key = getkey(rawrect);
+
+		if (m.find(key) != m.end())
+		{
+			continue;
+		}
+		m[key]= i;
+		result.add(rawrect);
+	}
+	raw_image_array.clear();
+
+	return result;
+}
 
 LVArray<Hitbox> LVDocView::GetPageHitboxes()
 {
@@ -2792,6 +2934,7 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
         }
     }
 	LVArray<lvRect> para_array = this->GetPageParaEnds();
+	LVArray<lvRect> images_array = this->GetPageImages();
 	LVRef<ldomXRange> range = this->GetPageDocRange();
     lvRect margins = this->cfg_margins_;
 	bool nomargins = false; //todo take nomargins from docview, set nomargins in docview from bridge
@@ -2944,5 +3087,20 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
             }
         }
     }
+	for (int i = 0; i < images_array.length(); i++)
+	{
+		lvRect imgrect = images_array.get(i);
+		if (this->DocToWindowRect(imgrect))
+		{
+
+			float l = imgrect.left / page_width;
+			float r = imgrect.right / page_width;
+			float t = (imgrect.top) / page_height;
+			float b = (imgrect.bottom) / page_height;
+			lString16 imagestring = lString16("IMAGE");
+			Hitbox *hitbox = new Hitbox(l, r, t, b, imagestring);
+			result.add(*hitbox);
+		}
+	}
     return result;
 }

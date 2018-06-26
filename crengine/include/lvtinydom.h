@@ -502,6 +502,8 @@ public:
     bool isRoot() const;
     /// returns true if node is text
     inline bool isText() const { return _handle._dataIndex && !(_handle._dataIndex&1); }
+    /// returns true if node is image node
+    inline bool isImage() const { return (this->getNodeName()=="img" ||this->getNodeName()=="image"); }
     /// returns true if node is element
     inline bool isElement() const { return _handle._dataIndex && (_handle._dataIndex&1); }
     /// returns true if node is and element that has children
