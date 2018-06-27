@@ -3030,7 +3030,7 @@ img_scaling_options_t::img_scaling_options_t()
 {
     img_scaling_option_t option;
     img_scaling_option_t option_inline;
-    option_inline.mode=IMG_NO_SCALE;
+    //option_inline.mode=IMG_NO_SCALE;
     zoom_in_inline = option_inline;
     zoom_in_block = option;
     zoom_out_inline = option_inline;
@@ -5260,7 +5260,6 @@ void ldomXRange::getRangeWords(LVArray<ldomWord>& words_list) {
             TRFLAGS |= CH_PROP_DASH;
 
             for (int i = nodeRange->getStart().getOffset(); i <= len; i++) {
-                //int alpha = lGetCharProps(text[i]) & CH_PROP_ALPHA; //  words check here
                 int alpha = lGetCharProps(text[i]) & TRFLAGS; //  words check here
                 if (alpha && beginOfWord < 0) {
                     beginOfWord = i;
@@ -5394,24 +5393,16 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
                 ldomWord word = ldomWord(node, pos, pos + 1);
                 lvRect rect = word.getRect();
                 lString16 string = word.getText();
-                int alpha = lGetCharProps(text[pos]) & TRFLAGS; //  words check here
-                if (alpha)
-                {
-                    rect.left = rect.left - leftshift;
-                    rect.right = rect.right - leftshift;
-                    list_.add(TextRect(node, rect, string));
-                }
+                rect.left = rect.left - leftshift;
+                rect.right = rect.right - leftshift;
+                list_.add(TextRect(node, rect, string));
             }
             //last char zero width fix
             ldomWord word = ldomWord(node, len - 1, len);
             lvRect rect = word.getRect();
             lString16 string = word.getText();
-            int alpha = lGetCharProps(text[pos]) & TRFLAGS; //  words check here
-            if (alpha)
-            {
-                rect.left = rect.left - leftshift;
-                list_.add(TextRect(node, rect, string));
-            }
+            rect.left = rect.left - leftshift;
+            list_.add(TextRect(node, rect, string));
         }
         /// called for each found node in range
         virtual bool onElement(ldomXPointerEx* ptr) {
@@ -5425,6 +5416,15 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
     WordsCollector collector(words_list);
     forEach(&collector);
 }
+
+/*ALPHACHECK
+//int alpha = lGetCharProps(text[pos]) & TRFLAGS; //  words check here
+if (alpha)
+{
+ do stuff here
+}
+*/
+
 
 /// adds all visible words from range, returns number of added words
 int ldomWordExList::addRangeWords( ldomXRange & range, bool /*trimPunctuation*/ ) {
