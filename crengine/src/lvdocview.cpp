@@ -2262,13 +2262,7 @@ LVArray<ImgRect> LVDocView::GetCurrentPageImages(int unused, int maxw, int maxh)
             int imgwidth = image->GetWidth();
             css_style_rec_t* style = node->getStyle().get();
 			lvRect imgrect;
-			if (!xp.getRect(imgrect))
-			{
-				CRLog::error("4");
-			}
 
-            //if (style->display == css_d_block)
-            //{
 			int pscale_x = 1000 * maxw_ / imgwidth;
 			int pscale_y = 1000 * maxh_ / imgheight;
 			int pscale = pscale_x < pscale_y ? pscale_x : pscale_y;
@@ -2285,7 +2279,7 @@ LVArray<ImgRect> LVDocView::GetCurrentPageImages(int unused, int maxw, int maxh)
             imgrect.right=imgrect.left+imgwidth;
             imgrect.bottom=imgrect.top+imgheight;
             para_rect_array.add(ImgRect(node,imgrect));
-            CRLog::error("imgrect = [%d:%d][%d:%d]", imgrect.left, imgrect.right, imgrect.top, imgrect.bottom);
+            //CRLog::error("imgrect = [%d:%d][%d:%d]", imgrect.left, imgrect.right, imgrect.top, imgrect.bottom);
 
 			return false;
 		}
@@ -2934,6 +2928,10 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
     bool two_columns    = this->GetColumns() > 1;
     float halfwidth     = page_width_int / 2;
 
+    LVFont * font = this->base_font_.get();
+    LVFont::glyph_info_t glyph;
+    int hyphwidth = ( font->getGlyphInfo('-', &glyph, '?') )? glyph.width :0;
+
 	int footnotesheightr = 0;
 	//checking whether this is the last page in document, to prevent sigsegv crashes
     if(this->page_ < this->pages_list_.length()-1)
@@ -3027,9 +3025,9 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
             img_counter++;
             if (rect.top == img_rect.top)
             {
-                CRLog::error("letter       = %s",LCSTR(word));
-                CRLog::error("rect.bottom     = %d",rect.bottom);
-                CRLog::error("img_rect.bottom = %d",img_rect.bottom);
+                //CRLog::error("letter       = %s",LCSTR(word));
+                //CRLog::error("rect.bottom     = %d",rect.bottom);
+                //CRLog::error("img_rect.bottom = %d",img_rect.bottom);
                 if (rect.bottom-strheight_curr < img_rect.bottom)
                 {
                 	lvRect img_rect2 = img_rect;
@@ -3037,7 +3035,7 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
                     img_top = img_rect2.top;
                     img_left = img_rect2.left;
                     img_right = img_rect2.right;
-                    CRLog::error("img_top      = %d",img_top);
+                    //CRLog::error("img_top      = %d",img_top);
                 }
                 break;
             }
@@ -3065,15 +3063,15 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
             }
             else
             {
-                pre_r = pre_r - rect.left;
+                pre_r = pre_r - rect.left + hyphwidth;
             }
-            if (right_side)
+	        if (right_side)
 	        {
 		        pre_r = pre_r + halfwidth;
 	        }
             if(pre_r< rect.right || pre_r >= page_width)
             {
-                pre_r = rect.right+5;
+                pre_r = rect.right+hyphwidth;
             }
 
 	        float l = rect.right / page_width;
