@@ -175,7 +175,7 @@ public:
     /// get list of links
     void GetCurrentPageLinks(ldomXRangeList& list);
     LVArray<lvRect> GetCurrentPageParas(int unused=0);
-    LVArray<lvRect> GetCurrentPageImages(int unused=0,int maxw=100, int maxh=100);
+    LVArray<ImgRect> GetCurrentPageImages(int unused=0,int maxw=100, int maxh=100);
     /// selects first link on page, if any. returns selected link range, null if no links.
     ldomXRange* SelectFirstPageLink();
     /// invalidate formatted data, request render
@@ -253,8 +253,13 @@ public:
     LVArray<lvRect> GetPageParaEnds();
     //returns array of Hitbox objects that contain hitbox info about characters on current docview page
     LVArray<Hitbox> GetPageHitboxes();
+    enum image_display_t {
+       img_all,
+       img_block,
+       img_inline
+    };
     //returns array of lvRects, that contains info about image location on current docview page
-    LVArray<lvRect> GetPageImages();
+    LVArray<ImgRect> GetPageImages(image_display_t type=img_all);
     LVDocView();
     ~LVDocView();
 };

@@ -1210,6 +1210,19 @@ public:
     ldomNode* getNode(){ return node_;};
 };
 
+class ImgRect
+{
+private:
+    ldomNode* node_;
+    lvRect rect_;
+public:
+    ImgRect() :  node_(nullptr),rect_(lvRect(0,0,0,0)) {}
+    ImgRect(ldomNode* node,lvRect rect ) :node_(node),rect_(rect){}
+
+    lvRect getRect(){ return rect_;};
+    ldomNode* getNode(){ return node_;};
+};
+
 /// range for word inside text node
 class ldomWord
 {
