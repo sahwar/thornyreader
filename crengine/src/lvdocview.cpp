@@ -2815,6 +2815,65 @@ unsigned long long int getkey(lvRect rect)
     return a;
 }
 
+float LVDocView::GenPre_r(TextRect textrect)
+{
+	lvRect rect = textrect.getRect();
+	DocToWindowRect(rect);
+	lString16 word = textrect.getText();
+	ldomNode *node = textrect.getNode();
+
+	int page_width_int = this->GetWidth();
+	float halfwidth = page_width_int / 2;
+	lvRect margins = this->cfg_margins_;
+	bool two_columns = this->GetColumns() > 1;
+
+	LVFont *font = this->base_font_.get();
+	LVFont::glyph_info_t glyph;
+	int hyphwidth = (font->getGlyphInfo(UNICODE_SOFT_HYPHEN_CODE, &glyph, '?')) ? glyph.width : 0;
+
+
+	bool right_side = two_columns ? rect.left > halfwidth : false;
+	int right_line;
+	if (two_columns)
+	{
+		right_line = right_side ? page_width_int : halfwidth;
+	}
+	else
+	{
+		right_line = page_width_int;
+	}
+	CRLog::error("right_line = %d",right_line);
+	char ch = word.firstChar();
+	int curwidth = (font->getGlyphInfo(ch, &glyph, L'е')) ? glyph.width : hyphwidth;
+	if (curwidth < hyphwidth && word != " ")
+	{
+		curwidth = hyphwidth * 2;
+	}
+	CRLog::error("curwidth = %d",curwidth);
+	CRLog::error("hyphwidth = %d",curwidth);
+	float pre_r;
+	int leftshift = right_side ? rect.left - halfwidth : rect.left;
+	CRLog::error("leftshift = rect.left = %d",leftshift);
+	CRLog::error("rect.left = %d",rect.left);
+
+	css_style_rec_t *style = node->getParentNode()->getStyle().get();
+	css_text_align_t align = style->text_align;
+	if (align == css_ta_right)
+	{
+		pre_r = right_line - margins.right + (hyphwidth / 2);
+	}
+	else if (align == css_ta_center)
+	{
+		pre_r = rect.right + curwidth + (hyphwidth / 2);
+	}
+	else
+	{
+		pre_r = right_line - leftshift + hyphwidth;
+	}
+	CRLog::error("pre_r = right_line - leftshift + hyphwidth = %f",pre_r);
+	return pre_r;
+}
+
 LVArray<lvRect> LVDocView::GetPageParaEnds()
 {
 	LVArray<lvRect> result;
@@ -3050,38 +3109,7 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
         //usual line break implementation
         if (strheight_last != 0 && strheight_curr >= strheight_last + (strheight_last/2))
         {
-            bool right_side = two_columns ? rect.left > halfwidth : false;
-            int right_line;
-            if (two_columns)
-            {
-                right_line = right_side ? page_width_int : halfwidth;
-            }
-            else
-            {
-                right_line = page_width_int;
-            }
-            char ch = word.firstChar();
-            int curwidth = ( font->getGlyphInfo(ch, &glyph, L'е') )? glyph.width : hyphwidth;
-            if (curwidth < hyphwidth && word != " ")
-            {
-                curwidth = hyphwidth * 2;
-            }
-            float pre_r;
-            int leftshift = right_side ? rect.left - halfwidth : rect.left;
-            css_style_rec_t *style = node->getParentNode()->getStyle().get();
-            css_text_align_t align = style->text_align;
-            if (align == css_ta_right)
-            {
-                pre_r = right_line - margins.right + (hyphwidth / 2);
-            }
-            else if (align == css_ta_center)
-            {
-                pre_r = rect.right + curwidth + (hyphwidth / 2);
-            }
-            else
-            {
-                pre_r = right_line - leftshift + hyphwidth;
-            }
+            float pre_r = this->GenPre_r(word_chars.get(i));
 
 	        float l = rect.right / page_width;
 	        float r = pre_r / page_width;
@@ -3169,6 +3197,19 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
                 r = rect.right / page_width;
                 t = (rect.bottom - charheight) / page_height;
                 b = rect.bottom / page_height;
+
+                lvRect nextrect = word_chars.get(i + 1).getRect();
+                DocToWindowRect(nextrect);
+                if (nextrect.top > img_top) //последний символ в строке с инлайновым изображением
+                {
+	                float pre_r = this->GenPre_r(word_chars.get(i));
+                    lvRect lastrect = word_chars.get(i - 1).getRect();
+                    DocToWindowRect(lastrect);
+                    l = (rect.right)    / page_width;
+                    r = pre_r  / page_width;
+                    t = (lastrect.bottom - charheight) / page_height;
+                    b = (lastrect.bottom) / page_height;
+                }
             }
 
             //CRLog::error("usual letter = %s", LCSTR(word));
