@@ -2262,6 +2262,10 @@ LVArray<ImgRect> LVDocView::GetCurrentPageImages(int unused, int maxw, int maxh)
             int imgwidth = image->GetWidth();
             css_style_rec_t* style = node->getStyle().get();
 			lvRect imgrect;
+            if (!xp.getRect(imgrect))
+            {
+                CRLog::error("Unable to get imagerect!");
+            }
 
 			int pscale_x = 1000 * maxw_ / imgwidth;
 			int pscale_y = 1000 * maxh_ / imgheight;
@@ -2930,7 +2934,7 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
 
     LVFont * font = this->base_font_.get();
     LVFont::glyph_info_t glyph;
-    int hyphwidth = ( font->getGlyphInfo('-', &glyph, '?') )? glyph.width :0;
+    int hyphwidth = ( font->getGlyphInfo(UNICODE_SOFT_HYPHEN_CODE, &glyph, '?') )? glyph.width :0;
 
 	int footnotesheightr = 0;
 	//checking whether this is the last page in document, to prevent sigsegv crashes
@@ -3046,32 +3050,37 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
         //usual line break implementation
         if (strheight_last != 0 && strheight_curr >= strheight_last + (strheight_last/2))
         {
-	        bool right_side = two_columns ? rect.left > halfwidth : false;
-	        float pre_r;
-	        if( two_columns)
-	        {
-		        pre_r = right_side ? page_width_int : halfwidth ;
-	        }
-			else
-	        {
-		        pre_r = page_width_int;
-	        }
-            css_style_rec_t* style = node->getParentNode()->getStyle().get();
-	        if(style->text_align==css_ta_right)
+            bool right_side = two_columns ? rect.left > halfwidth : false;
+            int right_line;
+            if (two_columns)
             {
-                pre_r = pre_r - (margins.right*2);
+                right_line = right_side ? page_width_int : halfwidth;
             }
             else
             {
-                pre_r = pre_r - rect.left + hyphwidth;
+                right_line = page_width_int;
             }
-	        if (right_side)
-	        {
-		        pre_r = pre_r + halfwidth;
-	        }
-            if(pre_r< rect.right || pre_r >= page_width)
+            char ch = word.firstChar();
+            int curwidth = ( font->getGlyphInfo(ch, &glyph, L'е') )? glyph.width : hyphwidth;
+            if (curwidth < hyphwidth && word != " ")
             {
-                pre_r = rect.right+hyphwidth;
+                curwidth = hyphwidth * 2;
+            }
+            float pre_r;
+            int leftshift = right_side ? rect.left - halfwidth : rect.left;
+            css_style_rec_t *style = node->getParentNode()->getStyle().get();
+            css_text_align_t align = style->text_align;
+            if (align == css_ta_right)
+            {
+                pre_r = right_line - margins.right + (hyphwidth / 2);
+            }
+            else if (align == css_ta_center)
+            {
+                pre_r = rect.right + curwidth + (hyphwidth / 2);
+            }
+            else
+            {
+                pre_r = right_line - leftshift + hyphwidth;
             }
 
 	        float l = rect.right / page_width;
