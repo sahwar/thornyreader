@@ -5378,7 +5378,7 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
                 }
                 break;
             }
-            if (pos == len)
+            if (pos == len && parentnode->getNodeName() == "p" && node->getNodeIndex() == 0)
             {
                 return;
             }
