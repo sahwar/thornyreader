@@ -3168,7 +3168,7 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
 	        }
 
 	        //CRLog::error("linebreak letter = %s",LCSTR(word));
-	        Hitbox *hitbox = new Hitbox(l, r, t, b, word+lString16("_"));
+	        Hitbox *hitbox = new Hitbox(l, r, t, b, word);
 	        result.add(*hitbox);
         }
         else
