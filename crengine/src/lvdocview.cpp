@@ -2211,6 +2211,107 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas(int unused)
 	return result;
 }
 
+LVArray<ImgRect> LVDocView::GetCurrentPageImages(int unused, int maxw, int maxh)
+{
+
+	LVArray<ImgRect> result;
+	LVRef<ldomXRange> page_range = GetPageDocRange();
+	if (page_range.isNull())
+	{
+		return result;
+	}
+	class ImageKeeper : public ldomNodeCallback
+	{
+		int &unused_;
+		int maxw_;
+		int maxh_;
+		LVArray<ImgRect> para_rect_array;
+
+		bool NodeIsAllowed(ldomNode * node)
+        {
+           return true;
+        }
+
+
+	public:
+
+		ImageKeeper(int &unused, int maxw, int maxh) : unused_(unused),maxw_(maxw),maxh_(maxh) {	}
+		// Called for each text fragment in range
+		virtual void onText(ldomXRange *node_range)
+		{
+			return;
+		}
+		// Called for each node in range
+		virtual bool onElement(ldomXPointerEx *ptr)
+		{
+			ldomNode *node = ptr->getNode();
+
+			if (!node->isImage())
+			{
+				return true;
+			}
+
+			//CRLog::error("in node = %s", LCSTR(node->getNodeName()));
+
+			int end_index = node->getText().length();
+            ldomXPointerEx end = ldomXPointerEx(node, end_index);
+            ldomXPointer xp = ldomXPointer(node,end_index);
+
+            LVImageSource* image = node->getObjectImageSource().get();
+            int imgheight = image->GetHeight();
+            int imgwidth = image->GetWidth();
+            css_style_rec_t* style = node->getStyle().get();
+			lvRect imgrect;
+            if (!xp.getRect(imgrect))
+            {
+                CRLog::error("Unable to get imagerect!");
+            }
+
+			int pscale_x = 1000 * maxw_ / imgwidth;
+			int pscale_y = 1000 * maxh_ / imgheight;
+			int pscale = pscale_x < pscale_y ? pscale_x : pscale_y;
+			int maxscale = 3 * 1000;
+			if ( pscale>maxscale )
+				pscale = maxscale;
+			imgheight = imgheight * pscale / 1000;
+			imgwidth  = imgwidth * pscale / 1000;
+
+            if (style->display == css_d_block)
+			imgrect.top= imgrect.top+style->font_size.value;
+            //}
+
+            imgrect.right=imgrect.left+imgwidth;
+            imgrect.bottom=imgrect.top+imgheight;
+            para_rect_array.add(ImgRect(node,imgrect));
+            //CRLog::error("imgrect = [%d:%d][%d:%d]", imgrect.left, imgrect.right, imgrect.top, imgrect.bottom);
+
+			return false;
+		}
+		LVArray<ImgRect> GetImgArray()
+		{
+			return para_rect_array;
+		}
+	};
+
+
+	ImageKeeper callback(unused,maxw,maxh);
+	page_range->forEach(&callback);
+	result = callback.GetImgArray();
+
+	if (viewport_mode_ == MODE_PAGES && GetColumns() > 1)
+	{
+		// Process second page
+		int page_index = GetCurrPage();
+		page_range = GetPageDocRange(page_index + 1);
+		if (!page_range.isNull())
+		{
+			page_range->forEach(&callback);
+			result.add(callback.GetImgArray());
+		}
+	}
+	return result;
+}
+
 /// get page text, -1 for current page
 lString16 LVDocView::GetPageText(int page_index)
 {
@@ -2714,6 +2815,65 @@ unsigned long long int getkey(lvRect rect)
     return a;
 }
 
+float LVDocView::GenPre_r(TextRect textrect)
+{
+	lvRect rect = textrect.getRect();
+	DocToWindowRect(rect);
+	lString16 word = textrect.getText();
+	ldomNode *node = textrect.getNode();
+
+	int page_width_int = this->GetWidth();
+	float halfwidth = page_width_int / 2;
+	lvRect margins = this->cfg_margins_;
+	bool two_columns = this->GetColumns() > 1;
+
+	LVFont *font = this->base_font_.get();
+	LVFont::glyph_info_t glyph;
+	int hyphwidth = (font->getGlyphInfo(UNICODE_SOFT_HYPHEN_CODE, &glyph, '?')) ? glyph.width : 0;
+
+
+	bool right_side = two_columns ? rect.left > halfwidth : false;
+	int right_line;
+	if (two_columns)
+	{
+		right_line = right_side ? page_width_int : halfwidth;
+	}
+	else
+	{
+		right_line = page_width_int;
+	}
+	CRLog::error("right_line = %d",right_line);
+	char ch = word.firstChar();
+	int curwidth = (font->getGlyphInfo(ch, &glyph, L'е')) ? glyph.width : hyphwidth;
+	if (curwidth < hyphwidth && word != " ")
+	{
+		curwidth = hyphwidth * 2;
+	}
+	CRLog::error("curwidth = %d",curwidth);
+	CRLog::error("hyphwidth = %d",curwidth);
+	float pre_r;
+	int leftshift = right_side ? rect.left - halfwidth : rect.left;
+	CRLog::error("leftshift = rect.left = %d",leftshift);
+	CRLog::error("rect.left = %d",rect.left);
+
+	css_style_rec_t *style = node->getParentNode()->getStyle().get();
+	css_text_align_t align = style->text_align;
+	if (align == css_ta_right)
+	{
+		pre_r = right_line - margins.right + (hyphwidth / 2);
+	}
+	else if (align == css_ta_center)
+	{
+		pre_r = rect.right + curwidth + (hyphwidth / 2);
+	}
+	else
+	{
+		pre_r = right_line - leftshift + hyphwidth;
+	}
+	CRLog::error("pre_r = right_line - leftshift + hyphwidth = %f",pre_r);
+	return pre_r;
+}
+
 LVArray<lvRect> LVDocView::GetPageParaEnds()
 {
 	LVArray<lvRect> result;
@@ -2745,7 +2905,10 @@ LVArray<lvRect> LVDocView::GetPageParaEnds()
 		{
 			continue;
 		}
-
+		if( rawrect.bottom - rawrect.top <= CHAR_HEIGHT_MIN)
+		{
+			continue;
+		}
 		key = getkey(rawrect);
 
 		if (m.find(key) != m.end())
@@ -2767,16 +2930,70 @@ LVArray<lvRect> LVDocView::GetPageParaEnds()
 	return result;
 }
 
-
-LVArray<TrHitbox> LVDocView::GetPageHitboxes()
+LVArray<ImgRect> LVDocView::GetPageImages(image_display_t type)  //display type :0 == all; 1 == css_d_block; 2 == inline;
 {
-    LVArray<TrHitbox> result;
+	LVArray<ImgRect> result ;
+	lvRect margins = this->cfg_margins_;
+
+    int width = (viewport_mode_ == MODE_PAGES && GetColumns() > 1)?(this->GetWidth()/2):this->GetWidth();
+    int maxheight = this->GetHeight() - (margins.bottom + margins.top);
+    int	maxwidth  = width - (margins.left + margins.right);
+
+    LVArray<ImgRect> raw_image_array= this->GetCurrentPageImages(0,maxwidth,maxheight);
+
+	typedef std::map< unsigned long long int, int> Rectmap;
+	Rectmap m;
+	unsigned long long int key;
+
+	for (int i = 0; i < raw_image_array.length(); i++)
+	{
+		lvRect rawrect = raw_image_array.get(i).getRect();
+		css_display_t curtype =  raw_image_array.get(i).getNode()->getStyle().get()->display;
+        //display type :0 == all; 1 == css_d_block; 2 == inline;
+
+		if(curtype == css_d_none)
+        {
+            continue;
+        }
+		if(type == img_block && curtype != css_d_block)
+		{
+			continue;
+		}
+		if(type == img_inline && curtype != css_d_inline && curtype != css_d_inline_table)
+		{
+			continue;
+		}
+		if (rawrect == lvRect(0,0,0,0))
+        {
+            continue;
+        }
+		key = getkey(rawrect);
+
+		if (m.find(key) != m.end())
+		{
+			continue;
+		}
+		m[key]= i;
+		result.add(raw_image_array.get(i));
+	}
+	raw_image_array.clear();
+
+	return result;
+}
+
+LVArray<Hitbox> LVDocView::GetPageHitboxes()
+{
+    LVArray<Hitbox> result;
     float page_width    = this->GetWidth();
     float page_height   = this->GetHeight();
     int page_width_int  = this->GetWidth();
     int page_height_int = this->GetHeight();
     bool two_columns    = this->GetColumns() > 1;
     float halfwidth     = page_width_int / 2;
+
+    LVFont * font = this->base_font_.get();
+    LVFont::glyph_info_t glyph;
+    int hyphwidth = ( font->getGlyphInfo(UNICODE_SOFT_HYPHEN_CODE, &glyph, '?') )? glyph.width :0;
 
 	int footnotesheightr = 0;
 	//checking whether this is the last page in document, to prevent sigsegv crashes
@@ -2789,6 +3006,7 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
         }
     }
 	LVArray<lvRect> para_array = this->GetPageParaEnds();
+	LVArray<ImgRect> images_array = this->GetPageImages(img_inline);
 	LVRef<ldomXRange> range = this->GetPageDocRange();
     lvRect margins = this->cfg_margins_;
 	bool nomargins = false; //todo take nomargins from docview, set nomargins in docview from bridge
@@ -2800,15 +3018,21 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
 
     int strheight_last = 0;
     int para_counter = 0;
+    int img_counter = 0;
+    int img_top = 0;
+    int img_left = 0;
+    int img_right = 0;
 
-    LVArray<ldomWord> word_chars;
+
+    LVArray<TextRect> word_chars;
     text.getRangeChars(word_chars);
     for (int i = 0; i < word_chars.length(); ++i)
     {
         lString16 word = word_chars.get(i).getText();
-        //CRLog::error("letter = %s",LCSTR(word))
+        //CRLog::error("letter = %s",LCSTR(word));
         word.ReplaceUnusualSpaces();
         lvRect rect = word_chars.get(i).getRect();
+        ldomNode* node = word_chars.get(i).getNode();
         int strheight_curr = rect.bottom - rect.top;
 
         //paragraph breaks implementation
@@ -2817,12 +3041,13 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
             continue;
         }
 
+	    int para_repeat_counter = 0;
 	    while (para_counter < para_array.length() && rect.top > para_array.get(para_counter).top)
 	    {
 		    lvRect para_rect = para_array.get(para_counter);
 
 		    this->DocToWindowRect(para_rect);
-		    if( para_rect.bottom - para_rect.top > CHAR_HEIGHT_MIN)
+		    if(para_repeat_counter < PARAEND_REPEAT_MAX)
 		    {
 				#if DEBUG_CRE_PARA_END_BLOCKS
 			    float l = (para_rect.left + (strheight_curr / 2)) / page_width;
@@ -2844,42 +3069,107 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
 			    //        LCSTR(word_chars.get(i+4).getText()));
 				#endif //TRDEBUG
 			    lString16 para_end = lString16("\n");// + lString16::itoa(para_counter);
-			    TrHitbox *hitbox = new TrHitbox(l, r, t, b, para_end);
+			    Hitbox *hitbox = new Hitbox(l, r, t, b, para_end);
 			    result.add(*hitbox);
+			    para_repeat_counter++;
 		    }
 		para_counter++;
 	    }
+
+        while (img_counter < images_array.length())
+        {
+            lvRect img_rect = images_array.get(img_counter).getRect();
+
+            if (rect.top < img_rect.top)
+            {
+                break;
+            }
+
+            img_counter++;
+            if (rect.top == img_rect.top)
+            {
+                //CRLog::error("letter       = %s",LCSTR(word));
+                //CRLog::error("rect.bottom     = %d",rect.bottom);
+                //CRLog::error("img_rect.bottom = %d",img_rect.bottom);
+                if (rect.bottom-strheight_curr < img_rect.bottom)
+                {
+                	lvRect img_rect2 = img_rect;
+                	DocToWindowRect(img_rect2);
+                    img_top = img_rect2.top;
+                    img_left = img_rect2.left;
+                    img_right = img_rect2.right;
+                    //CRLog::error("img_top      = %d",img_top);
+                }
+                break;
+            }
+        }
 
 	    this->DocToWindowRect(rect);
 
         //usual line break implementation
         if (strheight_last != 0 && strheight_curr >= strheight_last + (strheight_last/2))
         {
-            bool right_side = two_columns ? rect.left > halfwidth : false;
-            float pre_r = two_columns ? halfwidth : page_width_int;
-            pre_r = pre_r - ((nomargins)?(margins.right/2):(margins.right));
+            float pre_r = this->GenPre_r(word_chars.get(i));
 
-            if (right_side)
+	        float l = rect.right / page_width;
+	        float r = pre_r / page_width;
+	        float t = rect.top / page_height;
+	        float b = (rect.top + strheight_last) / page_height;
+
+            if (rect.top == img_top && word_chars.length() > i + 1)
             {
-                pre_r = pre_r + halfwidth;
+
+                int height = node->getParentNode()->getStyle().get()->font_size.value;
+                height = height + (height / 4);
+                l = rect.left / page_width;
+                r = rect.right / page_width;
+                t = (rect.bottom - height) / page_height;
+                b = rect.bottom / page_height;
+
+                lvRect lastrect = word_chars.get(i - 1).getRect();
+                DocToWindowRect(lastrect);
+                lvRect nextrect = word_chars.get(i + 1).getRect();
+                DocToWindowRect(nextrect);
+
+                if (nextrect.top > img_top) //последний символ в строке с инлайновым изображением
+                {
+                    l = (rect.left)    / page_width;
+                    r = (rect.right)   / page_width;
+                    t = (lastrect.bottom - height) / page_height;
+                    b = (lastrect.bottom) / page_height;
+
+                    if(rect.left <= img_left)
+                    {
+                        l = rect.right / page_width;
+                        r = pre_r / page_width;
+                    }
+
+                    if(rect.right <= img_right)
+                    {
+                        l = rect.right / page_width;
+                        r = rect.left / page_width;
+                    }
+
+                    if (lastrect.top != img_top ) //первый И последний символ в строке с инлайновым изображением
+                    {
+                        l = (rect.left)    / page_width;
+                        r = (rect.right)   / page_width;
+                        b = (nextrect.top) / page_height;
+                        t = (nextrect.top - height) / page_height;
+                    }
+                    img_top = 0;
+                }
             }
-            if (pre_r<rect.right)
-            {
-                pre_r = rect.right+5;
-            }
-            float l = rect.right / page_width;
-            float r = pre_r / page_width;
-            float t = rect.top / page_height;
-            float b = (rect.top + strheight_last) / page_height;
-            if (rect.top < margins.top)
-            {
-                t = (rect.top - strheight_last) / page_height;
-                b = (rect.top + 10) / page_height;
-            }
+
+	        if (rect.top < margins.top)
+	        {
+		        t = (rect.top - strheight_last) / page_height;
+		        b = (rect.top + 10) / page_height;
+	        }
 
 	        //CRLog::error("linebreak letter = %s",LCSTR(word));
-            TrHitbox *hitbox = new TrHitbox(l, r, t, b, word);
-            result.add(*hitbox);
+	        Hitbox *hitbox = new Hitbox(l, r, t, b, word+lString16("_"));
+	        result.add(*hitbox);
         }
         else
         { //usual single-line words
@@ -2898,9 +3188,33 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
             float t = rect.top / page_height;
             float r = rect.right / page_width;
             float b = rect.bottom / page_height;
+
+            if (rect.top == img_top && word_chars.length() > i + 1)
+            {
+                int charheight = node->getParentNode()->getStyle().get()->font_size.value;
+                charheight = charheight + (charheight / 4);
+                l = rect.left / page_width;
+                r = rect.right / page_width;
+                t = (rect.bottom - charheight) / page_height;
+                b = rect.bottom / page_height;
+
+                lvRect nextrect = word_chars.get(i + 1).getRect();
+                DocToWindowRect(nextrect);
+                if (nextrect.top > img_top) //последний символ в строке с инлайновым изображением
+                {
+	                float pre_r = this->GenPre_r(word_chars.get(i));
+                    lvRect lastrect = word_chars.get(i - 1).getRect();
+                    DocToWindowRect(lastrect);
+                    l = (rect.right)    / page_width;
+                    r = pre_r  / page_width;
+                    t = (lastrect.bottom - charheight) / page_height;
+                    b = (lastrect.bottom) / page_height;
+                }
+            }
+
             //CRLog::error("usual letter = %s", LCSTR(word));
 
-            TrHitbox *hitbox = new TrHitbox(l, r, t, b, word);
+            Hitbox *hitbox = new Hitbox(l, r, t, b, word);
             result.add(*hitbox);
         }
     }
@@ -2925,10 +3239,24 @@ LVArray<TrHitbox> LVDocView::GetPageHitboxes()
                 float b = rect.bottom / page_height;
 				#endif // DEBUG_PARA_END_BLOCKS
                 lString16 para_end = lString16("\n");
-                TrHitbox *hitbox = new TrHitbox(l, r, t, b, para_end);
+                Hitbox *hitbox = new Hitbox(l, r, t, b, para_end);
                 result.add(*hitbox);
             }
         }
     }
+	for (int i = 0; i < images_array.length(); i++)
+	{
+		lvRect imgrect = images_array.get(i).getRect();
+		if (this->DocToWindowRect(imgrect))
+		{
+			float l = imgrect.left / page_width;
+			float r = imgrect.right / page_width;
+			float t = (imgrect.top) / page_height;
+			float b = (imgrect.bottom) / page_height;
+			lString16 imagestring = lString16("IMAGE");
+			Hitbox *hitbox = new Hitbox(l, r, t, b, imagestring);
+			//result.add(*hitbox);
+		}
+	}
     return result;
 }

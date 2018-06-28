@@ -15,6 +15,7 @@
 
 #define META_MAX_LENGTH 2000
 #define CHAR_HEIGHT_MIN 5
+#define PARAEND_REPEAT_MAX 2
 
 #ifdef TRDEBUG
 #define DUMP_DOMTREE 0

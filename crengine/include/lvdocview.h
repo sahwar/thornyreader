@@ -61,7 +61,7 @@ public:
     void SelectWord(int x, int y);
 };
 
-class TrHitbox
+class Hitbox
 {
 public:
     float _left;
@@ -69,8 +69,8 @@ public:
     float _top;
     float _bottom;
     lString16 _text;
-    TrHitbox() {};
-    TrHitbox(float left, float right, float top, float bottom, lString16 text)
+    Hitbox() {};
+    Hitbox(float left, float right, float top, float bottom, lString16 text)
     {
         _left = left;
         _right = right;
@@ -78,7 +78,7 @@ public:
         _bottom = bottom;
         _text = text;
     };
-    ~TrHitbox(){};
+    ~Hitbox(){};
     void TrHitboxesArrayModify()
     {
         //stub
@@ -175,6 +175,7 @@ public:
     /// get list of links
     void GetCurrentPageLinks(ldomXRangeList& list);
     LVArray<lvRect> GetCurrentPageParas(int unused=0);
+    LVArray<ImgRect> GetCurrentPageImages(int unused=0,int maxw=100, int maxh=100);
     /// selects first link on page, if any. returns selected link range, null if no links.
     ldomXRange* SelectFirstPageLink();
     /// invalidate formatted data, request render
@@ -250,8 +251,16 @@ public:
                              bool smart_archive);
     //returns array of lvRect-s containing para ends location within page
     LVArray<lvRect> GetPageParaEnds();
-    //returns array of TrHitbox objects that contain hitbox info about characters on current docview page
-    LVArray<TrHitbox> GetPageHitboxes();
+    float GenPre_r(TextRect textrect);
+    //returns array of Hitbox objects that contain hitbox info about characters on current docview page
+    LVArray<Hitbox> GetPageHitboxes();
+    enum image_display_t {
+       img_all,
+       img_block,
+       img_inline
+    };
+    //returns array of lvRects, that contains info about image location on current docview page
+    LVArray<ImgRect> GetPageImages(image_display_t type=img_all);
     LVDocView();
     ~LVDocView();
 };

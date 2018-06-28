@@ -73,7 +73,7 @@ p image, li image {
   padding-right: 1em;
 }
 
-/* for that inline images just putting them to block */
+/* for that inline images in cites just putting them to block */
 cite p image{
   display: block;
 }

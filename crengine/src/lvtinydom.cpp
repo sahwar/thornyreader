@@ -3029,9 +3029,11 @@ img_scaling_option_t::img_scaling_option_t()
 img_scaling_options_t::img_scaling_options_t()
 {
     img_scaling_option_t option;
-    zoom_in_inline = option;
+    img_scaling_option_t option_inline;
+    //option_inline.mode=IMG_NO_SCALE;
+    zoom_in_inline = option_inline;
     zoom_in_block = option;
-    zoom_out_inline = option;
+    zoom_out_inline = option_inline;
     zoom_out_block = option;
 }
 
@@ -5258,7 +5260,6 @@ void ldomXRange::getRangeWords(LVArray<ldomWord>& words_list) {
             TRFLAGS |= CH_PROP_DASH;
 
             for (int i = nodeRange->getStart().getOffset(); i <= len; i++) {
-                //int alpha = lGetCharProps(text[i]) & CH_PROP_ALPHA; //  words check here
                 int alpha = lGetCharProps(text[i]) & TRFLAGS; //  words check here
                 if (alpha && beginOfWord < 0) {
                     beginOfWord = i;
@@ -5284,15 +5285,66 @@ void ldomXRange::getRangeWords(LVArray<ldomWord>& words_list) {
 
 
 /// get all words from specified range
-void ldomXRange::getRangeChars(LVArray<ldomWord>& words_list) {
+void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
     class WordsCollector : public ldomNodeCallback {
-        LVArray<ldomWord>& list_;
+        LVArray<TextRect>& list_;
     public:
-        WordsCollector(LVArray<ldomWord>& list) : list_(list) {}
+        WordsCollector(LVArray<TextRect>& list) : list_(list) {}
+
+        bool AllowTextNodeShift(ldomNode* node)
+        {
+
+            ldomNode* parentnode = node->getParentNode();
+            css_style_rec_t *style = parentnode->getStyle().get();
+            if (style == nullptr)
+            {
+                return false;
+            }
+            int whitespace = style->white_space;
+            if (style->white_space != css_ws_normal)
+            {
+                return false;
+            }
+            while (parentnode!=NULL)
+            {
+                if (parentnode == NULL)
+                {
+                    return false;
+                }
+                lString16 name = parentnode->getNodeName();
+                int index = node->getNodeIndex();
+                if(name == "style" && index !=0)
+                {
+                    return false;
+                }
+                if(name == "style" && index ==0)
+                {
+                    return true;
+                }
+                if(name == "body" || name == "section")
+                {
+                    return false;
+                }
+                if(name == "p" && index == 0)
+                {
+                    return true;
+                }
+                if(name == "blockquote" && index == 0)
+                {
+                    return true;
+                }
+                node = parentnode;
+                parentnode = parentnode->getParentNode();
+            }
+            return false;
+        };
+
         /// called for each found text fragment in range
         virtual void onText(ldomXRange* nodeRange) {
             ldomNode* node = nodeRange->getStart().getNode();
+            ldomNode* parentnode = node->getParentNode();
             lString16 text = node->getText();
+            int pos = nodeRange->getStart().getOffset();
             int len = text.length();
             int end = nodeRange->getEnd().getOffset();
             if (len > end) {
@@ -5311,12 +5363,46 @@ void ldomXRange::getRangeChars(LVArray<ldomWord>& words_list) {
             TRFLAGS |= CH_PROP_DASH;
             TRFLAGS |= CH_PROP_HIEROGLYPH;
 
-            for (int i = nodeRange->getStart().getOffset(); i <= len; i++) {
-                int alpha = lGetCharProps(text[i]) & TRFLAGS; //  words check here
-                if (alpha) {
-                    list_.add(ldomWord(node, i, i+1));
+            int leftshift = 0;
+
+
+            for (; pos < len; pos++)
+            {
+                ldomWord word = ldomWord(node, pos, pos + 1);
+                lvRect rect = word.getRect();
+                lString16 string = word.getText();
+                if (text[pos] == ' ' || text[pos] == '\t' || string == L"\u200B" )
+                {
+                    leftshift = leftshift + (rect.right - rect.left);
+                    continue;
                 }
+                break;
             }
+            if (pos == len && parentnode->getNodeName() == "p" && node->getNodeIndex() == 0)
+            {
+                return;
+            }
+
+            if (!AllowTextNodeShift(node))
+            {
+               leftshift =0;
+               pos= nodeRange->getStart().getOffset();
+            }
+            for (; pos < len - 1; pos++)
+            {
+                ldomWord word = ldomWord(node, pos, pos + 1);
+                lvRect rect = word.getRect();
+                lString16 string = word.getText();
+                rect.left = rect.left - leftshift;
+                rect.right = rect.right - leftshift;
+                list_.add(TextRect(node, rect, string));
+            }
+            //last char zero width fix
+            ldomWord word = ldomWord(node, len - 1, len);
+            lvRect rect = word.getRect();
+            lString16 string = word.getText();
+            rect.left = rect.left - leftshift;
+            list_.add(TextRect(node, rect, string));
         }
         /// called for each found node in range
         virtual bool onElement(ldomXPointerEx* ptr) {
@@ -5330,6 +5416,15 @@ void ldomXRange::getRangeChars(LVArray<ldomWord>& words_list) {
     WordsCollector collector(words_list);
     forEach(&collector);
 }
+
+/*ALPHACHECK
+//int alpha = lGetCharProps(text[pos]) & TRFLAGS; //  words check here
+if (alpha)
+{
+ do stuff here
+}
+*/
+
 
 /// adds all visible words from range, returns number of added words
 int ldomWordExList::addRangeWords( ldomXRange & range, bool /*trimPunctuation*/ ) {

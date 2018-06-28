@@ -502,6 +502,8 @@ public:
     bool isRoot() const;
     /// returns true if node is text
     inline bool isText() const { return _handle._dataIndex && !(_handle._dataIndex&1); }
+    /// returns true if node is image node
+    inline bool isImage() const { return (this->getNodeName()=="img" ||this->getNodeName()=="image"); }
     /// returns true if node is element
     inline bool isElement() const { return _handle._dataIndex && (_handle._dataIndex&1); }
     /// returns true if node is and element that has children
@@ -1193,6 +1195,34 @@ public:
     virtual bool onElement(ldomXPointerEx*) { return true; }
 };
 
+class TextRect
+{
+private:
+    ldomNode* node_;
+    lvRect rect_;
+    lString16 string_;
+public:
+    TextRect() :  node_(nullptr),rect_(lvRect(0,0,0,0)),string_(lString16::empty_str) {}
+    TextRect(ldomNode* node,lvRect rect, lString16 string) :node_(node),rect_(rect),string_(string){}
+
+    lString16 getText(){ return string_;};
+    lvRect getRect(){ return rect_;};
+    ldomNode* getNode(){ return node_;};
+};
+
+class ImgRect
+{
+private:
+    ldomNode* node_;
+    lvRect rect_;
+public:
+    ImgRect() :  node_(nullptr),rect_(lvRect(0,0,0,0)) {}
+    ImgRect(ldomNode* node,lvRect rect ) :node_(node),rect_(rect){}
+
+    lvRect getRect(){ return rect_;};
+    ldomNode* getNode(){ return node_;};
+};
+
 /// range for word inside text node
 class ldomWord
 {
@@ -1315,7 +1345,7 @@ public:
     /// get all words from specified range
     void getRangeWords( LVArray<ldomWord> & list );
 
-    void getRangeChars( LVArray<ldomWord> & list );
+    void getRangeChars( LVArray<TextRect> & list );
     /// returns href attribute of <A> element, null string if not found
     lString16 getHRef();
     /// sets range to nearest word bounds, returns true if success
