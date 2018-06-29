@@ -251,7 +251,8 @@ public:
                              bool smart_archive);
     //returns array of lvRect-s containing para ends location within page
     LVArray<lvRect> GetPageParaEnds();
-    float GenPre_r(TextRect textrect);
+    //returns calculated right side of hitbox based on apge properties
+    float CalcRightSide(TextRect textrect);
     //returns array of Hitbox objects that contain hitbox info about characters on current docview page
     LVArray<Hitbox> GetPageHitboxes();
     enum image_display_t {
