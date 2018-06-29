@@ -2815,8 +2815,9 @@ unsigned long long int getkey(lvRect rect)
     return a;
 }
 
-float LVDocView::GenPre_r(TextRect textrect)
+float LVDocView::CalcRightSide(TextRect textrect)
 {
+    float result;
 	lvRect rect = textrect.getRect();
 	DocToWindowRect(rect);
 	lString16 word = textrect.getText();
@@ -2826,14 +2827,20 @@ float LVDocView::GenPre_r(TextRect textrect)
 	float halfwidth = page_width_int / 2;
 	lvRect margins = this->cfg_margins_;
 	bool two_columns = this->GetColumns() > 1;
+    bool right_side = two_columns ? rect.left > halfwidth : false;
+    int right_line;
+    bool nomargins = (margins.right<20)? true:false;  //todo take nomargins from docview, set nomargins in docview from bridge
 
 	LVFont *font = this->base_font_.get();
 	LVFont::glyph_info_t glyph;
-	int hyphwidth = (font->getGlyphInfo(UNICODE_SOFT_HYPHEN_CODE, &glyph, '?')) ? glyph.width : 0;
+	int hyphwidth = font->getCharWidth(UNICODE_SOFT_HYPHEN_CODE);
+    int curwidth  = font->getCharWidth(word.firstChar());
 
+    if (curwidth < hyphwidth && word != " ")
+    {
+        curwidth = hyphwidth * 2;
+    }
 
-	bool right_side = two_columns ? rect.left > halfwidth : false;
-	int right_line;
 	if (two_columns)
 	{
 		right_line = right_side ? page_width_int : halfwidth;
@@ -2842,36 +2849,28 @@ float LVDocView::GenPre_r(TextRect textrect)
 	{
 		right_line = page_width_int;
 	}
-	CRLog::error("right_line = %d",right_line);
-	char ch = word.firstChar();
-	int curwidth = (font->getGlyphInfo(ch, &glyph, L'е')) ? glyph.width : hyphwidth;
-	if (curwidth < hyphwidth && word != " ")
-	{
-		curwidth = hyphwidth * 2;
-	}
-	CRLog::error("curwidth = %d",curwidth);
-	CRLog::error("hyphwidth = %d",curwidth);
-	float pre_r;
+
 	int leftshift = right_side ? rect.left - halfwidth : rect.left;
-	CRLog::error("leftshift = rect.left = %d",leftshift);
-	CRLog::error("rect.left = %d",rect.left);
 
 	css_style_rec_t *style = node->getParentNode()->getStyle().get();
 	css_text_align_t align = style->text_align;
 	if (align == css_ta_right)
 	{
-		pre_r = right_line - margins.right + (hyphwidth / 2);
+		result = right_line - margins.right + (hyphwidth / 2);
 	}
 	else if (align == css_ta_center)
 	{
-		pre_r = rect.right + curwidth + (hyphwidth / 2);
+		result = rect.right + curwidth + (hyphwidth / 2);
 	}
 	else
 	{
-		pre_r = right_line - leftshift + hyphwidth;
+		result = right_line - leftshift + hyphwidth;
 	}
-	CRLog::error("pre_r = right_line - leftshift + hyphwidth = %f",pre_r);
-	return pre_r;
+    if(nomargins)
+    {
+        result = result -  hyphwidth;
+    }
+	return result;
 }
 
 LVArray<lvRect> LVDocView::GetPageParaEnds()
@@ -2986,15 +2985,8 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
     LVArray<Hitbox> result;
     float page_width    = this->GetWidth();
     float page_height   = this->GetHeight();
-    int page_width_int  = this->GetWidth();
-    int page_height_int = this->GetHeight();
-    bool two_columns    = this->GetColumns() > 1;
-    float halfwidth     = page_width_int / 2;
 
     LVFont * font = this->base_font_.get();
-    LVFont::glyph_info_t glyph;
-    int hyphwidth = ( font->getGlyphInfo(UNICODE_SOFT_HYPHEN_CODE, &glyph, '?') )? glyph.width :0;
-
 	int footnotesheightr = 0;
 	//checking whether this is the last page in document, to prevent sigsegv crashes
     if(this->page_ < this->pages_list_.length()-1)
@@ -3009,11 +3001,6 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
 	LVArray<ImgRect> images_array = this->GetPageImages(img_inline);
 	LVRef<ldomXRange> range = this->GetPageDocRange();
     lvRect margins = this->cfg_margins_;
-	bool nomargins = false; //todo take nomargins from docview, set nomargins in docview from bridge
-    if (margins.right<20)
-	{
-		nomargins = true;
-	}
     ldomXRange text = *range;
 
     int strheight_last = 0;
@@ -3109,7 +3096,7 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
         //usual line break implementation
         if (strheight_last != 0 && strheight_curr >= strheight_last + (strheight_last/2))
         {
-            float pre_r = this->GenPre_r(word_chars.get(i));
+            float pre_r = this->CalcRightSide(word_chars.get(i));
 
 	        float l = rect.right / page_width;
 	        float r = pre_r / page_width;
@@ -3118,7 +3105,7 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
 
             if (rect.top == img_top && word_chars.length() > i + 1)
             {
-
+                int charwidth = font->getCharWidth(word.firstChar());
                 int height = node->getParentNode()->getStyle().get()->font_size.value;
                 height = height + (height / 4);
                 l = rect.left / page_width;
@@ -3133,6 +3120,7 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
 
                 if (nextrect.top > img_top) //последний символ в строке с инлайновым изображением
                 {
+                    //word=word+lString16("+1");
                     l = (rect.left)    / page_width;
                     r = (rect.right)   / page_width;
                     t = (lastrect.bottom - height) / page_height;
@@ -3140,18 +3128,21 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
 
                     if(rect.left <= img_left)
                     {
-                        l = rect.right / page_width;
-                        r = pre_r / page_width;
+	                    //   word=word+lString16("+2");
+                        l = (rect.right - charwidth) / page_width;
+                        r = (rect.right + charwidth) / page_width;
                     }
 
                     if(rect.right <= img_right)
                     {
+	                    //   word=word+lString16("+3");
                         l = rect.right / page_width;
                         r = rect.left / page_width;
                     }
 
                     if (lastrect.top != img_top ) //первый И последний символ в строке с инлайновым изображением
                     {
+	                    //    word=word+lString16("+4");
                         l = (rect.left)    / page_width;
                         r = (rect.right)   / page_width;
                         b = (nextrect.top) / page_height;
@@ -3168,7 +3159,7 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
 	        }
 
 	        //CRLog::error("linebreak letter = %s",LCSTR(word));
-	        Hitbox *hitbox = new Hitbox(l, r, t, b, word+lString16("_"));
+	        Hitbox *hitbox = new Hitbox(l, r, t, b, word);
 	        result.add(*hitbox);
         }
         else
@@ -3191,6 +3182,7 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
 
             if (rect.top == img_top && word_chars.length() > i + 1)
             {
+	            //	word=word+lString16("+11");
                 int charheight = node->getParentNode()->getStyle().get()->font_size.value;
                 charheight = charheight + (charheight / 4);
                 l = rect.left / page_width;
@@ -3202,11 +3194,12 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
                 DocToWindowRect(nextrect);
                 if (nextrect.top > img_top) //последний символ в строке с инлайновым изображением
                 {
-	                float pre_r = this->GenPre_r(word_chars.get(i));
+	                //    word=word+lString16("+12");
+                    int charwidth = font->getCharWidth(word.firstChar());
                     lvRect lastrect = word_chars.get(i - 1).getRect();
                     DocToWindowRect(lastrect);
-                    l = (rect.right)    / page_width;
-                    r = pre_r  / page_width;
+                    l = (rect.right - charwidth)    / page_width;
+                    r = (rect.right)  / page_width;
                     t = (lastrect.bottom - charheight) / page_height;
                     b = (lastrect.bottom) / page_height;
                 }

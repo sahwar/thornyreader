@@ -221,6 +221,8 @@ bool LVEmbeddedFontList::deserialize(SerialBuf & buf) {
  */
 int LVFont::getVisualAligmentWidth()
 {
+    return this->getSize();
+    /* //no need in such excessive function. Just returns current font size. Lets avoid not needed fallback fonts initialization.
     if ( _visual_alignment_width==-1 ) {
         lChar16 chars[] = { getHyphChar(), ',', '.', '!', ':', ';',
                             (lChar16)L'\xff0c', (lChar16)L'\x3302', (lChar16)L'\xff01', 0 };
@@ -236,6 +238,7 @@ int LVFont::getVisualAligmentWidth()
         _visual_alignment_width = maxw;
     }
     return _visual_alignment_width;
+    */
 }
 
 /**
@@ -982,11 +985,6 @@ public:
         }
 
         //removing those symbols because of alignment width check
-        if ((code == 65292) || (code == 13058) || (code == 65281))
-        {
-            glyph_index = getCharIndex(code, def_char);
-            return getGlyphInfoItem(glyph_index, glyph);
-        }
         if  (FALLBACK_FONTS_ENABLE)
         {
             fontMan->InitFallbackFonts();
@@ -998,7 +996,8 @@ public:
             return getGlyphInfoItem( glyph_index, glyph);
         }
         glyph_index = fallback->getCharIndex(code, 0);
-
+        //CRLog::error("code       = %c = %d = %x",code,code,code);
+        //CRLog::error("glyphindex = %lc = %d = %x",glyph_index,glyph_index,glyph_index);
         if (glyph_index != 0)
         {
             return fallback->getGlyphInfoItem(glyph_index, glyph);

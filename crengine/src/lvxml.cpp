@@ -2693,7 +2693,7 @@ bool LvXmlParser::Parse()
 
                 if (tagname=="br" && close_flag)
                 {
-                    callback_->OnText(L"\u200B", 1, flags);
+                    callback_->OnText(L" ", 1, flags);
                     //callback_->OnText(L"&", 1, flags);
                 }
                 if(tagname=="blockquote")
@@ -2731,7 +2731,7 @@ bool LvXmlParser::Parse()
                     tagns = "";
                     if (close_flag)
                     {
-                        callback_->OnText(L"\u200B", 1, flags);
+                        callback_->OnText(L" ", 1, flags);
                     }
                 }
 

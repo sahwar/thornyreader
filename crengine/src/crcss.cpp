@@ -183,6 +183,7 @@ tt, samp, kbd {
 
 blockquote {
   display: block;
+/*  hyphenate: none;*/
   font-style: italic;
   margin-left: 1.5em;
   margin-right: 1.5em;
