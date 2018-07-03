@@ -5382,6 +5382,11 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
             {
                 return;
             }
+            // alone_space_in_node shift prohibition
+            if (leftshift > 0 && pos == len && pos == 1 && (text == " " || text == "\t") )
+            {
+                leftshift = 0;
+            }
 
             if (!AllowTextNodeShift(node))
             {
