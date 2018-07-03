@@ -3197,8 +3197,8 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
                 {
                     //word = word + lString16("+12");
                     int charwidth = font->getCharWidth(word.firstChar());
-                    l = (rect.right - charwidth)    / page_width;
-                    r = (rect.right)                / page_width;
+                    l = (rect.right)                / page_width;
+                    r = (rect.right + charwidth)    / page_width;
                     t = (nextrect.top - charheight) / page_height;
                     b = (nextrect.top)              / page_height;
                 }
