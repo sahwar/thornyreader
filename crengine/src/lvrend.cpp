@@ -1698,7 +1698,18 @@ void DrawDocument( LVDrawBuf & drawbuf, ldomNode * enode, int x0, int y0, int dx
                     } else {
                         if ( gFlgFloatingPunctuationEnabled && (enode->getNodeName() == "image" || enode->getNodeName() == "img"))
                         {
-                            txform->Draw(&drawbuf, 0 + margins.right, doc_y + y0 + padding_top, marks, nbookmarks);
+                            int margin_right = margins.right;
+                            ldomNode * parent_node = enode->getParentNode();
+                            if(parent_node != nullptr)
+                            {
+                                css_style_rec_t * style = parent_node->getStyle().get();
+                                if(style->margin[1].value > 0)
+                                {
+                                    margin_right = style->margin[1].value;
+                                }
+                            }
+
+                            txform->Draw(&drawbuf, 0 + margin_right, doc_y + y0 + padding_top, marks, nbookmarks);
                         }
                         else
                         {
