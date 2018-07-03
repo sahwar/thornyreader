@@ -2052,6 +2052,10 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas(int unused)
             allowed.add(lString16("h1"));
             allowed.add(lString16("h2"));
             allowed.add(lString16("h3"));
+            allowed.add(lString16("h4"));
+            allowed.add(lString16("h5"));
+            allowed.add(lString16("h6"));
+            allowed.add(lString16("subtitle"));
             allowed.add(lString16("blockquote"));
             allowed.add(lString16("autoBoxing"));
             allowed.add(lString16("br"));
@@ -2863,13 +2867,17 @@ float LVDocView::CalcRightSide(TextRect textrect)
 	{
 		result = rect.right + curwidth + (hyphwidth / 2);
 	}
-	else
+	else  //css_ta_justify
 	{
 		result = right_line - leftshift + hyphwidth;
 	}
     if(nomargins)
     {
         result = result - hyphwidth;
+    }
+    if (result<rect.right) // Plan B
+    {
+        result = rect.right+curwidth;
     }
 	return result;
 }
