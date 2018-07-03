@@ -711,7 +711,8 @@ void LVDocView::DrawPageTo(LVDrawBuf *drawbuf, LVRendPageInfo &page, lvRect *pag
 		             -start + offset,
 		             height_,
 		             &marked_ranges_,
-		             &bookmark_ranges_);
+		             &bookmark_ranges_,
+				     margins_);
 	}
 	// draw footnotes
 	int fny = clip.top + (page.height ? page.height + FOOTNOTE_MARGIN : FOOTNOTE_MARGIN);
@@ -2858,7 +2859,7 @@ float LVDocView::CalcRightSide(TextRect textrect)
 	{
 		result = right_line - margins.right + (hyphwidth / 2);
 	}
-	else if (align == css_ta_center)
+	else if (align == css_ta_center || align == css_ta_left)
 	{
 		result = rect.right + curwidth + (hyphwidth / 2);
 	}
@@ -2868,7 +2869,7 @@ float LVDocView::CalcRightSide(TextRect textrect)
 	}
     if(nomargins)
     {
-        result = result -  hyphwidth;
+        result = result - hyphwidth;
     }
 	return result;
 }
@@ -3102,7 +3103,7 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
 	        float r = pre_r / page_width;
 	        float t = rect.top / page_height;
 	        float b = (rect.top + strheight_last) / page_height;
-
+	        //word=word+lString16("+00");
             if (rect.top == img_top && word_chars.length() > i + 1)
             {
                 int charwidth = font->getCharWidth(word.firstChar());
@@ -3117,7 +3118,7 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
                 DocToWindowRect(lastrect);
                 lvRect nextrect = word_chars.get(i + 1).getRect();
                 DocToWindowRect(nextrect);
-
+	            //word=word+lString16("+0");
                 if (nextrect.top > img_top) //последний символ в строке с инлайновым изображением
                 {
                     //word=word+lString16("+1");
@@ -3129,8 +3130,8 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
                     if(rect.left <= img_left)
                     {
 	                    //   word=word+lString16("+2");
-                        l = (rect.right - charwidth) / page_width;
-                        r = (rect.right + charwidth) / page_width;
+                        l = (rect.right) / page_width;
+                        r = pre_r / page_width;
                     }
 
                     if(rect.right <= img_right)
@@ -3179,7 +3180,7 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
             float t = rect.top / page_height;
             float r = rect.right / page_width;
             float b = rect.bottom / page_height;
-
+	        //word=word+lString16("+01");
             if (rect.top == img_top && word_chars.length() > i + 1)
             {
 	            //	word=word+lString16("+11");
@@ -3194,14 +3195,12 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
                 DocToWindowRect(nextrect);
                 if (nextrect.top > img_top) //последний символ в строке с инлайновым изображением
                 {
-	                //    word=word+lString16("+12");
+                    //word = word + lString16("+12");
                     int charwidth = font->getCharWidth(word.firstChar());
-                    lvRect lastrect = word_chars.get(i - 1).getRect();
-                    DocToWindowRect(lastrect);
                     l = (rect.right - charwidth)    / page_width;
-                    r = (rect.right)  / page_width;
-                    t = (lastrect.bottom - charheight) / page_height;
-                    b = (lastrect.bottom) / page_height;
+                    r = (rect.right)                / page_width;
+                    t = (nextrect.top - charheight) / page_height;
+                    b = (nextrect.top)              / page_height;
                 }
             }
 
