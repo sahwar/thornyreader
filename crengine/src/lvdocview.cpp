@@ -2064,7 +2064,11 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas(int unused)
             //allowed.add(lString16("pagebreak"));
 
             lString16 nodename = node->getNodeName();
-
+            css_display_t display = node->getParentNode()->getStyle().get()->display;
+            if(display == css_d_run_in)
+            {
+                return false;
+            }
             for (int i = 0; i < allowed.length(); i++)
             {
 	            //if (node->isText()))
@@ -3058,6 +3062,7 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
 			    #endif // DEBUG_PARA_END_BLOCKS
 
 			    #ifdef TRDEBUG
+			    //CRLog::error("[%s%s%s%s%s]",
 			    //        LCSTR(word_chars.get(i).getText()),
 			    //        LCSTR(word_chars.get(i+1).getText()),
 			    //        LCSTR(word_chars.get(i+2).getText()),
