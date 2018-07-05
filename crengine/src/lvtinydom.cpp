@@ -5312,6 +5312,10 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
                     return false;
                 }
                 lString16 name = parentnode->getNodeName();
+                if(name == "a")
+                {
+                    return false;
+                }
                 int index = node->getNodeIndex();
                 if(name == "style" && index !=0)
                 {
