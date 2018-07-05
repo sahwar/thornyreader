@@ -1597,7 +1597,7 @@ int renderBlockElement( LVRendPageContext & context, ldomNode * enode, int x, in
 }
 
 void DrawDocument( LVDrawBuf & drawbuf, ldomNode * enode, int x0, int y0, int dx, int dy, int doc_x, int doc_y, int page_height, ldomMarkedRangeList * marks,
-                   ldomMarkedRangeList *bookmarks, lvRect margins)
+                   ldomMarkedRangeList *bookmarks, lvRect margins,int columns)
 {
     if ( enode->isElement() )
     {
@@ -1650,7 +1650,7 @@ void DrawDocument( LVDrawBuf & drawbuf, ldomNode * enode, int x0, int y0, int dx
                 for (int i=0; i<cnt; i++)
                 {
                     ldomNode * child = enode->getChildNode( i );
-                    DrawDocument( drawbuf, child, x0, y0, dx, dy, doc_x, doc_y, page_height, marks, bookmarks,margins ); //+fmt->getX() +fmt->getY()
+                    DrawDocument( drawbuf, child, x0, y0, dx, dy, doc_x, doc_y, page_height, marks, bookmarks,margins,columns ); //+fmt->getX() +fmt->getY()
                 }
 #if (DEBUG_TREE_DRAW!=0)
                 drawbuf.FillRect( doc_x+x0, doc_y+y0, doc_x+x0+fmt.getWidth(), doc_y+y0+1, color );
@@ -1696,7 +1696,7 @@ void DrawDocument( LVDrawBuf & drawbuf, ldomNode * enode, int x0, int y0, int dx
                         ldomMarkedRangeList nmarks( marks, rc );
                         txform->Draw( &drawbuf, doc_x+x0 + padding_left, doc_y+y0 + padding_top, &nmarks, nbookmarks );
                     } else {
-                        if ( gFlgFloatingPunctuationEnabled && (enode->getNodeName() == "image" || enode->getNodeName() == "img"))
+                        if ( gFlgFloatingPunctuationEnabled && (enode->getNodeName() == "image" || enode->getNodeName() == "img") && columns == 1)
                         {
                             int margin_right = margins.right;
                             ldomNode * parent_node = enode->getParentNode();

@@ -712,7 +712,8 @@ void LVDocView::DrawPageTo(LVDrawBuf *drawbuf, LVRendPageInfo &page, lvRect *pag
 		             height_,
 		             &marked_ranges_,
 		             &bookmark_ranges_,
-				     margins_);
+				     margins_,
+                     GetColumns());
 	}
 	// draw footnotes
 	int fny = clip.top + (page.height ? page.height + FOOTNOTE_MARGIN : FOOTNOTE_MARGIN);
@@ -3221,7 +3222,7 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
                 }
             }
 
-            //CRLog::error("usual letter = %s", LCSTR(word));
+            //CRLog::error("usual letter = %s rect [%f:%f]:[%f:%f]", LCSTR(word),l*page_width,t*page_height,r*page_width,b*page_height);
 
             Hitbox *hitbox = new Hitbox(l, r, t, b, word);
             result.add(*hitbox);
