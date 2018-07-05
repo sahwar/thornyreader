@@ -2838,7 +2838,7 @@ float LVDocView::CalcRightSide(TextRect textrect)
 	bool two_columns = this->GetColumns() > 1;
     bool right_side = two_columns ? rect.left > halfwidth : false;
     int right_line;
-    bool nomargins = (margins.right<20)? true:false;  //todo take nomargins from docview, set nomargins in docview from bridge
+    bool nomargins = (margins.right<20)? true : false;  //todo take nomargins from docview, set nomargins in docview from bridge
 
 	LVFont *font = this->base_font_.get();
 	LVFont::glyph_info_t glyph;
@@ -2877,12 +2877,16 @@ float LVDocView::CalcRightSide(TextRect textrect)
 	}
     if(nomargins)
     {
-        result = result - hyphwidth;
+        result = result - (hyphwidth / 2);
     }
     if (result<rect.right) // Plan B
     {
         result = rect.right+curwidth;
     }
+	if(result>right_line)
+	{
+		result = right_line - (hyphwidth / 2);
+	}
 	return result;
 }
 
