@@ -200,8 +200,9 @@ void LVDocView::UpdatePageMargins()
 		{
 			align = new_margin_right;
 		}
-		new_margin_left += align;
-		new_margin_right -= align;
+        gTextLeftShift = align;
+		//new_margin_left += align;
+		//new_margin_right -= align;
 	}
 	if (margins_.left != new_margin_left
 	    || margins_.right != new_margin_right
@@ -2138,6 +2139,8 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas(int unused)
             //CRLog::error("text = %s",LCSTR(node->getText()));
             //CRLog::error("rect = [%d:%d][%d:%d]",end_rect.left,end_rect.right,end_rect.top,end_rect.bottom);
 			//para_rect_array.add(end_rect);
+            end_rect.left += gTextLeftShift;
+            end_rect.right += gTextLeftShift;
 			return end_rect;
 		}
 
@@ -2235,7 +2238,7 @@ LVArray<ImgRect> LVDocView::GetCurrentPageImages(int unused, int maxw, int maxh)
 		int &unused_;
 		int maxw_;
 		int maxh_;
-		LVArray<ImgRect> para_rect_array;
+		LVArray<ImgRect> img_rect_array;
 
 		bool NodeIsAllowed(ldomNode * node)
         {
@@ -2253,53 +2256,63 @@ LVArray<ImgRect> LVDocView::GetCurrentPageImages(int unused, int maxw, int maxh)
 		}
 		// Called for each node in range
 		virtual bool onElement(ldomXPointerEx *ptr)
-		{
-			ldomNode *node = ptr->getNode();
+        {
+            ldomNode *node = ptr->getNode();
 
-			if (!node->isImage())
-			{
-				return true;
-			}
+            if (!node->isImage())
+            {
+                return true;
+            }
 
-			//CRLog::error("in node = %s", LCSTR(node->getNodeName()));
+            //CRLog::error("in node = %s", LCSTR(node->getNodeName()));
 
-			int end_index = node->getText().length();
+            int end_index = node->getText().length();
             ldomXPointerEx end = ldomXPointerEx(node, end_index);
-            ldomXPointer xp = ldomXPointer(node,end_index);
+            ldomXPointer xp = ldomXPointer(node, end_index);
 
-            LVImageSource* image = node->getObjectImageSource().get();
+            LVImageSource *image = node->getObjectImageSource().get();
             int imgheight = image->GetHeight();
             int imgwidth = image->GetWidth();
-            css_style_rec_t* style = node->getStyle().get();
-			lvRect imgrect;
+            css_style_rec_t *style = node->getStyle().get();
+            css_style_rec_t *parent_style = node->getParentNode()->getStyle().get();
+            lvRect imgrect;
             if (!xp.getRect(imgrect))
             {
                 CRLog::error("Unable to get imagerect!");
             }
 
-			int pscale_x = 1000 * maxw_ / imgwidth;
-			int pscale_y = 1000 * maxh_ / imgheight;
-			int pscale = pscale_x < pscale_y ? pscale_x : pscale_y;
-			int maxscale = 3 * 1000;
-			if ( pscale>maxscale )
-				pscale = maxscale;
-			imgheight = imgheight * pscale / 1000;
-			imgwidth  = imgwidth * pscale / 1000;
+            int pscale_x = 1000 * maxw_ / imgwidth;
+            int pscale_y = 1000 * maxh_ / imgheight;
+            int pscale = pscale_x < pscale_y ? pscale_x : pscale_y;
+            int maxscale = 3 * 1000;
+            if (pscale > maxscale)
+                pscale = maxscale;
+            imgheight = imgheight * pscale / 1000;
+            imgwidth = imgwidth * pscale / 1000;
 
             if (style->display == css_d_block)
-			imgrect.top= imgrect.top+style->font_size.value;
-            //}
-
+            {
+                imgrect.top = imgrect.top + style->font_size.value;
+                if(parent_style->margin[0].value>0)
+                {
+                    imgrect.left = imgrect.left + style->font_size.value;
+                }
+            }
             imgrect.right=imgrect.left+imgwidth;
             imgrect.bottom=imgrect.top+imgheight;
-            para_rect_array.add(ImgRect(node,imgrect));
-            //CRLog::error("imgrect = [%d:%d][%d:%d]", imgrect.left, imgrect.right, imgrect.top, imgrect.bottom);
+
+            if(style->display == css_d_inline)
+            {
+                imgrect.left  = imgrect.left  + gTextLeftShift;
+                imgrect.right = imgrect.right + gTextLeftShift;
+            }
+            img_rect_array.add(ImgRect(node,imgrect));
 
 			return false;
 		}
 		LVArray<ImgRect> GetImgArray()
 		{
-			return para_rect_array;
+			return img_rect_array;
 		}
 	};
 

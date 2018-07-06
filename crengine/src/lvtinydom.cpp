@@ -15,6 +15,7 @@
 #include "include/lvtinydom.h"
 #include "include/fb2def.h"
 #include "include/lvrend.h"
+#include "include/crconfig.h"
 
 /// Data compression level (0=no compression, 1=fast compressions, 3=normal compression)
 #ifndef DOC_DATA_COMPRESSION_LEVEL
@@ -5355,10 +5356,11 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
             int pos = nodeRange->getStart().getOffset();
             int len = text.length();
             int end = nodeRange->getEnd().getOffset();
-            if (len > end) {
+            if (len > end)
+            {
                 len = end;
             }
-            int TRFLAGS = 0 ;
+            int TRFLAGS = 0;
             TRFLAGS |= CH_PROP_ALPHA;
             TRFLAGS |= CH_PROP_DIGIT;
             TRFLAGS |= CH_PROP_PUNCT;
@@ -5372,7 +5374,7 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
             TRFLAGS |= CH_PROP_HIEROGLYPH;
 
             int leftshift = 0;
-
+            int shift =0;
 
             for (; pos < len; pos++)
             {
@@ -5399,15 +5401,15 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
                     ldomWord word = ldomWord(node, pos, pos + 1);
                     lvRect rect = word.getRect();
                     lString16 string = word.getText();
-                    rect.left = rect.left - leftshift;
-                    rect.right = rect.right - leftshift;
+                    rect.left = rect.left - leftshift + gTextLeftShift;
+                    rect.right = rect.right - leftshift + gTextLeftShift;
                     list_.add(TextRect(node, rect, string));
                 }
                 //last char zero width fix
                 ldomWord word = ldomWord(node, len - 1, len);
                 lvRect rect = word.getRect();
                 lString16 string = word.getText();
-                rect.left = rect.left - leftshift;
+                rect.left = rect.left - leftshift + gTextLeftShift;
                 list_.add(TextRect(node, rect, string));
             }
             else
@@ -5440,8 +5442,8 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
                     ldomWord word = ldomWord(node, pos, pos + 1);
                     lvRect rect = word.getRect();
                     lString16 string = word.getText();
-                    rect.left = rect.left;
-                    rect.right = rect.right;
+                    rect.left = rect.left + gTextLeftShift;
+                    rect.right = rect.right + gTextLeftShift;
                     list_.add(TextRect(node, rect, string));
                 }
             }

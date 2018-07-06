@@ -54,7 +54,8 @@ LOCAL_SRC_FILES := \
     src/rtfimp.cpp \
     src/txtselector.cpp \
     src/wordfmt.cpp \
-    src/mobihandler.cpp
+    src/mobihandler.cpp \
+    src/crconfig.cpp
 
 LOCAL_SRC_FILES += \
     libpng/pngerror.c  \

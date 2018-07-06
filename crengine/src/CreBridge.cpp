@@ -516,9 +516,9 @@ void CreBridge::processPageLinks(CmdRequest& request, CmdResponse& response)
 #endif
             continue;
         }
-        float l = rect.left / page_width;
+        float l = (rect.left + gTextLeftShift) / page_width;
         float t = rect.top / page_height;
-        float r = rect.right / page_width;
+        float r = (rect.right + gTextLeftShift) / page_width;
         float b = rect.bottom / page_height;
         lString16 href = link->getHRef();
         uint16_t target_page = 0;

@@ -1696,21 +1696,18 @@ void DrawDocument( LVDrawBuf & drawbuf, ldomNode * enode, int x0, int y0, int dx
                         ldomMarkedRangeList nmarks( marks, rc );
                         txform->Draw( &drawbuf, doc_x+x0 + padding_left, doc_y+y0 + padding_top, &nmarks, nbookmarks );
                     } else {
-                        if ( gFlgFloatingPunctuationEnabled && (enode->getNodeName() == "image" || enode->getNodeName() == "img") && columns == 1)
+                        if ( gFlgFloatingPunctuationEnabled  )
                         {
-                            int margin_right = margins.right;
-                            ldomNode * parent_node = enode->getParentNode();
-                            if(parent_node != nullptr)
+                            if(enode->getNodeName() == "image" || enode->getNodeName() == "img")
                             {
-                                css_style_rec_t * style = parent_node->getStyle().get();
-                                if(style->margin[1].value > 0)
-                                {
-                                    margin_right = style->margin[1].value;
-                                }
+                                txform->Draw(&drawbuf, doc_x + x0 + padding_left, doc_y + y0 + padding_top, marks, nbookmarks);
                             }
-
-                            txform->Draw(&drawbuf, 0 + margin_right, doc_y + y0 + padding_top, marks, nbookmarks);
+                            else
+                            {
+                                txform->Draw(&drawbuf, doc_x + x0 + padding_left + gTextLeftShift, doc_y + y0 + padding_top, marks, nbookmarks);
+                            }
                         }
+
                         else
                         {
                             txform->Draw(&drawbuf, doc_x + x0 + padding_left, doc_y + y0 + padding_top, marks, nbookmarks);
