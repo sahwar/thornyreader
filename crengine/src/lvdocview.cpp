@@ -3135,6 +3135,15 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
 	        float t = rect.top / page_height;
 	        float b = (rect.top + strheight_last) / page_height;
 	        //word=word+lString16("+00");
+            // на случай второго переноса в stanza
+	        int rightzone = (this->GetColumns()==1)? (GetWidth()*3/4) : (GetWidth()*7/8);
+            if(rect.left > rightzone)
+            {
+                l = rect.left / page_width;
+                //word=word+lString16("+001");
+            }
+
+            //инлайновые изображения
             if (rect.top == img_top && word_chars.length() > i + 1)
             {
                 int charwidth = font->getCharWidth(word.firstChar());
