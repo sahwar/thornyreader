@@ -2293,9 +2293,13 @@ LVArray<ImgRect> LVDocView::GetCurrentPageImages(int unused, int maxw, int maxh)
             if (style->display == css_d_block)
             {
                 imgrect.top = imgrect.top + style->font_size.value;
-                if(parent_style->margin[0].value>0)
+                //cite p image fix
+                if (node->getParentNode()->getNodeName()=="p")
                 {
-                    imgrect.left = imgrect.left + style->font_size.value;
+                    if (node->getParentNode()->getParentNode()->getNodeName() == "cite")
+                    {
+                        imgrect.left = imgrect.left + style->font_size.value;
+                    }
                 }
             }
             imgrect.right=imgrect.left+imgwidth;
@@ -3030,6 +3034,7 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
     }
 	LVArray<lvRect> para_array = this->GetPageParaEnds();
 	LVArray<ImgRect> images_array = this->GetPageImages(img_inline);
+	//LVArray<ImgRect> images_array = this->GetPageImages();
 	LVRef<ldomXRange> range = this->GetPageDocRange();
     lvRect margins = this->cfg_margins_;
     ldomXRange text = *range;
