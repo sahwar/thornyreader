@@ -639,6 +639,7 @@ public:
     ldomNode * removeChild( lUInt32 index );
     /// returns XPath segment for this element relative to parent element (e.g. "p[10]")
     lString16 getXPathSegment();
+    lString16 getXPath();
     /// creates stream to read base64 encoded data from element
     LVStreamRef createBase64Stream();
     /// returns object image source
@@ -1193,6 +1194,7 @@ public:
     virtual void onText(ldomXRange*) { }
     /// called for each found node in range
     virtual bool onElement(ldomXPointerEx*) { return true; }
+    virtual bool onElement(ldomNode*) { return true; }
 };
 
 class TextRect
@@ -1351,6 +1353,7 @@ public:
     /// sets range to nearest word bounds, returns true if success
     static bool getWordRange( ldomXRange & range, ldomXPointer & p );
     /// run callback for each node in range
+    void forEachOld( ldomNodeCallback * callback );
     void forEach( ldomNodeCallback * callback );
     /// returns rectangle (in doc coordinates) for range. Returns true if found.
     bool getRect( lvRect & rect );
@@ -1359,6 +1362,13 @@ public:
     /// searches for specified text inside range
     bool findText(lString16 pattern, bool caseInsensitive, bool reverse, LVArray<ldomWord>& words,
                   int maxCount, int maxHeight, bool checkMaxFromStart = false);
+    void processStart(ldomNode* node, ldomNodeCallback *callback);
+    void processText(ldomNode* node, ldomNodeCallback *callback);
+    void processEnd(ldomNode* node, ldomNodeCallback *callback);
+    bool processElement(ldomNode *node, ldomNodeCallback *callback);
+    ldomNode* getEndNode();
+    ldomNode* getStartNode();
+
 };
 
 class ldomMarkedText

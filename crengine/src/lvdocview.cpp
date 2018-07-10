@@ -2018,7 +2018,7 @@ void LVDocView::GetCurrentPageLinks(ldomXRangeList &links_list)
 		}
 	};
 	LinkKeeper callback(links_list);
-	page_range->forEach(&callback);
+	page_range->forEachOld(&callback);
 	if (viewport_mode_ == MODE_PAGES && GetColumns() > 1)
 	{
 		// Process second page
@@ -2027,7 +2027,7 @@ void LVDocView::GetCurrentPageLinks(ldomXRangeList &links_list)
 		if (!page_range.isNull())
 		{
 			callback.text_is_first_ = true;
-			page_range->forEach(&callback);
+			page_range->forEachOld(&callback);
 		}
 	}
 }
@@ -2206,7 +2206,7 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas(int unused)
 	};
 
 	TextKeeper callback(unused);
-	page_range->forEach(&callback);
+	page_range->forEachOld(&callback);
 	result = callback.GetParaArray();
 
 	if (viewport_mode_ == MODE_PAGES && GetColumns() > 1)
@@ -2217,7 +2217,7 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas(int unused)
 		if (!page_range.isNull())
 		{
 			callback.text_is_first_ = true;
-			page_range->forEach(&callback);
+			page_range->forEachOld(&callback);
 			result.add(callback.GetParaArray());
 		}
 	}
@@ -2322,7 +2322,7 @@ LVArray<ImgRect> LVDocView::GetCurrentPageImages(int unused, int maxw, int maxh)
 
 
 	ImageKeeper callback(unused,maxw,maxh);
-	page_range->forEach(&callback);
+	page_range->forEachOld(&callback);
 	result = callback.GetImgArray();
 
 	if (viewport_mode_ == MODE_PAGES && GetColumns() > 1)
@@ -2332,7 +2332,7 @@ LVArray<ImgRect> LVDocView::GetCurrentPageImages(int unused, int maxw, int maxh)
 		page_range = GetPageDocRange(page_index + 1);
 		if (!page_range.isNull())
 		{
-			page_range->forEach(&callback);
+			page_range->forEachOld(&callback);
 			result.add(callback.GetImgArray());
 		}
 	}
