@@ -1455,21 +1455,10 @@ void LVDocView::UpdateBookmarksRanges()
 	ranges.getRanges(bookmark_ranges_);
 }
 
-/// Minimum EM width of page (prevents show two pages for windows that not enougn wide)
-#define MIN_EM_PER_PAGE 20
-
 int LVDocView::GetColumns()
 {
-	if (viewport_mode_ == MODE_SCROLL
-	    || width_ < cfg_font_size_ * MIN_EM_PER_PAGE
-	    || width_ * 5 < height_ * 6)
-	{
-		return 1;
-	}
-	return page_columns_;
+	return viewport_mode_ == MODE_SCROLL ? 1 : page_columns_;
 }
-
-#undef MIN_EM_PER_PAGE
 
 /// sets current bookmark
 void LVDocView::SetBookmark(ldomXPointer bm)
