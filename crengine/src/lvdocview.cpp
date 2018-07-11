@@ -2066,11 +2066,15 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas(int unused)
             //allowed.add(lString16("pagebreak"));
 
             lString16 nodename = node->getNodeName();
-            css_display_t display = node->getParentNode()->getStyle().get()->display;
-            if(display == css_d_run_in)
+            if(node->getParentNode() != NULL)
             {
-                return false;
+                css_display_t display = node->getParentNode()->getStyle().get()->display;
+                if(display == css_d_run_in)
+                {
+                    return false;
+                }
             }
+
             for (int i = 0; i < allowed.length(); i++)
             {
 	            //if (node->isText()))
@@ -2189,16 +2193,28 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas(int unused)
 		// Called for each node in range
 		virtual bool onElement(ldomXPointerEx *ptr)
 		{
-			ldomNode *element_node = ptr->getNode();
+			ldomNode *node = ptr->getNode();
 			#ifdef TRDEBUG
-			if (element_node->getChildCount() == 0)
+			if (node->getChildCount() == 0)
 			{
 				CRLog::trace("GetCurrentPageParas empty: no children found");
 			}
 			#endif
-            ProcessNodeParaends(element_node);
+            ProcessNodeParaends(node);
 			return false;
 		}
+
+		virtual bool onElement(ldomNode *node)
+		{
+			#ifdef TRDEBUG
+			if (node->getChildCount() == 0)
+			{
+				CRLog::trace("GetCurrentPageParas empty: no children found");
+			}
+			#endif
+			ProcessNodeParaends(node);
+			return false;
+        }
 		LVArray<lvRect> GetParaArray()
 		{
 			return para_rect_array;
