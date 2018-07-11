@@ -1368,6 +1368,7 @@ public:
     bool processElement(ldomNode *node, ldomNodeCallback *callback);
     ldomNode* getEndNode();
     ldomNode* getStartNode();
+    ldomNode* getAncestor(ldomNode* n1, ldomNode* n2);
 
 };
 

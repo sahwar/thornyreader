@@ -9,6 +9,7 @@
    See LICENSE file for details
 *******************************************************/
 
+#include <map>
 #include <stdlib.h>
 #include <zlib.h>
 #include "include/lvstring.h"
@@ -3587,7 +3588,8 @@ lString16 ldomNode::getXPath()
     ldomNode *parent = this->getParentNode();
     while (parent != NULL)
     {
-        result = parent->getXPathSegment() + "/" + result;
+        result = parent->getXPathSegment() + "(" + lString16::itoa(parent->getNodeLevel()) +")/" + result;
+        //result = parent->getXPathSegment() + "/" + result;
         parent = parent->getParentNode();
     }
     return result;
@@ -5263,6 +5265,60 @@ ldomNode* ldomXRange::getStartNode()
     return this->_start.getNode();
 }
 
+ldomNode* ldomXRange::getAncestor(ldomNode* n1, ldomNode* n2)
+{
+    typedef std::map< int, ldomNode*> nodemap;
+    nodemap m;
+
+    ldomNode * a;
+    ldomNode * b;
+    ldomNode * p;
+
+    if (n1 == NULL || n2 == NULL)
+    {
+        return NULL;
+    }
+    ldomNode *p1 = n1->getParentNode();
+    ldomNode *p2 = n2->getParentNode();
+
+    if (p1 == NULL || p2 == NULL) return NULL;
+    if (n1 == n2) return p1;
+    if (n1 == p2) return p1;
+    if (n2 == p1) return p2;
+
+    if(n1->getNodeLevel() > n2->getNodeLevel())
+    {
+        a = n1; b = n2;
+    }
+    else
+    {
+        a = n2; b = n1;
+    }
+
+    p = a;
+    while (p->getParentNode() != NULL)
+    {
+        p = p->getParentNode();
+        int key = p->getNodeLevel();
+        m[key]= p;
+    }
+
+    p = b;
+    while (p->getParentNode() != NULL)
+    {
+        p = p->getParentNode();
+        int key = p->getNodeLevel();
+        if (m.find(key)!= m.end())
+        {
+            if(p == m.at(key))
+            {
+                return p;
+            }
+        }
+    }
+    return NULL;
+}
+
 void ldomXRange::processText(ldomNode* node, ldomNodeCallback *callback)
 {
     ldomXRange range = ldomXRange(node);
@@ -5321,16 +5377,15 @@ bool ldomXRange::processElement(ldomNode *node, ldomNodeCallback *callback)
 /// run callback for each node in range
 void ldomXRange::forEach(ldomNodeCallback *callback)
 {
-    ldomXRange* orig = this;
-
     ldomNode *start = getStartNode();
     ldomNode *end   = getEndNode();
-    int startoffset = orig->_start.getOffset();
-    int endoffset   = orig->_end.getOffset();
-    //lString16 startpath = start->getXPath();
-    //lString16 endpath   = end->getXPath();
-    //CRLog::error("startpath = %s",LCSTR(startpath));
-    //CRLog::error("end  path = %s",LCSTR(endpath));
+    ldomNode *common_parent   = getAncestor(start,end);
+    int level = (common_parent!=NULL)? common_parent->getNodeLevel():1;
+
+    CRLog::error("start  path = %s",LCSTR(start->getXPath()));
+    CRLog::error("end    path = %s",LCSTR(end->getXPath()));
+    CRLog::error("parent path = %s",LCSTR(common_parent->getXPath()));
+    CRLog::error("parent lvl  = %d",common_parent->getNodeLevel());
 
     ldomNode* node = start;
     ldomNode* parent = node->getParentNode();
@@ -5341,7 +5396,7 @@ void ldomXRange::forEach(ldomNodeCallback *callback)
     int index = node->getNodeIndex();
 
     bool recres = false;
-    while (parent != NULL && parent->getParentNode() != NULL)
+    while (parent->getNodeLevel() >= level)
     {
         for (int i = index; i < parent->getChildCount(); i++)
         {
@@ -5349,26 +5404,32 @@ void ldomXRange::forEach(ldomNodeCallback *callback)
 
             if (node->isText())
             {
-               // lString16 nodepath = node->getXPath();
-               // CRLog::error("TEXT nodepath = %s",LCSTR(nodepath));
+                lString16 nodepath = node->getXPath();
+                CRLog::error("TEXT nodepath = %s",LCSTR(nodepath));
                 processText(node, callback);
             }
             else
             {
-               // lString16 nodepath = node->getXPath();
-               // CRLog::error("ELEMENT nodepath = %s",LCSTR(nodepath));
+                lString16 nodepath = node->getXPath();
+                CRLog::error("ELEMENT nodepath = %s",LCSTR(nodepath));
                 recres = processElement(node, callback);
             }
             if (recres || node == end)
             {
-              //  lString16 nodepath = node->getXPath();
-              //  CRLog::error("FOREACH FINISH nodepath = %s",LCSTR(nodepath));
+                lString16 nodepath = node->getXPath();
+                CRLog::error("FOREACH FINISH nodepath = %s",LCSTR(nodepath));
                 return;
             }
         }
         index = parent->getNodeIndex()+1;
         parent = parent->getParentNode();
-        lString16 parentpath   = parent->getXPath();
+
+        if(parent->getNodeLevel() == level)
+        {
+            CRLog::error("WE'RE IN COMMON PARENT!!!!!");
+            CRLog::error("___parent path = %s",LCSTR(parent->getXPath()));
+        }
+
     }
 }
 
