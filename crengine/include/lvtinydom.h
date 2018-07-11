@@ -1353,8 +1353,9 @@ public:
     /// sets range to nearest word bounds, returns true if success
     static bool getWordRange( ldomXRange & range, ldomXPointer & p );
     /// run callback for each node in range
-    void forEachOld( ldomNodeCallback * callback );
-    void forEach( ldomNodeCallback * callback );
+    void forEach(ldomNodeCallback *callback);
+    /// run callback for each node in range REIMPLEMENTED FOR TEXT HITBOX EXTRACTION
+    void forEach2( ldomNodeCallback * callback );
     /// returns rectangle (in doc coordinates) for range. Returns true if found.
     bool getRect( lvRect & rect );
     /// returns nearest common element for start and end points
@@ -1362,14 +1363,16 @@ public:
     /// searches for specified text inside range
     bool findText(lString16 pattern, bool caseInsensitive, bool reverse, LVArray<ldomWord>& words,
                   int maxCount, int maxHeight, bool checkMaxFromStart = false);
-    void processStart(ldomNode* node, ldomNodeCallback *callback);
+    //foreach2 process text node
     void processText(ldomNode* node, ldomNodeCallback *callback);
-    void processEnd(ldomNode* node, ldomNodeCallback *callback);
+    //foreach2 process element node
     bool processElement(ldomNode *node, ldomNodeCallback *callback);
+    //foreach2 get node that contains xpointer of end of range
     ldomNode* getEndNode();
+    //foreach2 get node that contains xpointer of start of range
     ldomNode* getStartNode();
+    //get first common ancestor of nodes n1 and n2
     ldomNode* getAncestor(ldomNode* n1, ldomNode* n2);
-
 };
 
 class ldomMarkedText
