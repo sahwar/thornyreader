@@ -5669,6 +5669,7 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
                 lvRect rect = word.getRect();
                 lString16 string = word.getText();
                 rect.left = rect.left - leftshift + gTextLeftShift;
+                rect.right = rect.right + gTextLeftShift;
                 list_.add(TextRect(node, rect, string));
             }
             else
