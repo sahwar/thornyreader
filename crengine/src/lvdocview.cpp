@@ -2251,10 +2251,8 @@ LVArray<ImgRect> LVDocView::GetCurrentPageImages(int unused, int maxw, int maxh)
 			return;
 		}
 		// Called for each node in range
-		virtual bool onElement(ldomXPointerEx *ptr)
+		virtual bool onElement(ldomNode *node)
         {
-            ldomNode *node = ptr->getNode();
-
             if (!node->isImage())
             {
                 return true;
@@ -2318,7 +2316,7 @@ LVArray<ImgRect> LVDocView::GetCurrentPageImages(int unused, int maxw, int maxh)
 
 
 	ImageKeeper callback(unused,maxw,maxh);
-    page_range->forEach(&callback);
+    page_range->forEach2(&callback);
 	result = callback.GetImgArray();
 
 	if (viewport_mode_ == MODE_PAGES && GetColumns() > 1)
@@ -2328,7 +2326,7 @@ LVArray<ImgRect> LVDocView::GetCurrentPageImages(int unused, int maxw, int maxh)
 		page_range = GetPageDocRange(page_index + 1);
 		if (!page_range.isNull())
 		{
-            page_range->forEach(&callback);
+            page_range->forEach2(&callback);
 			result.add(callback.GetImgArray());
 		}
 	}
