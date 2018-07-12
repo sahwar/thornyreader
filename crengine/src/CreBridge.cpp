@@ -172,10 +172,6 @@ void CreBridge::processFonts(CmdRequest& request, CmdResponse& response)
             fontMan->RegisterFont(UnicodeToUtf8(font));
         }
     }
-    if  (FALLBACK_FACE_DEFAULT != lString8("NONE")) //todo make call from upper level
-    {
-        fontMan->InitFallbackFontDefault();
-    }
 }
 
 void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
@@ -184,6 +180,10 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
     CmdDataIterator iter(request.first);
     if (!doc_view_) {
         doc_view_ = new LVDocView();
+        if  (FALLBACK_FACE_DEFAULT != lString8("NONE"))
+        {
+            fontMan->InitFallbackFontDefault();
+        }
     }
     while (iter.hasNext()) {
         uint32_t key;
@@ -251,11 +251,8 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
             doc_view_->cfg_font_face_ = UnicodeToUtf8(lString16(val));
             doc_view_->UpdatePageMargins();
             doc_view_->RequestRender();
-        } else if (key == CONFIG_CRE_FONT_FACE_FALLBACK) { //todo create call from upper level
-            if  (FALLBACK_FACE_DEFAULT != lString8("NONE"))
-            {
-                fontMan->InitFallbackFontDefault();
-            }
+        } else if (key == CONFIG_CRE_FONT_FACE_FALLBACK) {
+          //
         } else if (key == CONFIG_CRE_FONT_SIZE) {
             int int_val = atoi(val);
             int array_lenght = sizeof(ALLOWED_FONT_SIZES) / sizeof(int);
