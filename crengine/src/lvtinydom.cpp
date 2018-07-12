@@ -5379,6 +5379,57 @@ void ldomXRange::forEach2(ldomNodeCallback *callback)
     }
 }
 
+void ldomNodeCallback::processText(ldomNode* node, ldomXRange * range)
+{
+    ldomXRange noderange = ldomXRange(node);
+
+    if (node == range->getEndNode())
+    {
+        noderange.setEnd(range->getEnd());
+    }
+    if(node == range->getStartNode() )
+    {
+        noderange.setStart(range->getStart());
+    }
+    this->onText(&noderange);
+    /*
+    lString16 text = node->getText().substr(range._start.getOffset(),range._end.getOffset());
+    CRLog::error("full  text = %s",LCSTR(node->getText()));
+    CRLog::error("substrtext = %s",LCSTR(text));
+    */
+}
+
+bool ldomNodeCallback::processElement(ldomNode* node, ldomXRange * range)
+{
+    for (lUInt32 i = 0; i < node->getChildCount(); i++)
+    {
+        ldomNode *child = node->getChildNode(i);
+
+        if (child->isText())
+        {
+            //CRLog::error("_______TEXT nodepath = %s",LCSTR(child->getXPath()));
+            processText(child,range);
+        }
+        else
+        {
+            //CRLog::error("_______ELEMENT nodepath = %s",LCSTR(child->getXPath()));
+
+            if (this->onElement(child))
+            {
+                if(processElement(child, range))
+                {
+                    return true;
+                }
+            }
+        }
+
+        if (child == range->getEndNode())
+        {
+            return true;
+        }
+    }
+    return false;
+}
 /*
 // run callback for each node in range
 void ldomXRange::forEach2(ldomNodeCallback *callback)
@@ -8928,56 +8979,4 @@ lvRect ldomWord::getRect()
     range.setEnd(endex);
     range.getRect(result);
     return result;
-}
-
-void ldomNodeCallback::processText(ldomNode* node, ldomXRange * range)
-{
-    ldomXRange noderange = ldomXRange(node);
-
-    if (node == range->getEndNode())
-    {
-        noderange.setEnd(range->getEnd());
-    }
-    if(node == range->getStartNode() )
-    {
-        noderange.setStart(range->getStart());
-    }
-    this->onText(&noderange);
-    /*
-    lString16 text = node->getText().substr(range._start.getOffset(),range._end.getOffset());
-    CRLog::error("full  text = %s",LCSTR(node->getText()));
-    CRLog::error("substrtext = %s",LCSTR(text));
-    */
-}
-
-bool ldomNodeCallback::processElement(ldomNode* node, ldomXRange * range)
-{
-    for (lUInt32 i = 0; i < node->getChildCount(); i++)
-    {
-        ldomNode *child = node->getChildNode(i);
-
-        if (child->isText())
-        {
-            //CRLog::error("_______TEXT nodepath = %s",LCSTR(child->getXPath()));
-            processText(child,range);
-        }
-        else
-        {
-            //CRLog::error("_______ELEMENT nodepath = %s",LCSTR(child->getXPath()));
-
-            if (this->onElement(child))
-            {
-                if(processElement(child, range))
-                {
-                    return true;
-                }
-            }
-        }
-
-        if (child == range->getEndNode())
-        {
-            return true;
-        }
-    }
-    return false;
 }
