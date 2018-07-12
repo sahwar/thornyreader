@@ -1195,6 +1195,8 @@ public:
     /// called for each found node in range
     virtual bool onElement(ldomXPointerEx*) { return true; }
     virtual bool onElement(ldomNode*) { return true; }
+    virtual void processText(ldomNode* node, ldomXRange* range);
+    virtual bool processElement(ldomNode* node, ldomXRange* range);
 };
 
 class TextRect

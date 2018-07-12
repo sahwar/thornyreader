@@ -668,7 +668,7 @@ void LVDocView::DrawPageTo(LVDrawBuf *drawbuf, LVRendPageInfo &page, lvRect *pag
 	clip.left = pageRect->left + margins_.left;
 	clip.top = pageRect->top + margins_.top + offset;
 	clip.bottom = pageRect->top + margins_.top + height + offset;
-	clip.right = pageRect->left + pageRect->width() - margins_.right;
+	clip.right = pageRect->left + pageRect->width() - margins_.right + gTextLeftShift;
 	if (page.type == PAGE_TYPE_COVER)
 	{
 		clip.top = pageRect->top + margins_.top;
@@ -2040,10 +2040,11 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas(int unused)
 	{
 		return result;
 	}
-	class TextKeeper : public ldomNodeCallback
+	class ParaKeeper : public ldomNodeCallback
 	{
 		int &unused;
 		LVArray<lvRect> para_rect_array;
+		bool endnode_found_ = false;
 
 		bool NodeIsAllowed(ldomNode * node)
         {
@@ -2088,7 +2089,7 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas(int unused)
             return false;
         }
 
-		lvRect ProcessNodeParaends(ldomNode *node)
+		lvRect ProcessNodeParaends(ldomNode *node, ldomXRange* range)
 		{
             //CRLog::error("in node = %s",LCSTR(node->getNodeName()));
             lvRect paraend;
@@ -2105,9 +2106,14 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas(int unused)
 				else
 				{
                 //    CRLog::error("diving deeper");
-					paraend = ProcessNodeParaends(child);
+					paraend = ProcessNodeParaends(child,range);
                 }
               //  CRLog::error("node ended");
+                if (child == range->getEndNode())
+                {
+                    //CRLog::error("endnode found for processnodeparaends");
+                    endnode_found_ = true;
+                }
 			}
             if(NodeIsAllowed(node))
             {
@@ -2151,78 +2157,52 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas(int unused)
 	public:
 		bool text_is_first_ = true;
 
-		TextKeeper(int &unused) : unused(unused)	{	}
-		// Called for each text fragment in range
-		virtual void onText(ldomXRange *node_range)
-		{
-			if (!text_is_first_)
-			{
-				return;
-			}
-			text_is_first_ = false;
-			ldomNode *node = node_range->getStart().getNode();
-			if (node->isNull())
-			{
-				return;
-			}
-            while (node != NULL && node->getParentNode() != NULL )
+		ParaKeeper(int &unused) : unused(unused)	{	}
+
+        // Called for each text fragment in range
+        void processText(ldomNode *node1, ldomXRange *range)
+        {
+            ldomXRange node_range = ldomXRange(node1);
+
+            if (!text_is_first_)
+            {
+                return;
+            }
+            text_is_first_ = false;
+            ldomNode *node = node_range.getStart().getNode();
+            if (node->isNull())
+            {
+                return;
+            }
+            while (node != NULL && node->getParentNode() != NULL)
             {
                 node = node->getParentNode();
-                if(NodeIsAllowed(node))
+                if (NodeIsAllowed(node))
                 {
                     break;
                 }
             }
-            if(node->getParentNode()==NULL)
+            if (node->getParentNode() == NULL)
             {
                 return;
             }
-            ProcessNodeParaends(node);
-			#ifdef TRDEBUG
-			lString16 text = node->getText();
-			int start = node_range->getStart().getOffset();
-			int end = node_range->getEnd().getOffset();
-			if (start < end)
-			{
-				text = text.substr(start, end - start);
-			}
-			ldomNode *end_node = node_range->getEnd().getNode();
-			//CRLog::debug("GetCurrentPageParas first text on page: %d-%d %s", node->getDataIndex(), end_node->getDataIndex(), LCSTR(text));
-			#endif
-		}
-		// Called for each node in range
-		virtual bool onElement(ldomXPointerEx *ptr)
-		{
-			ldomNode *node = ptr->getNode();
-			#ifdef TRDEBUG
-			if (node->getChildCount() == 0)
-			{
-				CRLog::trace("GetCurrentPageParas empty: no children found");
-			}
-			#endif
-            ProcessNodeParaends(node);
-			return false;
-		}
-
-		virtual bool onElement(ldomNode *node)
-		{
-			#ifdef TRDEBUG
-			if (node->getChildCount() == 0)
-			{
-				CRLog::trace("GetCurrentPageParas empty: no children found");
-			}
-			#endif
-			ProcessNodeParaends(node);
-			return false;
+            ProcessNodeParaends(node, range);
         }
-		LVArray<lvRect> GetParaArray()
-		{
-			return para_rect_array;
-		}
-	};
 
-	TextKeeper callback(unused);
-    page_range->forEach(&callback);
+        virtual bool processElement(ldomNode *node, ldomXRange *range)
+        {
+            ProcessNodeParaends(node, range);
+            return (endnode_found_) ? true : false;
+        }
+
+        LVArray<lvRect> GetParaArray()
+        {
+            return para_rect_array;
+        }
+    };
+
+	ParaKeeper callback(unused);
+    page_range->forEach2(&callback);
 	result = callback.GetParaArray();
 
 	if (viewport_mode_ == MODE_PAGES && GetColumns() > 1)
@@ -2233,7 +2213,7 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas(int unused)
 		if (!page_range.isNull())
 		{
 			callback.text_is_first_ = true;
-            page_range->forEach(&callback);
+            page_range->forEach2(&callback);
 			result.add(callback.GetParaArray());
 		}
 	}
