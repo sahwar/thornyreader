@@ -1272,6 +1272,8 @@ class ldomXRange {
     ldomXPointerEx _start;
     ldomXPointerEx _end;
     lUInt32 _flags;
+    ldomNode* _startnode = NULL;
+    ldomNode* _endnode = NULL;
 public:
     ldomXRange() : _flags(0) { }
     ldomXRange( const ldomXPointerEx & start, const ldomXPointerEx & end, lUInt32 flags=0 )

@@ -5257,12 +5257,20 @@ void ldomXRange::forEach(ldomNodeCallback *callback)
 
 ldomNode* ldomXRange::getEndNode()
 {
-    return this->_end.getNode();
+    if (_endnode == NULL)
+    {
+        _endnode = this->_end.getNode();
+    }
+    return _endnode;
 }
 
 ldomNode* ldomXRange::getStartNode()
 {
-    return this->_start.getNode();
+    if (_startnode == NULL)
+    {
+        _startnode = this->_start.getNode();
+    }
+    return _startnode;
 }
 
 ldomNode* ldomXRange::getAncestor(ldomNode* n1, ldomNode* n2)
@@ -5323,6 +5331,11 @@ ldomNode* ldomXRange::getAncestor(ldomNode* n1, ldomNode* n2)
 /// run callback for each node in range
 void ldomXRange::forEach2(ldomNodeCallback *callback)
 {
+    if ( _start.isNull() || _end.isNull() )
+    {
+        return;
+    }
+
     ldomNode *start = getStartNode();
     ldomNode *end   = getEndNode();
     ldomNode *common_parent   = getAncestor(start,end);
