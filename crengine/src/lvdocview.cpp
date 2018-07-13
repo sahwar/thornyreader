@@ -204,6 +204,10 @@ void LVDocView::UpdatePageMargins()
 		//new_margin_left += align;
 		//new_margin_right -= align;
 	}
+	else
+	{
+		gTextLeftShift = 0;
+	}
 	if (margins_.left != new_margin_left
 	    || margins_.right != new_margin_right
 	    || margins_.top != cfg_margins_.top
