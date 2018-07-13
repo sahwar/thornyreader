@@ -54,6 +54,7 @@ void DrawDocument(
         int page_height,
         ldomMarkedRangeList * marks,
         ldomMarkedRangeList * bookmarks = NULL,
-        lvRect = lvRect(0,0,0,0));
+        lvRect = lvRect(0,0,0,0),
+        int two_columns = 1);
 
 #endif
