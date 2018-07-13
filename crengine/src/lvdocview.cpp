@@ -2790,7 +2790,7 @@ unsigned long long int getkey(lvRect rect)
 
 float LVDocView::CalcRightSide(TextRect textrect)
 {
-    float result;
+	float result;
 	lvRect rect = textrect.getRect();
 	DocToWindowRect(rect);
 	lString16 word = textrect.getText();
@@ -2800,19 +2800,19 @@ float LVDocView::CalcRightSide(TextRect textrect)
 	float halfwidth = page_width_int / 2;
 	lvRect margins = this->cfg_margins_;
 	bool two_columns = this->GetColumns() > 1;
-    bool right_side = two_columns ? rect.left > halfwidth : false;
-    int right_line;
-    bool nomargins = (margins.right<20)? true : false;  //todo take nomargins from docview, set nomargins in docview from bridge
+	bool right_side = two_columns ? rect.left > halfwidth : false;
+	int right_line;
+	bool nomargins = (margins.right < 20) ? true : false;  //todo take nomargins from docview, set nomargins in docview from bridge
 
 	LVFont *font = this->base_font_.get();
 	LVFont::glyph_info_t glyph;
 	int hyphwidth = font->getCharWidth(UNICODE_SOFT_HYPHEN_CODE);
-    int curwidth  = font->getCharWidth(word.firstChar());
+	int curwidth = font->getCharWidth(word.firstChar());
 
-    if (curwidth < hyphwidth && word != " ")
-    {
-        curwidth = hyphwidth * 2;
-    }
+	if (curwidth < hyphwidth && word != " ")
+	{
+		curwidth = hyphwidth * 2;
+	}
 
 	if (two_columns)
 	{
@@ -2839,15 +2839,17 @@ float LVDocView::CalcRightSide(TextRect textrect)
 	{
 		result = right_line - leftshift + hyphwidth;
 	}
-    if(nomargins)
-    {
-        result = result - (hyphwidth / 2);
-    }
-    if (result<rect.right) // Plan B
-    {
-        result = rect.right+curwidth;
-    }
-	if(result>right_line)
+	if (nomargins)
+	{
+		result = result - (hyphwidth / 2);
+	}
+	if (result < rect.right) // Plan B
+	{
+	    result = (word == " ")
+	    		? rect.right + hyphwidth
+			    : rect.right + hyphwidth + curwidth ;
+	}
+	if (result > right_line)
 	{
 		result = right_line - (hyphwidth / 2);
 	}
@@ -3006,7 +3008,6 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
     {
         lString16 word = word_chars.get(i).getText();
         //CRLog::error("letter = %s",LCSTR(word));
-        word.ReplaceUnusualSpaces();
         lvRect rect = word_chars.get(i).getRect();
         ldomNode* node = word_chars.get(i).getNode();
         int strheight_curr = rect.bottom - rect.top;

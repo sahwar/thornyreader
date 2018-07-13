@@ -4205,7 +4205,7 @@ lString16 lString16::TrimEndQuestionChar(lString16 & str){
     return str;
 }
 //converting all different spaces to one type space
-void lString16::ReplaceUnusualSpaces()
+lString16 lString16::ReplaceUnusualSpaces()
 {
     if ((this->firstChar() == L'\u00A0')
      || (this->firstChar() == L'\u180E')
@@ -4215,8 +4215,9 @@ void lString16::ReplaceUnusualSpaces()
      || (this->firstChar() == L'\u3000')
      || (this->firstChar() == L'\uFEFF'))
     {
-        this->replace(0,1,lString16(" "));
+        return lString16(" ");
     }
+    return* this;
 }
 
 

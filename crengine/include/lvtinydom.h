@@ -1207,7 +1207,9 @@ private:
     lString16 string_;
 public:
     TextRect() :  node_(nullptr),rect_(lvRect(0,0,0,0)),string_(lString16::empty_str) {}
-    TextRect(ldomNode* node,lvRect rect, lString16 string) :node_(node),rect_(rect),string_(string){}
+    TextRect(ldomNode* node,lvRect rect, lString16 string) :node_(node),rect_(rect){
+        string_ = string.ReplaceUnusualSpaces();
+    }
 
     lString16 getText(){ return string_;};
     lvRect getRect(){ return rect_;};

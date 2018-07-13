@@ -683,7 +683,7 @@ public:
     //removes UFFD (unicode questionmark) from the end of the line.
     lString16 TrimEndQuestionChar(lString16 & str);
     //converting all different spaces to one type space
-    void ReplaceUnusualSpaces();
+    lString16 ReplaceUnusualSpaces();
 };
 
 /// calculates hash for wide string
