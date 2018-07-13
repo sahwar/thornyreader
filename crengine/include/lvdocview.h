@@ -185,7 +185,6 @@ public:
     void UpdateBookmarksRanges();
     /// get page document range, -1 for current page
     LVRef<ldomXRange> GetPageDocRange(int page_index = -1);
-    LVRef<ldomXRange> GetPageParaDocRange(int page_index = -1);
     /// get page text, -1 for current page
     lString16 GetPageText(int page_index = -1);
     int GetColumns();

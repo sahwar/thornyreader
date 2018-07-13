@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <crengine/include/crconfig.h>
 
 #include "thornyreader/include/thornyreader.h"
 #include "thornyreader/include/StProtocol.h"
@@ -179,6 +180,10 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
     CmdDataIterator iter(request.first);
     if (!doc_view_) {
         doc_view_ = new LVDocView();
+        if  (FALLBACK_FACE_DEFAULT != lString8("NONE"))
+        {
+            fontMan->InitFallbackFontDefault();
+        }
     }
     while (iter.hasNext()) {
         uint32_t key;
@@ -247,9 +252,7 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
             doc_view_->UpdatePageMargins();
             doc_view_->RequestRender();
         } else if (key == CONFIG_CRE_FONT_FACE_FALLBACK) {
-            fontMan->SetFallbackFontFace(UnicodeToUtf8(lString16(val)));
-            doc_view_->UpdatePageMargins();
-            doc_view_->RequestRender();
+          //
         } else if (key == CONFIG_CRE_FONT_SIZE) {
             int int_val = atoi(val);
             int array_lenght = sizeof(ALLOWED_FONT_SIZES) / sizeof(int);
@@ -510,9 +513,9 @@ void CreBridge::processPageLinks(CmdRequest& request, CmdResponse& response)
 #endif
             continue;
         }
-        float l = rect.left / page_width;
+        float l = (rect.left + gTextLeftShift) / page_width;
         float t = rect.top / page_height;
-        float r = rect.right / page_width;
+        float r = (rect.right + gTextLeftShift) / page_width;
         float b = rect.bottom / page_height;
         lString16 href = link->getHRef();
         uint16_t target_page = 0;

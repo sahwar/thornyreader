@@ -9,12 +9,14 @@
    See LICENSE file for details
 *******************************************************/
 
+#include <map>
 #include <stdlib.h>
 #include <zlib.h>
 #include "include/lvstring.h"
 #include "include/lvtinydom.h"
 #include "include/fb2def.h"
 #include "include/lvrend.h"
+#include "include/crconfig.h"
 
 /// Data compression level (0=no compression, 1=fast compressions, 3=normal compression)
 #ifndef DOC_DATA_COMPRESSION_LEVEL
@@ -3571,6 +3573,29 @@ lString16 ldomNode::getXPathSegment()
     return lString16::empty_str;
 }
 
+lString16 ldomNode::getXPath()
+{
+    lString16 result;
+    lString16 brackets = lString16("[" + lString16::itoa(this->getNodeIndex()+1) + "]");
+    lString16 curlevel = lString16("(" + lString16::itoa(this->getNodeLevel()) + ")");
+
+    if (this->isText())
+    {
+        result.append(lString16("Text") + brackets + curlevel);
+    }
+    else
+    {
+        result.append(this->getXPathSegment() + curlevel);
+    }
+    ldomNode *parent = this->getParentNode();
+    while (parent != NULL)
+    {
+        result = parent->getXPathSegment() + "(" + lString16::itoa(parent->getNodeLevel()) +")/" + result ;
+        //result = parent->getXPathSegment() + "/" + result;
+        parent = parent->getParentNode();
+    }
+    return result;
+}
 lString16 ldomXPointer::toString()
 {
     lString16 path;
@@ -5192,7 +5217,7 @@ bool ldomXPointerEx::prevVisibleFinal()
 }
 
 /// run callback for each node in range
-void ldomXRange::forEach( ldomNodeCallback * callback )
+void ldomXRange::forEach(ldomNodeCallback *callback)
 {
     if ( isNull() )
         return;
@@ -5231,6 +5256,260 @@ void ldomXRange::forEach( ldomNodeCallback * callback )
             break;
     }
 }
+
+ldomNode* ldomXRange::getEndNode()
+{
+    if (_endnode == NULL)
+    {
+        _endnode = this->_end.getNode();
+    }
+    return _endnode;
+}
+
+ldomNode* ldomXRange::getStartNode()
+{
+    if (_startnode == NULL)
+    {
+        _startnode = this->_start.getNode();
+    }
+    return _startnode;
+}
+
+ldomNode* ldomXRange::getAncestor(ldomNode* n1, ldomNode* n2)
+{
+    typedef std::map< int, ldomNode*> nodemap;
+    nodemap m;
+
+    ldomNode * a;
+    ldomNode * b;
+    ldomNode * p;
+
+    if (n1 == NULL || n2 == NULL)
+    {
+        return NULL;
+    }
+    ldomNode *p1 = n1->getParentNode();
+    ldomNode *p2 = n2->getParentNode();
+
+    if (p1 == NULL || p2 == NULL) return NULL;
+    if (n1 == n2) return p1;
+    if (n1 == p2) return p1;
+    if (n2 == p1) return p2;
+
+    if(n1->getNodeLevel() > n2->getNodeLevel())
+    {
+        a = n1; b = n2;
+    }
+    else
+    {
+        a = n2; b = n1;
+    }
+
+    p = a;
+    while (p->getParentNode() != NULL)
+    {
+        p = p->getParentNode();
+        int key = p->getNodeLevel();
+        m[key]= p;
+    }
+
+    p = b;
+    while (p->getParentNode() != NULL)
+    {
+        p = p->getParentNode();
+        int key = p->getNodeLevel();
+        if (m.find(key)!= m.end())
+        {
+            if(p == m.at(key))
+            {
+                return p;
+            }
+        }
+    }
+    return NULL;
+}
+
+
+/// run callback for each node in range
+void ldomXRange::forEach2(ldomNodeCallback *callback)
+{
+    if ( _start.isNull() || _end.isNull() )
+    {
+        return;
+    }
+
+    ldomNode *start = getStartNode();
+    ldomNode *end   = getEndNode();
+    ldomNode *common_parent   = getAncestor(start,end);
+    int level = (common_parent != NULL) ? common_parent->getNodeLevel() : 1;
+
+    //CRLog::error("start  path = %s",LCSTR(start->getXPath()));
+    //CRLog::error("end    path = %s",LCSTR(end->getXPath()));
+    //CRLog::error("parent path = %s",LCSTR(common_parent->getXPath()));
+    //CRLog::error("parent lvl  = %d",common_parent->getNodeLevel());
+
+    ldomNode *node = start;
+    ldomNode *parent = node->getParentNode();
+
+    int index = node->getNodeIndex();
+
+    bool endfound = false;
+    while (parent->getNodeLevel() >= level)
+    {
+        for (int i = index; i < parent->getChildCount(); i++)
+        {
+            node = parent->getChildNode(i);
+
+            if (node->isText())
+            {
+                //CRLog::error("TEXT nodepath = %s",LCSTR(node->getXPath()));
+                callback->processText(node, this);
+            }
+            else
+            {
+                //CRLog::error("ELEMENT nodepath = %s",LCSTR(node->getXPath()));
+                if (callback->onElement(node))
+                {
+                    endfound = callback->processElement(node, this);
+                }
+            }
+
+            endfound = (endfound || (node == this->getEndNode())) ? true : false;
+            if (endfound)
+            {
+                //CRLog::error("FOREACH FINISH nodepath = %s",LCSTR(node->getXPath()));
+                return;
+            }
+        }
+        index = parent->getNodeIndex() + 1;
+        parent = parent->getParentNode();
+        //CRLog::error("parentpath = %s",LCSTR(parent->getXPath()));
+        if (parent == end)
+        {
+            //CRLog::error("PARENT EXIT");
+            return;
+        }
+        if (parent->getNodeLevel() == level)
+        {
+            //CRLog::error("WE'RE IN COMMON PARENT!!!!!");
+        }
+    }
+}
+
+void ldomNodeCallback::processText(ldomNode* node, ldomXRange * range)
+{
+    ldomXRange noderange = ldomXRange(node);
+
+    if (node == range->getEndNode())
+    {
+        noderange.setEnd(range->getEnd());
+    }
+    if(node == range->getStartNode() )
+    {
+        noderange.setStart(range->getStart());
+    }
+    this->onText(&noderange);
+    /*
+    lString16 text = node->getText().substr(range._start.getOffset(),range._end.getOffset());
+    CRLog::error("full  text = %s",LCSTR(node->getText()));
+    CRLog::error("substrtext = %s",LCSTR(text));
+    */
+}
+
+bool ldomNodeCallback::processElement(ldomNode* node, ldomXRange * range)
+{
+    if (!this->onElement(node))
+    {
+        return false;
+    }
+    for (lUInt32 i = 0; i < node->getChildCount(); i++)
+    {
+        ldomNode *child = node->getChildNode(i);
+
+        if (child->isText())
+        {
+            //CRLog::error("_______TEXT nodepath = %s",LCSTR(child->getXPath()));
+            processText(child,range);
+        }
+        else
+        {
+            //CRLog::error("_______ELEMENT nodepath = %s",LCSTR(child->getXPath()));
+
+            if (this->onElement(child))
+            {
+                if(processElement(child, range))
+                {
+                    return true;
+                }
+            }
+        }
+
+        if (child == range->getEndNode())
+        {
+            return true;
+        }
+    }
+    return false;
+}
+/*
+// run callback for each node in range
+void ldomXRange::forEach2(ldomNodeCallback *callback)
+{
+    if (isNull())
+    {
+        return;
+    }
+    ldomXRange pos(_start, _end, 0);
+    bool allowGoRecurse = true;
+    while (!pos._start.isNull() && pos._start.compare(_end) < 0)    //Пока мы можем взять старт курсора, и пока начало курсора не стало концом рейнджа
+    {
+        ldomNode *node = pos._start.getNode();                      //берём ноду
+        log(node);                                                  //выводим инфу о ней
+
+
+        //CRLog::trace("path: %s", UnicodeToUtf8(pos._start.toString()).c_str());
+        if (node->isElement())                              //Нода - не текст.
+        {
+            allowGoRecurse = callback->onElement(&pos.getStart());  // спрашиваем, можно идти по рекурсии или нет?
+        }
+        else if (node->isText())                            // нода - текст
+        {
+            lString16 txt = node->getText();                //берём текст
+            pos._end = pos._start;                          //сужаем курсор до 0 блоков в ширину в начало
+            pos._start.setOffset(0);                        //выставляем оффсет в 0
+            pos._end.setOffset(txt.length());               //выставляем оффсет конца в точку конца текста
+            if (_start.getNode() == node)                   //если старт рэйнджа - в ноде, в которой мы начали
+            {
+                pos._start.setOffset(_start.getOffset());   //смещаем начало курсора в начало рэйнджа
+            }
+            if (_end.getNode() == node && pos._end.getOffset() > _end.getOffset()) //если конец рейнджа находится в ноде в которой мы сейчас
+                                                                                   //И оффсет конца курсора больше оффсета конца рейнджа
+            {
+                pos._end.setOffset(_end.getOffset());   // устанавливаем конец курсора в конец рейнджа
+            }
+            callback->onText(&pos);                     //вызываем обработчик онТекст из колбэка
+            allowGoRecurse = false;                     //запрещаем рекурсию (обработали самый глубокий уровень)
+        }
+        // move to next item
+        bool stop = false;                              //флаг об окончании работы
+        if (!allowGoRecurse || !pos._start.child(0))    //если флаг опущен, Или мы НЕ можем сместиться на первого ребёнка из начала курсора + СМЕЩАЕМСЯ на ребёнка вниз для начала курсора
+        {
+            while (!pos._start.nextSibling())           //ПОКА мы можем взять следующего брата от начала курсора
+            {
+                if (!pos._start.parent())               //ЕСЛИ мы не можем взять родителя от начала курсора
+                {
+                    stop = true;                        //поднимаем флаг об окончании
+                    break;                              //и бросаем цикл
+                }
+            }
+        }
+        if (stop)                                       //если флаг поднят
+        {
+            break;                                      //бросаем цикл по рейнджу
+        }
+    }
+}
+ * */
 
 /// get all words from specified range
 void ldomXRange::getRangeWords(LVArray<ldomWord>& words_list) {
@@ -5280,7 +5559,7 @@ void ldomXRange::getRangeWords(LVArray<ldomWord>& words_list) {
         }
     };
     WordsCollector collector(words_list);
-    forEach(&collector);
+    forEach2(&collector);
 }
 
 
@@ -5293,7 +5572,6 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
 
         bool AllowTextNodeShift(ldomNode* node)
         {
-
             ldomNode* parentnode = node->getParentNode();
             css_style_rec_t *style = parentnode->getStyle().get();
             if (style == nullptr)
@@ -5312,6 +5590,10 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
                     return false;
                 }
                 lString16 name = parentnode->getNodeName();
+                if(name == "a")
+                {
+                    return false;
+                }
                 int index = node->getNodeIndex();
                 if(name == "style" && index !=0)
                 {
@@ -5351,10 +5633,11 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
             int pos = nodeRange->getStart().getOffset();
             int len = text.length();
             int end = nodeRange->getEnd().getOffset();
-            if (len > end) {
+            if (len > end)
+            {
                 len = end;
             }
-            int TRFLAGS = 0 ;
+            int TRFLAGS = 0;
             TRFLAGS |= CH_PROP_ALPHA;
             TRFLAGS |= CH_PROP_DIGIT;
             TRFLAGS |= CH_PROP_PUNCT;
@@ -5368,7 +5651,7 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
             TRFLAGS |= CH_PROP_HIEROGLYPH;
 
             int leftshift = 0;
-
+            int shift =0;
 
             for (; pos < len; pos++)
             {
@@ -5395,15 +5678,16 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
                     ldomWord word = ldomWord(node, pos, pos + 1);
                     lvRect rect = word.getRect();
                     lString16 string = word.getText();
-                    rect.left = rect.left - leftshift;
-                    rect.right = rect.right - leftshift;
+                    rect.left = rect.left - leftshift + gTextLeftShift;
+                    rect.right = rect.right - leftshift + gTextLeftShift;
                     list_.add(TextRect(node, rect, string));
                 }
                 //last char zero width fix
                 ldomWord word = ldomWord(node, len - 1, len);
                 lvRect rect = word.getRect();
                 lString16 string = word.getText();
-                rect.left = rect.left - leftshift;
+                rect.left = rect.left - leftshift + gTextLeftShift;
+                rect.right = rect.right + gTextLeftShift;
                 list_.add(TextRect(node, rect, string));
             }
             else
@@ -5436,8 +5720,8 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
                     ldomWord word = ldomWord(node, pos, pos + 1);
                     lvRect rect = word.getRect();
                     lString16 string = word.getText();
-                    rect.left = rect.left;
-                    rect.right = rect.right;
+                    rect.left = rect.left + gTextLeftShift;
+                    rect.right = rect.right + gTextLeftShift;
                     list_.add(TextRect(node, rect, string));
                 }
             }
@@ -5452,7 +5736,7 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
         }
     };
     WordsCollector collector(words_list);
-    forEach(&collector);
+    return forEach2(&collector);
 }
 
 /*ALPHACHECK
