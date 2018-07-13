@@ -1830,54 +1830,6 @@ LVRef<ldomXRange> LVDocView::GetPageDocRange(int page_index)
 }
 
 
-/// get page document range, -1 for current page
-LVRef<ldomXRange> LVDocView::GetPageParaDocRange(int page_index)
-{
-    CHECK_RENDER("getPageDocRange()")
-    LVRef<ldomXRange> res(NULL);
-
-    // PAGES mode
-    if (page_index < 0 || page_index >= pages_list_.length())
-    {
-        page_index = GetCurrPage();
-    }
-    LVRendPageInfo *page = pages_list_[page_index];
-    if (page->type != PAGE_TYPE_NORMAL)
-    {
-        return res;
-    }
-    ldomXPointer start;
-    if(page_index==0)
-    {
-        start = cr_dom_->createXPointer(lvPoint(0, page->start));
-    }
-    else if( page_index == 1)
-    {
-        start = cr_dom_->createXPointer(lvPoint(0, 0));
-    }
-    else
-    {
-       start = cr_dom_->createXPointer(lvPoint(0, page->start - page->height));
-    }
-    //ldomXPointer end = cr_dom_->createXPointer(lvPoint(m_dx + m_dy, page->start + page->height - 1));
-    //ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
-    ldomXPointer end;
-    if (GetColumns() > 1)
-    {
-        end = cr_dom_->createXPointer(lvPoint(0, page->start + (height_ * 2) ));
-    }
-    else
-    {
-        end = cr_dom_->createXPointer(lvPoint(0, page->start + height_ + 50 ));
-    }
-    //ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
-    if (start.isNull() || end.isNull())
-    {
-        return res;
-    }
-    res = LVRef<ldomXRange>(new ldomXRange(start, end));
-    return res;
-}
 
 void LVDocView::GetCurrentPageLinks(ldomXRangeList &links_list)
 {
