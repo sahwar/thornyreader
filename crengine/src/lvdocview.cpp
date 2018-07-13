@@ -1811,20 +1811,15 @@ LVRef<ldomXRange> LVDocView::GetPageDocRange(int page_index)
 		{
 			return res;
 		}
-		ldomXPointer start = cr_dom_->createXPointer(lvPoint(0, page->start));
-		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(m_dx + m_dy, page->start + page->height - 1));
-		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
-        ldomXPointer end;
-		if (GetColumns() > 1)
-		{
-			//end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height + page->height + 100), 1);
-			end = cr_dom_->createXPointer(lvPoint(0, page->start + (height_ * 2)), 1);
-		}
-		else
-		{
-			end = cr_dom_->createXPointer(lvPoint(0, page->start + (height_ * 1)), 1);
-		}
-		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
+        int columns = GetColumns();
+        int end_y = page->start + (height_ * columns);
+        if (page_index + columns < pages_list_.length())
+        {
+            LVRendPageInfo *nextpage = pages_list_[page_index + columns];
+            end_y = nextpage->start;
+        }
+        ldomXPointer start = cr_dom_->createXPointer(lvPoint(0, page->start));
+        ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, end_y), 1);
 		if (start.isNull() || end.isNull())
 		{
 			return res;
@@ -1863,7 +1858,8 @@ LVRef<ldomXRange> LVDocView::GetPageParaDocRange(int page_index)
     else
     {
        start = cr_dom_->createXPointer(lvPoint(0, page->start - page->height));
-    }//ldomXPointer end = cr_dom_->createXPointer(lvPoint(m_dx + m_dy, page->start + page->height - 1));
+    }
+    //ldomXPointer end = cr_dom_->createXPointer(lvPoint(m_dx + m_dy, page->start + page->height - 1));
     //ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
     ldomXPointer end;
     if (GetColumns() > 1)
@@ -3015,6 +3011,7 @@ LVArray<ImgRect> LVDocView::GetPageImages(image_display_t type)  //display type 
 
 LVArray<Hitbox> LVDocView::GetPageHitboxes()
 {
+	//CRLog::trace("GETPAGEHITBOXES start");
     LVArray<Hitbox> result;
     float page_width    = this->GetWidth();
     float page_height   = this->GetHeight();
@@ -3030,10 +3027,14 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
             footnotesheightr = footnotesheightr + pages_list_[this->page_+1]->footnotes[fn].height;
         }
     }
-	LVArray<lvRect> para_array = this->GetPageParaEnds();
-	LVArray<ImgRect> images_array = this->GetPageImages(img_inline);
-	//LVArray<ImgRect> images_array = this->GetPageImages();
-	LVRef<ldomXRange> range = this->GetPageDocRange();
+    //CRLog::trace("PARAEND START");
+    LVArray<lvRect> para_array = this->GetPageParaEnds();
+    //CRLog::trace("PARAEND END");
+    //CRLog::trace("IMAGES START");
+	//LVArray<ImgRect> images_array = this->GetPageImages(img_inline);
+    LVArray<ImgRect> images_array = this->GetPageImages();
+    //CRLog::trace("IMAGES END");
+    LVRef<ldomXRange> range = this->GetPageDocRange();
     lvRect margins = this->cfg_margins_;
     ldomXRange text = *range;
 
@@ -3046,7 +3047,9 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
 
 
     LVArray<TextRect> word_chars;
+    //CRLog::trace("RANGECHARS start");
     text.getRangeChars(word_chars);
+    //CRLog::trace("RANGECHARS end");
     for (int i = 0; i < word_chars.length(); ++i)
     {
         lString16 word = word_chars.get(i).getText();
@@ -3290,8 +3293,10 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
 			float b = (imgrect.bottom) / page_height;
 			lString16 imagestring = lString16("IMAGE");
 			Hitbox *hitbox = new Hitbox(l, r, t, b, imagestring);
-			//result.add(*hitbox);
+			result.add(*hitbox);
 		}
 	}
-    return result;
+	//CRLog::trace("GETPAGEHITBOXES end");
+
+	return result;
 }

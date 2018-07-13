@@ -3577,18 +3577,20 @@ lString16 ldomNode::getXPath()
 {
     lString16 result;
     lString16 brackets = lString16("[" + lString16::itoa(this->getNodeIndex()+1) + "]");
+    lString16 curlevel = lString16("(" + lString16::itoa(this->getNodeLevel()) + ")");
+
     if (this->isText())
     {
-        result.append(lString16("Text") + brackets);
+        result.append(lString16("Text") + brackets + curlevel);
     }
     else
     {
-        result.append(this->getXPathSegment());
+        result.append(this->getXPathSegment() + curlevel);
     }
     ldomNode *parent = this->getParentNode();
     while (parent != NULL)
     {
-        result = parent->getXPathSegment() + "(" + lString16::itoa(parent->getNodeLevel()) +")/" + result;
+        result = parent->getXPathSegment() + "(" + lString16::itoa(parent->getNodeLevel()) +")/" + result ;
         //result = parent->getXPathSegment() + "/" + result;
         parent = parent->getParentNode();
     }
@@ -5365,29 +5367,31 @@ void ldomXRange::forEach2(ldomNodeCallback *callback)
             }
             else
             {
-                //CRLog::error("ELEMENT nodepath = %s",LCSTR(node->getXPath();));
+                //CRLog::error("ELEMENT nodepath = %s",LCSTR(node->getXPath()));
                 if (callback->onElement(node))
                 {
                     endfound = callback->processElement(node, this);
                 }
             }
-            if (endfound || node == end)
+
+            endfound = (endfound || (node == this->getEndNode())) ? true : false;
+            if (endfound)
             {
                 //CRLog::error("FOREACH FINISH nodepath = %s",LCSTR(node->getXPath()));
                 return;
             }
         }
-        if (parent == end)
-        {
-            return;
-        }
         index = parent->getNodeIndex() + 1;
         parent = parent->getParentNode();
         //CRLog::error("parentpath = %s",LCSTR(parent->getXPath()));
+        if (parent == end)
+        {
+            //CRLog::error("PARENT EXIT");
+            return;
+        }
         if (parent->getNodeLevel() == level)
         {
             //CRLog::error("WE'RE IN COMMON PARENT!!!!!");
-            //CRLog::error("___parent path = %s",LCSTR(parent->getXPath()));
         }
     }
 }
@@ -5414,6 +5418,10 @@ void ldomNodeCallback::processText(ldomNode* node, ldomXRange * range)
 
 bool ldomNodeCallback::processElement(ldomNode* node, ldomXRange * range)
 {
+    if (!this->onElement(node))
+    {
+        return false;
+    }
     for (lUInt32 i = 0; i < node->getChildCount(); i++)
     {
         ldomNode *child = node->getChildNode(i);
@@ -5564,7 +5572,6 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
 
         bool AllowTextNodeShift(ldomNode* node)
         {
-
             ldomNode* parentnode = node->getParentNode();
             css_style_rec_t *style = parentnode->getStyle().get();
             if (style == nullptr)
