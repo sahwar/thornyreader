@@ -2247,6 +2247,14 @@ LVArray<ImgRect> LVDocView::GetCurrentPageImages(int unused, int maxw, int maxh)
                         imgrect.left = imgrect.left + style->font_size.value;
                     }
                 }
+	            if (node->getParentNode()->getNodeName()=="div")
+	            {
+		            if (node->getParentNode()->getParentNode()->getNodeName() == "span")
+		            {
+			            imgrect.left = imgrect.left + gTextLeftShift;
+                        imgrect.top = imgrect.top - style->font_size.value;
+		            }
+	            }
             }
             imgrect.right=imgrect.left+imgwidth;
             imgrect.bottom=imgrect.top+imgheight;
