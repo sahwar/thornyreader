@@ -261,6 +261,10 @@ public:
     };
     //returns array of lvRects, that contains info about image location on current docview page
     LVArray<ImgRect> GetPageImages(image_display_t type=img_all);
+    font_ref_t GetBaseFont();
+
+    LVArray<Hitbox> GetPageLinks();
+
     LVDocView();
     ~LVDocView();
 };

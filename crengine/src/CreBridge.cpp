@@ -497,9 +497,28 @@ void CreBridge::processPageLinks(CmdRequest& request, CmdResponse& response)
     float page_width = doc_view_->GetWidth();
     float page_height = doc_view_->GetHeight();
     for (int i = 0; i < list.length(); i++) {
+        LVFont *font = doc_view_->GetBaseFont().get();
         ldomXRange* link = list[i];
         lvRect raw_rect;
         link->getRect(raw_rect);
+
+        LVArray<TextRect> text;
+        link->getRangeChars(text);
+        lString16 string = text.get(0).getText();
+        if (i >= 1)
+        {
+            ldomXRange* last_link = list[i-1];
+            lvRect last_rect;
+            last_link->getRect(last_rect);
+            int lastheight = last_rect.bottom - last_rect.top;
+            if (raw_rect.bottom - raw_rect.top >= lastheight * 1.5)
+            {
+                int curwidth = font->getCharWidth(string.firstChar());
+                raw_rect.bottom = raw_rect.top + lastheight;
+                raw_rect.left = raw_rect.right + curwidth;
+            }
+        }
+
         lvRect rect = lvRect(raw_rect.left, raw_rect.top, raw_rect.right, raw_rect.bottom);
         if (!doc_view_->DocToWindowRect(rect)) {
 #ifdef TRDEBUG
