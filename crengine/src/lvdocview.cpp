@@ -1391,6 +1391,7 @@ void LVDocView::ClearSelection()
 	UpdateSelections();
 }
 
+/*
 /// selects first link on page, if any. returns selected link range, null if no links.
 ldomXRange *LVDocView::SelectFirstPageLink()
 {
@@ -1403,6 +1404,7 @@ ldomXRange *LVDocView::SelectFirstPageLink()
 	UpdateSelections();
 	return sel[0];
 }
+*/
 
 /// update selection ranges
 void LVDocView::UpdateSelections()
@@ -1820,7 +1822,7 @@ LVRef<ldomXRange> LVDocView::GetPageDocRange(int page_index)
 
 
 
-void LVDocView::GetCurrentPageLinks(ldomXRangeList &links_list)
+void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
 {
 	links_list.clear();
 	LVRef<ldomXRange> page_range = GetPageDocRange();
@@ -1830,68 +1832,35 @@ void LVDocView::GetCurrentPageLinks(ldomXRangeList &links_list)
 	}
 	class LinkKeeper : public ldomNodeCallback
 	{
-		ldomXRangeList &list_;
+        LVArray<TextRect> &list_;
 		void ProcessFinalNode(ldomNode *node)
-		{
-			int end_index = node->isText() ? node->getText().length() : node->getChildCount();
-			ldomXPointerEx start = ldomXPointerEx(node, 0);
-			ldomXPointerEx end = ldomXPointerEx(node, end_index);
-			lvRect start_rect;
-			lvRect end_rect;
-			if (!start.getRect(start_rect) || !end.getRect(end_rect))
-			{
-				CRLog::error("GetCurrentPageLinks getRect fail");
-				return;
-			}
-			if (start_rect.top == end_rect.top && start_rect.bottom == end_rect.bottom)
-			{
-				// Singleline link
-				list_.add(new ldomXRange(start, end));
-				return;
-			}
-			lvRect curr_rect;
-			for (int i = end_index - 1; i >= 0; i--)
-			{
-				ldomXPointerEx curr = ldomXPointerEx(node, i);
-				if (!curr.getRect(curr_rect))
-				{
-					CRLog::error("GetCurrentPageLinks getRect fail");
-					return;
-				}
-				if (curr_rect.top == start_rect.top)
-				{
-					if (curr_rect.bottom == start_rect.bottom)
-					{
-						// Запрыгнули на верхнюю строчку
-						list_.add(new ldomXRange(start, curr));
-						ldomXPointerEx prev = ldomXPointerEx(node, i + 1);
-						list_.add(new ldomXRange(prev, end));
-						break;
-					}
-					else
-					{
-						CRLog::error("GetCurrentPageLinks tops equals, bottoms doesnt");
-					}
-				}
-				else if (curr_rect.top != end_rect.top)
-				{
-					if (curr_rect.bottom != end_rect.bottom)
-					{
-						ldomXPointerEx prev = ldomXPointerEx(node, i + 1);
-						list_.add(new ldomXRange(prev, end));
-						end = ldomXPointerEx(curr);
-						if (!end.getRect(end_rect))
-						{
-							CRLog::error("GetCurrentPageLinks getRect fail");
-							return;
-						}
-					}
-					else
-					{
-						CRLog::error("GetCurrentPageLinks tops not equals, bottoms does");
-					}
-				}
-			}
+        {
+            ldomXRange nodeRange = ldomXRange(node);
+            ldomNode *parent_node = node->getParentNode();
+            if (parent_node == nullptr)
+            {
+                return;
+            }
+            lString16 text = node->getText();
+            int pos = nodeRange.getStart().getOffset();
+            int len = text.length();
+            int end = nodeRange.getEnd().getOffset();
+            if (len > end)
+            {
+                len = end;
+            }
+
+            int leftshift = 0;
+            int shift = 0;
+
+            pos = nodeRange.getStart().getOffset();
+            for (; pos < len; pos++)
+            {
+                ldomWord word = ldomWord(node, pos, pos + 1);
+                lvRect rect = word.getRect();
+                lString16 string = word.getText();
+                list_.add(TextRect(node, rect, string));
+            }
 		}
 		void ProcessLinkNode(ldomNode *node)
 		{
@@ -1910,7 +1879,7 @@ void LVDocView::GetCurrentPageLinks(ldomXRangeList &links_list)
 		}
 	public:
 		bool text_is_first_ = true;
-		LinkKeeper(ldomXRangeList &list) : list_(list) {}
+		LinkKeeper(LVArray<TextRect> &list) : list_(list) {}
 		// Called for each text fragment in range
 		virtual void onText(ldomXRange *node_range)
 		{
@@ -3250,3 +3219,71 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
 
 	return result;
 }
+
+LVArray<Hitbox> LVDocView::GetPageLinks()
+{
+	LVArray<Hitbox> result;
+	float page_width  = GetWidth();
+	float page_height = GetHeight();
+
+    LVArray<TextRect> list;
+	GetCurrentPageLinks(list);
+	if (list.empty()) {
+		return result;
+	}
+	LVArray<TextRect> clusters;
+
+    TextRect  link = list.get(0);
+    lvRect    rect = link.getRect();
+	lString16 href = link.getNode()->getHRef();
+
+	for (int i = 0; i < list.length(); i++)
+	{
+		LVFont *font = this->base_font_.get();
+        TextRect link = list.get(i);
+		lvRect raw_rect = link.getRect();
+		lString16 string = link.getText();
+		if (i >= 1)
+		{
+			TextRect last = list[i - 1];
+			lvRect last_rect = last.getRect();
+			int lastheight = last_rect.bottom - last_rect.top;
+			if (raw_rect.bottom - raw_rect.top >= lastheight * 1.5)
+			{
+				int curwidth = font->getCharWidth(string.firstChar());
+				raw_rect.bottom = raw_rect.top + lastheight;
+                raw_rect.right = raw_rect.right + curwidth;
+			}
+		}
+        if (raw_rect.top == rect.top && raw_rect.bottom == rect.bottom && href == link.getNode()->getHRef())
+        {
+            rect.right = raw_rect.right;
+        }
+        else
+        {
+            clusters.add(TextRect(nullptr,rect,href));
+            href = link.getNode()->getHRef();
+            rect = link.getRect();
+        }
+	}
+    clusters.add(TextRect(nullptr,rect,href));
+
+    for (int i = 0; i < clusters.length(); i++)
+	{
+		TextRect curr = clusters.get(i);
+		lString16 href = curr.getText();
+		lvRect rect = curr.getRect();
+		if (!DocToWindowRect(rect))
+		{
+			continue;
+		}
+		float l = (rect.left + gTextLeftShift) / page_width;
+		float t = rect.top / page_height;
+		float r = (rect.right + gTextLeftShift) / page_width;
+		float b = rect.bottom / page_height;
+		Hitbox *hitbox = new Hitbox(l, r, t, b, href);
+		result.add(*hitbox);
+	}
+	return result;
+ }
+font_ref_t LVDocView::GetBaseFont() { return base_font_; };

@@ -5451,65 +5451,6 @@ bool ldomNodeCallback::processElement(ldomNode* node, ldomXRange * range)
     }
     return false;
 }
-/*
-// run callback for each node in range
-void ldomXRange::forEach2(ldomNodeCallback *callback)
-{
-    if (isNull())
-    {
-        return;
-    }
-    ldomXRange pos(_start, _end, 0);
-    bool allowGoRecurse = true;
-    while (!pos._start.isNull() && pos._start.compare(_end) < 0)    //Пока мы можем взять старт курсора, и пока начало курсора не стало концом рейнджа
-    {
-        ldomNode *node = pos._start.getNode();                      //берём ноду
-        log(node);                                                  //выводим инфу о ней
-
-
-        //CRLog::trace("path: %s", UnicodeToUtf8(pos._start.toString()).c_str());
-        if (node->isElement())                              //Нода - не текст.
-        {
-            allowGoRecurse = callback->onElement(&pos.getStart());  // спрашиваем, можно идти по рекурсии или нет?
-        }
-        else if (node->isText())                            // нода - текст
-        {
-            lString16 txt = node->getText();                //берём текст
-            pos._end = pos._start;                          //сужаем курсор до 0 блоков в ширину в начало
-            pos._start.setOffset(0);                        //выставляем оффсет в 0
-            pos._end.setOffset(txt.length());               //выставляем оффсет конца в точку конца текста
-            if (_start.getNode() == node)                   //если старт рэйнджа - в ноде, в которой мы начали
-            {
-                pos._start.setOffset(_start.getOffset());   //смещаем начало курсора в начало рэйнджа
-            }
-            if (_end.getNode() == node && pos._end.getOffset() > _end.getOffset()) //если конец рейнджа находится в ноде в которой мы сейчас
-                                                                                   //И оффсет конца курсора больше оффсета конца рейнджа
-            {
-                pos._end.setOffset(_end.getOffset());   // устанавливаем конец курсора в конец рейнджа
-            }
-            callback->onText(&pos);                     //вызываем обработчик онТекст из колбэка
-            allowGoRecurse = false;                     //запрещаем рекурсию (обработали самый глубокий уровень)
-        }
-        // move to next item
-        bool stop = false;                              //флаг об окончании работы
-        if (!allowGoRecurse || !pos._start.child(0))    //если флаг опущен, Или мы НЕ можем сместиться на первого ребёнка из начала курсора + СМЕЩАЕМСЯ на ребёнка вниз для начала курсора
-        {
-            while (!pos._start.nextSibling())           //ПОКА мы можем взять следующего брата от начала курсора
-            {
-                if (!pos._start.parent())               //ЕСЛИ мы не можем взять родителя от начала курсора
-                {
-                    stop = true;                        //поднимаем флаг об окончании
-                    break;                              //и бросаем цикл
-                }
-            }
-        }
-        if (stop)                                       //если флаг поднят
-        {
-            break;                                      //бросаем цикл по рейнджу
-        }
-    }
-}
- * */
 
 /// get all words from specified range
 void ldomXRange::getRangeWords(LVArray<ldomWord>& words_list) {
@@ -8559,6 +8500,30 @@ LVStreamRef ldomNode::createBase64Stream()
     istream->SetPos(0);
 #endif
     return istream;
+}
+
+lString16 ldomNode::getHRef()
+{
+    if (isNull())
+    {
+        return lString16::empty_str;
+    }
+    ldomNode *node = this;
+    while (node && !node->isElement())
+        node = node->getParentNode();
+    while (node && node->getNodeId() != el_a)
+       node = node->getParentNode();
+
+    if (!node)
+    {
+        return lString16::empty_str;
+    }
+    lString16 ref = node->getAttributeValue(LXML_NS_ANY, attr_href);
+    if (!ref.empty() && ref[0] != '#')
+    {
+        ref = DecodeHTMLUrlString(ref);
+    }
+    return ref;
 }
 
 class NodeImageProxy : public LVImageSource

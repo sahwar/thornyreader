@@ -173,7 +173,7 @@ public:
     /// clears selection
     void ClearSelection();
     /// get list of links
-    void GetCurrentPageLinks(ldomXRangeList& list);
+    void GetCurrentPageLinks(LVArray<TextRect>& links_list);
     LVArray<lvRect> GetCurrentPageParas(int unused=0);
     LVArray<ImgRect> GetCurrentPageImages(int unused=0,int maxw=100, int maxh=100);
     /// selects first link on page, if any. returns selected link range, null if no links.
@@ -261,6 +261,10 @@ public:
     };
     //returns array of lvRects, that contains info about image location on current docview page
     LVArray<ImgRect> GetPageImages(image_display_t type=img_all);
+    font_ref_t GetBaseFont();
+
+    LVArray<Hitbox> GetPageLinks();
+
     LVDocView();
     ~LVDocView();
 };
