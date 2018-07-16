@@ -658,6 +658,8 @@ public:
     ldomNode * modify();
     /// for display:list-item node, get marker
     bool getNodeListMarker( int & counterValue, lString16 & marker, int & markerWidth );
+    /// returns href attribute of <A> element, null string if not found
+    lString16 getHRef();
 };
 
 /**
@@ -1214,6 +1216,7 @@ public:
     lString16 getText(){ return string_;};
     lvRect getRect(){ return rect_;};
     ldomNode* getNode(){ return node_;};
+    void setRect(lvRect rect){ rect_ = rect;};
 };
 
 class ImgRect

@@ -173,7 +173,7 @@ public:
     /// clears selection
     void ClearSelection();
     /// get list of links
-    void GetCurrentPageLinks(ldomXRangeList& list);
+    void GetCurrentPageLinks(LVArray<TextRect>& links_list);
     LVArray<lvRect> GetCurrentPageParas(int unused=0);
     LVArray<ImgRect> GetCurrentPageImages(int unused=0,int maxw=100, int maxh=100);
     /// selects first link on page, if any. returns selected link range, null if no links.
