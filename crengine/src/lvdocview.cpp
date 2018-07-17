@@ -1832,6 +1832,7 @@ void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
 	}
 	class LinkKeeper : public ldomNodeCallback
 	{
+	    LVDocView * doc_view_;
         LVArray<TextRect> &list_;
 		void ProcessFinalNode(ldomNode *node)
         {
@@ -1849,19 +1850,50 @@ void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
             {
                 len = end;
             }
-
-            int leftshift = 0;
-            int shift = 0;
-
-            pos = nodeRange.getStart().getOffset();
+            lString16 href = node->getHRef();
+	        LVFont *font = doc_view_->GetBaseFont().get();
+            LVArray<TextRect> pre;
             for (; pos < len; pos++)
             {
                 ldomWord word = ldomWord(node, pos, pos + 1);
                 lvRect rect = word.getRect();
                 lString16 string = word.getText();
-                list_.add(TextRect(node, rect, string));
+                pre.add(TextRect(node, rect, string));
             }
-		}
+            if(pre.empty())
+            {
+	            return;
+            }
+            TextRect word = pre.get(0);
+            lvRect rect = word.getRect();
+
+            lvRect last = rect;
+            for (int i = 0; i < pre.length(); i++)
+            {
+
+                TextRect word = pre.get(i);
+                lvRect raw_rect = word.getRect();
+                lString16 string = word.getText();
+                int lastheight = last.bottom - last.top;
+                if (raw_rect.bottom - raw_rect.top >= lastheight * 1.5)
+                {
+                    int curwidth = font->getCharWidth(string.firstChar());
+                    raw_rect.bottom = raw_rect.top + lastheight;
+                    raw_rect.right = raw_rect.right + curwidth;
+                }
+                if (raw_rect.top == rect.top && raw_rect.bottom == rect.bottom)
+                {
+                    rect.right = raw_rect.right;
+                }
+                else
+                {
+                    list_.add(TextRect(node, rect, href));
+                    rect = word.getRect();
+                }
+                last = raw_rect;
+            }
+            list_.add(TextRect(node, rect, href));
+        }
 		void ProcessLinkNode(ldomNode *node)
 		{
 			for (lUInt32 i = 0; i < node->getChildCount(); i++)
@@ -1879,7 +1911,7 @@ void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
 		}
 	public:
 		bool text_is_first_ = true;
-		LinkKeeper(LVArray<TextRect> &list) : list_(list) {}
+		LinkKeeper(LVArray<TextRect> &list, LVDocView* doc_view) : list_(list),doc_view_(doc_view) {}
 		// Called for each text fragment in range
 		virtual void onText(ldomXRange *node_range)
 		{
@@ -1927,7 +1959,7 @@ void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
 			return true;
 		}
 	};
-	LinkKeeper callback(links_list);
+	LinkKeeper callback(links_list,this);
     page_range->forEach(&callback);
 	if (viewport_mode_ == MODE_PAGES && GetColumns() > 1)
 	{
@@ -3231,46 +3263,10 @@ LVArray<Hitbox> LVDocView::GetPageLinks()
 	if (list.empty()) {
 		return result;
 	}
-	LVArray<TextRect> clusters;
 
-    TextRect  link = list.get(0);
-    lvRect    rect = link.getRect();
-	lString16 href = link.getNode()->getHRef();
-
-	for (int i = 0; i < list.length(); i++)
+    for (int i = 0; i < list.length(); i++)
 	{
-		LVFont *font = this->base_font_.get();
-        TextRect link = list.get(i);
-		lvRect raw_rect = link.getRect();
-		lString16 string = link.getText();
-		if (i >= 1)
-		{
-			TextRect last = list[i - 1];
-			lvRect last_rect = last.getRect();
-			int lastheight = last_rect.bottom - last_rect.top;
-			if (raw_rect.bottom - raw_rect.top >= lastheight * 1.5)
-			{
-				int curwidth = font->getCharWidth(string.firstChar());
-				raw_rect.bottom = raw_rect.top + lastheight;
-                raw_rect.right = raw_rect.right + curwidth;
-			}
-		}
-        if (raw_rect.top == rect.top && raw_rect.bottom == rect.bottom && href == link.getNode()->getHRef())
-        {
-            rect.right = raw_rect.right;
-        }
-        else
-        {
-            clusters.add(TextRect(nullptr,rect,href));
-            href = link.getNode()->getHRef();
-            rect = link.getRect();
-        }
-	}
-    clusters.add(TextRect(nullptr,rect,href));
-
-    for (int i = 0; i < clusters.length(); i++)
-	{
-		TextRect curr = clusters.get(i);
+		TextRect curr = list.get(i);
 		lString16 href = curr.getText();
 		lvRect rect = curr.getRect();
 		if (!DocToWindowRect(rect))
