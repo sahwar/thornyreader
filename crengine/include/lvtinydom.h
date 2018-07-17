@@ -1195,7 +1195,6 @@ public:
     /// called for each found text fragment in range
     virtual void onText(ldomXRange*) { }
     /// called for each found node in range
-    virtual bool onElement(ldomXPointerEx*) { return true; }
     virtual bool onElement(ldomNode*) { return true; }
     virtual void processText(ldomNode* node, ldomXRange* range);
     virtual bool processElement(ldomNode* node, ldomXRange* range);
@@ -1351,8 +1350,6 @@ public:
     void setFlags( lUInt32 flags ) { _flags = flags; }
     /// returns true if this interval intersects specified interval
     bool checkIntersection( ldomXRange & v );
-    /// returns text between two XPointer positions
-    lString16 GetRangeText( lChar16 blockDelimiter='\n', int maxTextLen=0 );
     /// get all words from specified range
     void getRangeWords( LVArray<ldomWord> & list );
 
@@ -1361,8 +1358,6 @@ public:
     lString16 getHRef();
     /// sets range to nearest word bounds, returns true if success
     static bool getWordRange( ldomXRange & range, ldomXPointer & p );
-    /// run callback for each node in range
-    void forEach(ldomNodeCallback *callback);
     /// run callback for each node in range REIMPLEMENTED FOR TEXT HITBOX EXTRACTION
     void forEach2( ldomNodeCallback * callback );
     /// returns rectangle (in doc coordinates) for range. Returns true if found.
