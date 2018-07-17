@@ -1941,26 +1941,25 @@ void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
 #endif
 		}
 		// Called for each node in range
-		virtual bool onElement(ldomXPointerEx *ptr)
+        virtual bool onElement(ldomNode *node)
 		{
-			ldomNode *element_node = ptr->getNode();
-			if (element_node->getNodeId() != el_a)
+			if (node->getNodeId() != el_a)
 			{
 				return true;
 			}
 #ifdef TRDEBUG
-			if (element_node->getChildCount() == 0)
+			if (node->getChildCount() == 0)
 			{
 				// Empty link in malformed doc, example: <a name="sync_on_demand"></a>
 				CRLog::trace("GetCurrentPageLinks empty link in malformed doc");
 			}
 #endif
-			ProcessLinkNode(element_node);
+			ProcessLinkNode(node);
 			return true;
 		}
 	};
 	LinkKeeper callback(links_list,this);
-    page_range->forEach(&callback);
+    page_range->forEach2(&callback);
 	if (viewport_mode_ == MODE_PAGES && GetColumns() > 1)
 	{
 		// Process second page
@@ -1969,7 +1968,7 @@ void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
 		if (!page_range.isNull())
 		{
 			callback.text_is_first_ = true;
-            page_range->forEach(&callback);
+            page_range->forEach2(&callback);
 		}
 	}
 }
@@ -2281,26 +2280,6 @@ LVArray<ImgRect> LVDocView::GetCurrentPageImages(int unused, int maxw, int maxh)
 		}
 	}
 	return result;
-}
-
-/// get page text, -1 for current page
-lString16 LVDocView::GetPageText(int page_index)
-{
-	CHECK_RENDER("GetPageText()")
-	if (page_index < 0 || page_index >= pages_list_.length())
-	{
-		page_index = GetCurrPage();
-	}
-	lString16 text;
-	LVRef<ldomXRange> range = GetPageDocRange(page_index);
-	text = range->GetRangeText();
-	if (viewport_mode_ == MODE_PAGES && GetColumns() > 1)
-	{
-		// Process second page
-		range = GetPageDocRange(page_index + 1);
-		text = text + range->GetRangeText();
-	}
-	return text;
 }
 
 /// sets new list of bookmarks, removes old values
