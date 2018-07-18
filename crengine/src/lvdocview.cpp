@@ -3229,6 +3229,26 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
                 #endif
                 continue;
             }
+            // filling between-nodes empty space (right direction)
+            if(word == " " && word_chars.length() > i + 1)
+            {
+                lvRect nextrect = word_chars.get(i + 1).getRect();
+                DocToWindowRect(nextrect);
+                if (nextrect.height() < strheight_curr * 1.5 && rect.right < nextrect.left && rect.top == nextrect.top)
+                {
+                    rect.right = nextrect.left;
+                }
+            }
+            // filling between-nodes empty space (left direction)
+            if(word == " " && i > 0)
+            {
+                lvRect lastrect = word_chars.get(i - 1 ).getRect();
+                DocToWindowRect(lastrect);
+                if (rect.left > lastrect.right && lastrect.height() < strheight_curr * 1.5 && rect.top == lastrect.top)
+                {
+                    rect.left = lastrect.right;
+                }
+            }
             float l = rect.left / page_width;
             float t = rect.top / page_height;
             float r = rect.right / page_width;
