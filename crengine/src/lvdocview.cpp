@@ -1820,7 +1820,24 @@ LVRef<ldomXRange> LVDocView::GetPageDocRange(int page_index)
 	return res;
 }
 
-
+void LVDocView::GetImageScaleParams(ldomNode* node, int &imgheight, int &imgwidth)
+{
+    lvRect margins = this->cfg_margins_;
+    int width = (viewport_mode_ == MODE_PAGES && GetColumns() > 1)?(this->GetWidth()/2):this->GetWidth();
+    int maxheight = this->GetHeight() - (margins.bottom + margins.top);
+    int	maxwidth  = width - (margins.left + margins.right);
+    LVImageSource *image = node->getObjectImageSource().get();
+    imgheight = image->GetHeight();
+    imgwidth = image->GetWidth();
+    int pscale_x = 1000 * maxwidth / imgwidth;
+    int pscale_y = 1000 * maxheight / imgheight;
+    int pscale = pscale_x < pscale_y ? pscale_x : pscale_y;
+    int maxscale = 3 * 1000;
+    if (pscale > maxscale)
+        pscale = maxscale;
+    imgheight = imgheight * pscale / 1000;
+    imgwidth = imgwidth * pscale / 1000;
+}
 
 void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
 {
@@ -1894,7 +1911,41 @@ void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
             }
             list_.add(TextRect(node, rect, href));
         }
-		void ProcessLinkNode(ldomNode *node)
+
+        void ProcessImageNode(ldomNode *node)
+        {
+            if (!node->isImage())
+            {
+                return;
+            }
+
+            //CRLog::error("in node = %s", LCSTR(node->getNodeName()));
+
+            int end_index = node->getText().length();
+            ldomXPointerEx end = ldomXPointerEx(node, end_index);
+            ldomXPointer xp = ldomXPointer(node, end_index);
+
+            int imgheight = 0;
+            int imgwidth = 0;
+            doc_view_->GetImageScaleParams(node, imgheight, imgwidth);
+
+            lvRect imgrect;
+            if (!xp.getRect(imgrect))
+            {
+                CRLog::error("Unable to get imagerect!");
+            }
+
+            css_style_rec_t *style = node->getStyle().get();
+            css_style_rec_t *parent_style = node->getParentNode()->getStyle().get();
+
+            imgrect.right=imgrect.left+imgwidth;
+            imgrect.bottom=imgrect.top+imgheight;
+
+            lString16 href = node->getHRef();
+            list_.add(TextRect(node, imgrect, href));
+        }
+
+        void ProcessLinkNode(ldomNode *node)
 		{
 			for (lUInt32 i = 0; i < node->getChildCount(); i++)
 			{
@@ -1903,6 +1954,10 @@ void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
 				{
 					ProcessFinalNode(child);
 				}
+                else if (child->isImage())
+                {
+                    ProcessImageNode(child);
+                }
 				else
 				{
 					ProcessLinkNode(child);
@@ -1973,7 +2028,7 @@ void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
 	}
 }
 
-LVArray<lvRect> LVDocView::GetCurrentPageParas(int unused)
+LVArray<lvRect> LVDocView::GetCurrentPageParas()
 {
 	LVArray<lvRect> result;
 	LVRef<ldomXRange> page_range = GetPageDocRange();
@@ -1983,9 +2038,9 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas(int unused)
 	}
 	class ParaKeeper : public ldomNodeCallback
 	{
-		int &unused;
 		LVArray<lvRect> para_rect_array;
 		bool endnode_found_ = false;
+		int unused_;
 
 		bool NodeIsAllowed(ldomNode * node)
         {
@@ -2098,7 +2153,7 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas(int unused)
 	public:
 		bool text_is_first_ = true;
 
-		ParaKeeper(int &unused) : unused(unused)	{	}
+		ParaKeeper(int &unused) : unused_(unused)	{	}
 
         // Called for each text fragment in range
         void processText(ldomNode *node1, ldomXRange *range)
@@ -2142,6 +2197,7 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas(int unused)
         }
     };
 
+	int unused = 0;
 	ParaKeeper callback(unused);
     page_range->forEach2(&callback);
 	result = callback.GetParaArray();
@@ -2161,7 +2217,7 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas(int unused)
 	return result;
 }
 
-LVArray<ImgRect> LVDocView::GetCurrentPageImages(int unused, int maxw, int maxh)
+LVArray<ImgRect> LVDocView::GetCurrentPageImages()
 {
 
 	LVArray<ImgRect> result;
@@ -2172,10 +2228,8 @@ LVArray<ImgRect> LVDocView::GetCurrentPageImages(int unused, int maxw, int maxh)
 	}
 	class ImageKeeper : public ldomNodeCallback
 	{
-		int &unused_;
-		int maxw_;
-		int maxh_;
 		LVArray<ImgRect> img_rect_array;
+		LVDocView* doc_view_;
 
 		bool NodeIsAllowed(ldomNode * node)
         {
@@ -2185,7 +2239,7 @@ LVArray<ImgRect> LVDocView::GetCurrentPageImages(int unused, int maxw, int maxh)
 
 	public:
 
-		ImageKeeper(int &unused, int maxw, int maxh) : unused_(unused),maxw_(maxw),maxh_(maxh) {	}
+		ImageKeeper(LVDocView* doc_view) : doc_view_(doc_view) {	}
 		// Called for each text fragment in range
 		virtual void onText(ldomXRange *node_range)
 		{
@@ -2198,6 +2252,10 @@ LVArray<ImgRect> LVDocView::GetCurrentPageImages(int unused, int maxw, int maxh)
             {
                 return true;
             }
+            if(node->getHRef()!= lString16::empty_str)
+            {
+                //return true;
+            }
 
             //CRLog::error("in node = %s", LCSTR(node->getNodeName()));
 
@@ -2205,9 +2263,6 @@ LVArray<ImgRect> LVDocView::GetCurrentPageImages(int unused, int maxw, int maxh)
             ldomXPointerEx end = ldomXPointerEx(node, end_index);
             ldomXPointer xp = ldomXPointer(node, end_index);
 
-            LVImageSource *image = node->getObjectImageSource().get();
-            int imgheight = image->GetHeight();
-            int imgwidth = image->GetWidth();
             css_style_rec_t *style = node->getStyle().get();
             css_style_rec_t *parent_style = node->getParentNode()->getStyle().get();
             lvRect imgrect;
@@ -2216,16 +2271,16 @@ LVArray<ImgRect> LVDocView::GetCurrentPageImages(int unused, int maxw, int maxh)
                 CRLog::error("Unable to get imagerect!");
             }
 
-            int pscale_x = 1000 * maxw_ / imgwidth;
-            int pscale_y = 1000 * maxh_ / imgheight;
-            int pscale = pscale_x < pscale_y ? pscale_x : pscale_y;
-            int maxscale = 3 * 1000;
-            if (pscale > maxscale)
-                pscale = maxscale;
-            imgheight = imgheight * pscale / 1000;
-            imgwidth = imgwidth * pscale / 1000;
+	        int imgheight = 0;
+	        int imgwidth = 0;
+	        doc_view_->GetImageScaleParams(node, imgheight, imgwidth);
 
-            if (style->display == css_d_block)
+	        if(node->getHRef() != lString16::empty_str && style->display != css_d_inline)
+            {
+                imgrect.left  = imgrect.left  + gTextLeftShift;
+                imgrect.right = imgrect.right + gTextLeftShift;
+            }
+            else if (style->display == css_d_block)
             {
                 imgrect.top = imgrect.top + style->font_size.value;
                 //cite p image fix
@@ -2245,6 +2300,7 @@ LVArray<ImgRect> LVDocView::GetCurrentPageImages(int unused, int maxw, int maxh)
 		            }
 	            }
             }
+
             imgrect.right=imgrect.left+imgwidth;
             imgrect.bottom=imgrect.top+imgheight;
 
@@ -2264,7 +2320,7 @@ LVArray<ImgRect> LVDocView::GetCurrentPageImages(int unused, int maxw, int maxh)
 	};
 
 
-	ImageKeeper callback(unused,maxw,maxh);
+	ImageKeeper callback(this);
     page_range->forEach2(&callback);
 	result = callback.GetImgArray();
 
@@ -2772,10 +2828,13 @@ float LVDocView::CalcRightSide(TextRect textrect)
 	DocToWindowRect(rect);
 	lString16 word = textrect.getText();
 	ldomNode *node = textrect.getNode();
+	//lvRect nodemargins = node->getFullMargins();
 
 	int page_width_int = this->GetWidth();
 	float halfwidth = page_width_int / 2;
 	lvRect margins = this->cfg_margins_;
+	//CRLog::error("cfg  margins [%d:%d][%d:%d]",margins.left,margins.right,margins.top,margins.bottom);
+	//CRLog::error("node margins [%d:%d][%d:%d]",nodemargins.left,nodemargins.right,nodemargins.top,nodemargins.bottom);
 	bool two_columns = this->GetColumns() > 1;
 	bool right_side = two_columns ? rect.left > halfwidth : false;
 	int right_line;
@@ -2786,9 +2845,9 @@ float LVDocView::CalcRightSide(TextRect textrect)
 	int hyphwidth = font->getCharWidth(UNICODE_SOFT_HYPHEN_CODE);
 	int curwidth = font->getCharWidth(word.firstChar());
 
-	if (curwidth < hyphwidth && word != " ")
+	if (word == " ")
 	{
-		curwidth = hyphwidth * 2;
+		//curwidth = hyphwidth;
 	}
 
 	if (two_columns)
@@ -2799,11 +2858,18 @@ float LVDocView::CalcRightSide(TextRect textrect)
 	{
 		right_line = page_width_int;
 	}
+    //return right_line - (nodemargins.right/2);
+    int leftshift = right_side ? rect.left - halfwidth : rect.left;
 
-	int leftshift = right_side ? rect.left - halfwidth : rect.left;
+    css_style_rec_t *style = node->getParentNode()->getStyle().get();
+    css_text_align_t align = style->text_align;
 
-	css_style_rec_t *style = node->getParentNode()->getStyle().get();
-	css_text_align_t align = style->text_align;
+	if (margins.right + (hyphwidth * 2 ) < leftshift )
+    {
+        leftshift = margins.right;
+    }
+
+	//4 variants of right lines
 	if (align == css_ta_right)
 	{
 		result = right_line - margins.right + (hyphwidth / 2);
@@ -2812,24 +2878,40 @@ float LVDocView::CalcRightSide(TextRect textrect)
 	{
 		result = rect.right + curwidth + (hyphwidth / 2);
 	}
-	else  //css_ta_justify
+    else if(nomargins)
+    {
+        result = right_line - ( hyphwidth / 2 );
+    }
+	else //css_ta_justify AND margins ON
 	{
 		result = right_line - leftshift + hyphwidth;
 	}
-	if (nomargins)
-	{
-		result = result - (hyphwidth / 2);
-	}
+
+    //some fixes:
 	if (result < rect.right) // Plan B
 	{
-	    result = (word == " ")
-	    		? rect.right + hyphwidth
-			    : rect.right + hyphwidth + curwidth ;
+        if (nomargins)
+        {
+            result = right_line - (hyphwidth / 2);
+        }
+        else
+        {
+            result = right_line - (hyphwidth * 2);
+        }
 	}
 	if (result > right_line)
 	{
 		result = right_line - (hyphwidth / 2);
 	}
+    //CRLog::error("r = %d , l = %d", rect.right, rect.left);
+    //int rectmax = (rect.right >= rect.left) ? rect.right : rect.left;
+    //CRLog::error("rectmax = %d ", rectmax);
+    //if((result - rectmax)  > curwidth * 2) // plan C
+    //{
+    //    CRLog::error("result( %f ) - rectmax( %d ) > hyphwidth ( %d ) *3 ", result , rectmax, hyphwidth);
+    //    result = result - (hyphwidth * 2);
+    //}
+    //CRLog::error("10");
 	return result;
 }
 
@@ -2898,7 +2980,7 @@ LVArray<ImgRect> LVDocView::GetPageImages(image_display_t type)  //display type 
     int maxheight = this->GetHeight() - (margins.bottom + margins.top);
     int	maxwidth  = width - (margins.left + margins.right);
 
-    LVArray<ImgRect> raw_image_array= this->GetCurrentPageImages(0,maxwidth,maxheight);
+    LVArray<ImgRect> raw_image_array= this->GetCurrentPageImages();
 
 	typedef std::map< unsigned long long int, int> Rectmap;
 	Rectmap m;
@@ -3148,7 +3230,7 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
             else
             {
                 #ifdef TRDEBUG
-                CRLog::error("invalid character [%s] %x : too short height!",LCSTR(word),word.firstChar());
+                //CRLog::error("invalid character [%s] %x : too short height!",LCSTR(word),word.firstChar());
                 #endif
                 continue;
             }
