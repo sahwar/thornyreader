@@ -8810,6 +8810,21 @@ lvRect ldomNode::getFullMargins()
     return margins;
 }
 
+lString16 ldomNode::getMainParentName()
+{
+    lString16 result;
+    ldomNode* node = this;
+    while(node != NULL && node->getParentNode()!=NULL)
+    {
+        if(node->isNodeName("li") || node->isNodeName("poem") || node->isNodeName("stanza") || node->isNodeName("annotation")|| node->isNodeName("blockquote"))
+        {
+            return node->getNodeName();
+        }
+        node = node->getParentNode();
+    }
+    return lString16::empty_str;
+}
+
 void CrDomBase::dumpStatistics() {
 //#define TINYNODECOLLECTION_DUMPSTATISTICS
 #ifdef TINYNODECOLLECTION_DUMPSTATISTICS

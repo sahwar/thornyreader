@@ -2823,68 +2823,72 @@ unsigned long long int getkey(lvRect rect)
 
 float LVDocView::CalcRightSide(TextRect textrect)
 {
-	float result;
-	lvRect rect = textrect.getRect();
-	DocToWindowRect(rect);
-	lString16 word = textrect.getText();
-	ldomNode *node = textrect.getNode();
-	//lvRect nodemargins = node->getFullMargins();
+    float result;
+    lvRect rect = textrect.getRect();
+    DocToWindowRect(rect);
+    lString16 word = textrect.getText();
+    ldomNode *node = textrect.getNode();
 
-	int page_width_int = this->GetWidth();
-	float halfwidth = page_width_int / 2;
-	lvRect margins = this->cfg_margins_;
-	//CRLog::error("cfg  margins [%d:%d][%d:%d]",margins.left,margins.right,margins.top,margins.bottom);
-	//CRLog::error("node margins [%d:%d][%d:%d]",nodemargins.left,nodemargins.right,nodemargins.top,nodemargins.bottom);
-	bool two_columns = this->GetColumns() > 1;
-	bool right_side = two_columns ? rect.left > halfwidth : false;
-	int right_line;
-	bool nomargins = (margins.right < 20) ? true : false;  //todo take nomargins from docview, set nomargins in docview from bridge
 
-	LVFont *font = this->base_font_.get();
-	LVFont::glyph_info_t glyph;
-	int hyphwidth = font->getCharWidth(UNICODE_SOFT_HYPHEN_CODE);
-	int curwidth = font->getCharWidth(word.firstChar());
+    int page_width_int = this->GetWidth();
+    float halfwidth = page_width_int / 2;
+    lvRect page_margins = this->cfg_margins_;
+    //lvRect nodemargins = node->getFullMargins();
+    //CRLog::error("cfg  margins [%d:%d][%d:%d]",page_margins.left,page_margins.right,page_margins.top,page_margins.bottom);
+    //CRLog::error("node margins [%d:%d][%d:%d]",nodemargins.left,nodemargins.right,nodemargins.top,nodemargins.bottom);
+    bool two_columns = this->GetColumns() > 1;
+    bool right_side = two_columns ? rect.left > halfwidth : false;
+    int right_line;
+    bool nomargins = (page_margins.right < 20) ? true : false;  //todo take nomargins from docview, set nomargins in docview from bridge
 
-	if (word == " ")
-	{
-		//curwidth = hyphwidth;
-	}
-
-	if (two_columns)
-	{
-		right_line = right_side ? page_width_int : halfwidth;
-	}
-	else
-	{
-		right_line = page_width_int;
-	}
-    //return right_line - (nodemargins.right/2);
-    int leftshift = right_side ? rect.left - halfwidth : rect.left;
-
+    LVFont *font = this->base_font_.get();
+    LVFont::glyph_info_t glyph;
+    int hyphwidth = font->getCharWidth(UNICODE_SOFT_HYPHEN_CODE);
+    int curwidth = font->getCharWidth(word.firstChar());
     css_style_rec_t *style = node->getParentNode()->getStyle().get();
     css_text_align_t align = style->text_align;
 
-	if (margins.right + (hyphwidth * 2 ) < leftshift )
+    if (two_columns)
     {
-        leftshift = margins.right;
+        right_line = right_side ? page_width_int : halfwidth;
+    }
+    else
+    {
+        right_line = page_width_int;
+    }
+    //return right_line - right_line - ( hyphwidth / 2 );
+    int leftshift = right_side ? rect.left - halfwidth : rect.left;
+    lString16 mainname = node->getMainParentName();
+
+    //4 variants of right lines
+    if (align == css_ta_right)
+    {
+        result = right_line - page_margins.right + (hyphwidth / 2);
+    }
+    else if (align == css_ta_center || align == css_ta_left)
+    {
+        result = rect.right + curwidth + (hyphwidth / 2);
     }
 
-	//4 variants of right lines
-	if (align == css_ta_right)
-	{
-		result = right_line - margins.right + (hyphwidth / 2);
-	}
-	else if (align == css_ta_center || align == css_ta_left)
-	{
-		result = rect.right + curwidth + (hyphwidth / 2);
-	}
+    else if ((mainname == "poem" || mainname == "stanza" || mainname == "blockquote") )
+    {
+        result = right_line - leftshift + gTextLeftShift + (hyphwidth / 2);
+    }
     else if(nomargins)
     {
         result = right_line - ( hyphwidth / 2 );
     }
+    else if( mainname == "annotation" )
+    {
+	    result = right_line - ( hyphwidth * 2 );
+    }
+    else if (mainname == "li")
+    {
+        result = right_line - hyphwidth;
+    }
 	else //css_ta_justify AND margins ON
 	{
-		result = right_line - leftshift + hyphwidth;
+        result = right_line - leftshift + hyphwidth;
 	}
 
     //some fixes:
@@ -2899,19 +2903,10 @@ float LVDocView::CalcRightSide(TextRect textrect)
             result = right_line - (hyphwidth * 2);
         }
 	}
-	if (result > right_line)
+	if (result > right_line) // plan C
 	{
 		result = right_line - (hyphwidth / 2);
 	}
-    //CRLog::error("r = %d , l = %d", rect.right, rect.left);
-    //int rectmax = (rect.right >= rect.left) ? rect.right : rect.left;
-    //CRLog::error("rectmax = %d ", rectmax);
-    //if((result - rectmax)  > curwidth * 2) // plan C
-    //{
-    //    CRLog::error("result( %f ) - rectmax( %d ) > hyphwidth ( %d ) *3 ", result , rectmax, hyphwidth);
-    //    result = result - (hyphwidth * 2);
-    //}
-    //CRLog::error("10");
 	return result;
 }
 

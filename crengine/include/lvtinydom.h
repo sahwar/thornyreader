@@ -662,6 +662,8 @@ public:
     lString16 getHRef();
     //returns lvrect that contains accumulative sum of all margins of node and all parent nodes
     lvRect getFullMargins();
+    //returns string name if any parent name is from white list
+    lString16 getMainParentName();
 };
 
 /**
