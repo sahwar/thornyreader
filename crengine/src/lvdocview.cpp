@@ -1977,10 +1977,10 @@ void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
 			text_is_first_ = false;
 			ldomNode *node = node_range->getStart().getNode();
 			ldomNode *element_node = node->getParentNode();
-			if (element_node->isNull() || element_node->getNodeId() != el_a)
+			if (element_node->isNull() || node->getHRef() == lString16::empty_str)
 			{
-				return;
-			}
+                return;
+            }
 			ProcessLinkNode(element_node);
 #ifdef TRDEBUG
 			lString16 text = element_node->getText();

@@ -5369,7 +5369,7 @@ void ldomNodeCallback::processText(ldomNode* node, ldomXRange * range)
     }
     this->onText(&noderange);
     /*
-    lString16 text = node->getText().substr(range._start.getOffset(),range._end.getOffset());
+    lString16 text = node->getText().substr(noderange.getStart().getOffset(),noderange.getEnd().getOffset());
     CRLog::error("full  text = %s",LCSTR(node->getText()));
     CRLog::error("substrtext = %s",LCSTR(text));
     */

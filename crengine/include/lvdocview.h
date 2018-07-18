@@ -255,19 +255,19 @@ public:
     //returns calculated right side of hitbox based on apge properties
     float CalcRightSide(TextRect textrect);
     //returns array of Hitbox objects that contain hitbox info about characters on current docview page
-    LVArray<Hitbox> GetPageHitboxes();
     enum image_display_t {
-       img_all,
-       img_block,
-       img_inline
+        img_all,
+        img_block,
+        img_inline
     };
+    LVArray<Hitbox> GetPageLinks();
+    //returns array of Hitbox objects that contain hitbox info about characters on current docview page
+    LVArray<Hitbox> GetPageHitboxes();
     //returns array of lvRects, that contains info about image location on current docview page
     LVArray<ImgRect> GetPageImages(image_display_t type=img_all);
     //rewrites imgheight and imgwidth to corresponding values of scaled image.
     void GetImageScaleParams(ldomNode *node, int &imgheight, int &imgwidth);
     font_ref_t GetBaseFont();
-
-    LVArray<Hitbox> GetPageLinks();
 
     LVDocView();
     ~LVDocView();
