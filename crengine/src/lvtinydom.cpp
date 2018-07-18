@@ -5377,10 +5377,6 @@ void ldomNodeCallback::processText(ldomNode* node, ldomXRange * range)
 
 bool ldomNodeCallback::processElement(ldomNode* node, ldomXRange * range)
 {
-    if (!this->onElement(node))
-    {
-        return false;
-    }
     for (lUInt32 i = 0; i < node->getChildCount(); i++)
     {
         ldomNode *child = node->getChildNode(i);
@@ -8791,6 +8787,27 @@ ldomNode* ldomNode::modify()
         }
     }
     return this;
+}
+
+lvRect ldomNode::getFullMargins()
+{
+    lvRect margins = lvRect(0,0,0,0);
+    ldomNode* node = this;
+    while(node != NULL && node->getParentNode()!=NULL)
+    {
+        if(!node->isText())
+        {
+            css_style_rec_t *style = node->getStyle().get();
+            margins.left   += style->margin[0].value;
+            margins.right  += style->margin[1].value;
+            margins.top    += style->margin[2].value;
+            margins.bottom += style->margin[3].value;
+            CRLog::error("[%d:%d][%d:%d]",style->margin[0].value,style->margin[1].value,style->margin[2].value,style->margin[3].value);
+            CRLog::error("nodename = %s",LCSTR(node->getNodeName()));
+        }
+        node = node->getParentNode();
+    }
+    return margins;
 }
 
 void CrDomBase::dumpStatistics() {

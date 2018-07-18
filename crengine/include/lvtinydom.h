@@ -660,6 +660,8 @@ public:
     bool getNodeListMarker( int & counterValue, lString16 & marker, int & markerWidth );
     /// returns href attribute of <A> element, null string if not found
     lString16 getHRef();
+    //returns lvrect that contains accumulative sum of all margins of node and all parent nodes
+    lvRect getFullMargins();
 };
 
 /**
