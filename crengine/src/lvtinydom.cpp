@@ -8802,8 +8802,6 @@ lvRect ldomNode::getFullMargins()
             margins.right  += style->margin[1].value;
             margins.top    += style->margin[2].value;
             margins.bottom += style->margin[3].value;
-            CRLog::error("[%d:%d][%d:%d]",style->margin[0].value,style->margin[1].value,style->margin[2].value,style->margin[3].value);
-            CRLog::error("nodename = %s",LCSTR(node->getNodeName()));
         }
         node = node->getParentNode();
     }
