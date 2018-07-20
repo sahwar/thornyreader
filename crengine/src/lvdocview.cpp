@@ -3060,12 +3060,13 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
         }
 
 	    int para_repeat_counter = 0;
+	    int last_top = 0 ;
 	    while (para_counter < para_array.length() && rect.top > para_array.get(para_counter).top)
 	    {
 		    lvRect para_rect = para_array.get(para_counter);
 
 		    this->DocToWindowRect(para_rect);
-		    if(para_repeat_counter < PARAEND_REPEAT_MAX)
+		    if(para_repeat_counter < PARAEND_REPEAT_MAX && para_rect.top != last_top)
 		    {
 				#if DEBUG_CRE_PARA_END_BLOCKS
 			    float l = (para_rect.left + (strheight_curr / 2)) / page_width;
@@ -3091,6 +3092,7 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
 			    Hitbox *hitbox = new Hitbox(l, r, t, b, para_end);
 			    result.add(*hitbox);
 			    para_repeat_counter++;
+			    last_top = para_rect.top;
 		    }
 		para_counter++;
 	    }
