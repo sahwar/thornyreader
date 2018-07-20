@@ -5216,47 +5216,6 @@ bool ldomXPointerEx::prevVisibleFinal()
     }
 }
 
-/// run callback for each node in range
-void ldomXRange::forEach(ldomNodeCallback *callback)
-{
-    if ( isNull() )
-        return;
-    ldomXRange pos( _start, _end, 0 );
-    bool allowGoRecurse = true;
-    while ( !pos._start.isNull() && pos._start.compare( _end ) < 0 ) {
-        ldomNode * node = pos._start.getNode();
-        //CRLog::trace("path: %s", UnicodeToUtf8(pos._start.toString()).c_str());
-        if ( node->isElement() ) {
-            allowGoRecurse = callback->onElement( &pos.getStart() );
-        } else if ( node->isText() ) {
-            lString16 txt = node->getText();
-            pos._end = pos._start;
-            pos._start.setOffset( 0 );
-            pos._end.setOffset( txt.length() );
-            if ( _start.getNode() == node ) {
-                pos._start.setOffset( _start.getOffset() );
-            }
-            if ( _end.getNode() == node && pos._end.getOffset() > _end.getOffset()) {
-                pos._end.setOffset( _end.getOffset() );
-            }
-            callback->onText( &pos );
-            allowGoRecurse = false;
-        }
-        // move to next item
-        bool stop = false;
-        if ( !allowGoRecurse || !pos._start.child(0) ) {
-             while ( !pos._start.nextSibling() ) {
-                if ( !pos._start.parent() ) {
-                    stop = true;
-                    break;
-                }
-            }
-        }
-        if ( stop )
-            break;
-    }
-}
-
 ldomNode* ldomXRange::getEndNode()
 {
     if (_endnode == NULL)
@@ -5410,7 +5369,7 @@ void ldomNodeCallback::processText(ldomNode* node, ldomXRange * range)
     }
     this->onText(&noderange);
     /*
-    lString16 text = node->getText().substr(range._start.getOffset(),range._end.getOffset());
+    lString16 text = node->getText().substr(noderange.getStart().getOffset(),noderange.getEnd().getOffset());
     CRLog::error("full  text = %s",LCSTR(node->getText()));
     CRLog::error("substrtext = %s",LCSTR(text));
     */
@@ -5418,10 +5377,6 @@ void ldomNodeCallback::processText(ldomNode* node, ldomXRange * range)
 
 bool ldomNodeCallback::processElement(ldomNode* node, ldomXRange * range)
 {
-    if (!this->onElement(node))
-    {
-        return false;
-    }
     for (lUInt32 i = 0; i < node->getChildCount(); i++)
     {
         ldomNode *child = node->getChildNode(i);
@@ -5938,77 +5893,6 @@ void ldomWordExList::init()
     }
 }
 
-/// returns text between two XPointer positions
-lString16 ldomXRange::GetRangeText(lChar16 blockDelimiter, int maxTextLen)
-{
-    class TextCollector : public ldomNodeCallback {
-    private:
-        bool lastText;
-        bool newBlock;
-        lChar16 delimiter;
-        int maxLen;
-        lString16 text_;
-    public:
-        TextCollector(lChar16 blockDelimiter, int maxTextLen)
-                : lastText(false), newBlock(true), delimiter(blockDelimiter), maxLen(maxTextLen) {
-        }
-        /// destructor
-        virtual ~TextCollector() {}
-        /// called for each found text fragment in range
-        virtual void onText(ldomXRange* node_range) {
-            if (newBlock && !text_.empty()) {
-                text_ << delimiter;
-            }
-            lString16 text = node_range->getStart().getNode()->getText();
-            int start = node_range->getStart().getOffset();
-            int end = node_range->getEnd().getOffset();
-            if (start < end) {
-                text_ << text.substr(start, end - start+1); // problem was here, added +1, so full string is being sent
-            }
-            lastText = true;
-            newBlock = false;
-        }
-        /// called for each found node in range
-        virtual bool onElement(ldomXPointerEx* ptr) {
-            ldomNode* elem = ptr->getNode();
-            if (elem->getRendMethod() == erm_invisible)
-                return false;
-            switch (elem->getStyle()->display) {
-                /*
-                case css_d_inherit:
-                case css_d_block:
-                case css_d_list_item:
-                case css_d_compact:
-                case css_d_marker:
-                case css_d_table:
-                case css_d_inline_table:
-                case css_d_table_row_group:
-                case css_d_table_header_group:
-                case css_d_table_footer_group:
-                case css_d_table_row:
-                case css_d_table_column_group:
-                case css_d_table_column:
-                case css_d_table_cell:
-                case css_d_table_caption:
-                */
-                default:
-                    newBlock = true;
-                    return true;
-                case css_d_none:
-                    return false;
-                case css_d_inline:
-                case css_d_run_in:
-                    newBlock = false;
-                    return true;
-            }
-        }
-        /// get collected text
-        lString16 getText() { return text_; }
-    };
-    TextCollector callback(blockDelimiter, maxTextLen);
-    forEach(&callback);
-    return callback.getText();
-}
 
 /// returns href attribute of <A> element, null string if not found
 lString16 ldomXPointer::getHRef()
@@ -8903,6 +8787,40 @@ ldomNode* ldomNode::modify()
         }
     }
     return this;
+}
+
+lvRect ldomNode::getFullMargins()
+{
+    lvRect margins = lvRect(0,0,0,0);
+    ldomNode* node = this;
+    while(node != NULL && node->getParentNode()!=NULL)
+    {
+        if(!node->isText())
+        {
+            css_style_rec_t *style = node->getStyle().get();
+            margins.left   += style->margin[0].value;
+            margins.right  += style->margin[1].value;
+            margins.top    += style->margin[2].value;
+            margins.bottom += style->margin[3].value;
+        }
+        node = node->getParentNode();
+    }
+    return margins;
+}
+
+lString16 ldomNode::getMainParentName()
+{
+    lString16 result;
+    ldomNode* node = this;
+    while(node != NULL && node->getParentNode()!=NULL)
+    {
+        if(node->isNodeName("li") || node->isNodeName("poem") || node->isNodeName("stanza") || node->isNodeName("annotation")|| node->isNodeName("blockquote"))
+        {
+            return node->getNodeName();
+        }
+        node = node->getParentNode();
+    }
+    return lString16::empty_str;
 }
 
 void CrDomBase::dumpStatistics() {

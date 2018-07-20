@@ -174,8 +174,10 @@ public:
     void ClearSelection();
     /// get list of links
     void GetCurrentPageLinks(LVArray<TextRect>& links_list);
-    LVArray<lvRect> GetCurrentPageParas(int unused=0);
-    LVArray<ImgRect> GetCurrentPageImages(int unused=0,int maxw=100, int maxh=100);
+    // get list of paraends on current page
+    LVArray<lvRect> GetCurrentPageParas();
+    // get list of images on current page
+    LVArray<ImgRect> GetCurrentPageImages();
     /// selects first link on page, if any. returns selected link range, null if no links.
     ldomXRange* SelectFirstPageLink();
     /// invalidate formatted data, request render
@@ -253,17 +255,19 @@ public:
     //returns calculated right side of hitbox based on apge properties
     float CalcRightSide(TextRect textrect);
     //returns array of Hitbox objects that contain hitbox info about characters on current docview page
-    LVArray<Hitbox> GetPageHitboxes();
     enum image_display_t {
-       img_all,
-       img_block,
-       img_inline
+        img_all,
+        img_block,
+        img_inline
     };
+    LVArray<Hitbox> GetPageLinks();
+    //returns array of Hitbox objects that contain hitbox info about characters on current docview page
+    LVArray<Hitbox> GetPageHitboxes();
     //returns array of lvRects, that contains info about image location on current docview page
     LVArray<ImgRect> GetPageImages(image_display_t type=img_all);
+    //rewrites imgheight and imgwidth to corresponding values of scaled image.
+    void GetImageScaleParams(ldomNode *node, int &imgheight, int &imgwidth);
     font_ref_t GetBaseFont();
-
-    LVArray<Hitbox> GetPageLinks();
 
     LVDocView();
     ~LVDocView();
