@@ -2800,11 +2800,11 @@ bool LVDocView::NeedCheckImage()
     return false;
 }
 
-unsigned long long int getkey(lvRect rect)
+unsigned long int getkey(lvRect rect)
 {
     lString16 key;
-	unsigned long long int a; //so huge num to avoid overfloating
-    a=rect.left+rect.right+rect.top+rect.bottom;
+	unsigned long int a;
+    a = abs(((rect.topLeft().x*rect.bottomRight().x)-(rect.topLeft().y*rect.bottomRight().y)) % 1000000);
     return a;
 }
 
