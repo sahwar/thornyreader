@@ -3022,13 +3022,14 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
             footnotesheightr = footnotesheightr + pages_list_[this->page_+1]->footnotes[fn].height;
         }
     }
-    //CRLog::trace("PARAEND START");
     LVArray<lvRect> para_array = this->GetPageParaEnds();
-    //CRLog::trace("PARAEND END");
-    //CRLog::trace("IMAGES START");
-	//LVArray<ImgRect> images_array = this->GetPageImages(img_inline);
+
+#if DEBUG_DRAW_IMAGE_HITBOXES
+    LVArray<ImgRect> images_array = this->GetPageImages(img_inline);
+#else
     LVArray<ImgRect> images_array = this->GetPageImages();
-    //CRLog::trace("IMAGES END");
+#endif //DEBUG_DRAW_IMAGE_HITBOXES
+
     LVRef<ldomXRange> range = this->GetPageDocRange();
     lvRect margins = this->cfg_margins_;
     ldomXRange text = *range;
@@ -3298,6 +3299,8 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
             }
         }
     }
+#ifdef TRDEBUG
+#if DEBUG_DRAW_IMAGE_HITBOXES
 	for (int i = 0; i < images_array.length(); i++)
 	{
 		lvRect imgrect = images_array.get(i).getRect();
@@ -3312,6 +3315,8 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
 			result.add(*hitbox);
 		}
 	}
+#endif
+#endif //TRDEBUG
 	//CRLog::trace("GETPAGEHITBOXES end");
 
 	return result;
