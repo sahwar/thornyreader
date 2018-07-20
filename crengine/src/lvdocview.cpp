@@ -1836,7 +1836,7 @@ void LVDocView::GetImageScaleParams(ldomNode* node, int &imgheight, int &imgwidt
     if (pscale > maxscale)
         pscale = maxscale;
     imgheight = imgheight * pscale / 1000;
-    imgwidth = imgwidth * pscale / 1000;
+    imgwidth  = imgwidth  * pscale / 1000;
 }
 
 void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
@@ -2230,13 +2230,6 @@ LVArray<ImgRect> LVDocView::GetCurrentPageImages()
 	{
 		LVArray<ImgRect> img_rect_array;
 		LVDocView* doc_view_;
-
-		bool NodeIsAllowed(ldomNode * node)
-        {
-           return true;
-        }
-
-
 	public:
 
 		ImageKeeper(LVDocView* doc_view) : doc_view_(doc_view) {	}
@@ -2252,12 +2245,6 @@ LVArray<ImgRect> LVDocView::GetCurrentPageImages()
             {
                 return true;
             }
-            if(node->getHRef()!= lString16::empty_str)
-            {
-                //return true;
-            }
-
-            //CRLog::error("in node = %s", LCSTR(node->getNodeName()));
 
             int end_index = node->getText().length();
             ldomXPointerEx end = ldomXPointerEx(node, end_index);
