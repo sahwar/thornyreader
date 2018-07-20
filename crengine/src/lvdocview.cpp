@@ -2865,10 +2865,10 @@ float LVDocView::CalcRightSide(TextRect textrect)
     {
         result = right_line - ( hyphwidth / 2 );
     }
-    else if( mainname == "annotation" )
-    {
-	    result = right_line - ( hyphwidth * 2 );
-    }
+    //else if( mainname == "annotation" )
+    //{
+	//    result = right_line - ( hyphwidth * 2 );
+    //}
     else if (mainname == "li")
     {
         result = right_line - hyphwidth;
