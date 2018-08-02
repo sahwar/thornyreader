@@ -225,7 +225,46 @@ void MuPdfBridge::processText(int pageNo, const char* pattern, CmdResponse& resp
                             bbbox.y0 = last_char.y0;
                             bbbox.y1 = last_char.y1;
                             #endif //PDF_PARA_BLOCKS_DEBUG
-                            toResponseParaend(response, bounds, fz_round_rect(&qbox, &bbbox), paraend, 9);
+                            fz_point next_char;
+                            if ( blockIndex + 1 < pagetext->len )
+                            {
+                                fz_page_block &block = pagetext->blocks[blockIndex + 1];
+                                if (block.type != FZ_PAGE_BLOCK_TEXT)
+                                {
+                                    next_char.x = -1;
+                                    next_char.y = -1;
+                                }
+                                else if (block.u.text->lines && block.u.text->len > 0)
+                                {
+                                    fz_text_line &line = block.u.text->lines[0];
+                                    if (line.first_span)
+                                    {
+                                        fz_text_span *span = line.first_span;
+                                        if (span->text && span->len > 0)
+                                        {
+                                            fz_rect bbox;
+                                            fz_text_char_bbox(ctx, &bbox, span, 0);
+                                            fz_irect sas;
+                                            float height = abs(bbox.y0 - bbox.y1);
+                                            sas.x0 = bbox.x0;
+                                            sas.x1 = bbox.x1;
+                                            sas.y0 = bbox.y0;
+                                            sas.y1 = bbox.y1 + height / 8;
+
+                                            next_char.x = sas.x0 + abs(sas.x0 - sas.x1);
+                                            next_char.y = sas.y0 + abs(sas.y0 - sas.y1);
+                                        }
+                                    }
+                                }
+                                if (next_char.x > 0 && next_char.x < bbbox.x1 && next_char.y > bbbox.y0 )
+                                {
+                                    toResponseParaend(response, bounds, fz_round_rect(&qbox, &bbbox), paraend, 9);
+                                }
+                            }
+                            else
+                            {
+                                toResponseParaend(response, bounds, fz_round_rect(&qbox, &bbbox), paraend, 9);
+                            }
                         }
                     }
                     DEBUG_L(L_DEBUG_TEXT, LCTX, "processText: page processed");
