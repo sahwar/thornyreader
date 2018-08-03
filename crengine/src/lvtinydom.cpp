@@ -5575,7 +5575,7 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
                     lvRect rect = word.getRect();
                     lString16 string = word.getText();
                     rect.left = rect.left - leftshift + gTextLeftShift;
-                    rect.right = rect.right - leftshift + gTextLeftShift;
+                    rect.right = rect.right - leftshift + gTextLeftShift -1;
                     list_.add(TextRect(node, rect, string));
                 }
                 //last char zero width fix
@@ -5583,7 +5583,7 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
                 lvRect rect = word.getRect();
                 lString16 string = word.getText();
                 rect.left = rect.left - leftshift + gTextLeftShift;
-                rect.right = rect.right + gTextLeftShift;
+                rect.right = rect.right + gTextLeftShift-1;
                 list_.add(TextRect(node, rect, string));
             }
             else
@@ -5617,7 +5617,7 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
                     lvRect rect = word.getRect();
                     lString16 string = word.getText();
                     rect.left = rect.left + gTextLeftShift;
-                    rect.right = rect.right + gTextLeftShift;
+                    rect.right = rect.right + gTextLeftShift-1;
                     list_.add(TextRect(node, rect, string));
                 }
             }

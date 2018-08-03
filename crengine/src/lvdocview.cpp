@@ -2147,6 +2147,7 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas()
 			//para_rect_array.add(end_rect);
             end_rect.left += gTextLeftShift;
             end_rect.right += gTextLeftShift;
+            end_rect.right -=1;
 			return end_rect;
 		}
 
