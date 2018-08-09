@@ -485,7 +485,8 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
         }
         else
         {
-            return false;
+	        LvDomAutocloseWriter writer(cr_dom_, false, HTML_AUTOCLOSE_TABLE);
+	        parser = new LvHtmlParser(stream_, &writer);
         }
 #endif //ENABLE_ANTIWORD == 1
 	}
