@@ -2818,7 +2818,6 @@ float LVDocView::CalcRightSide(TextRect textrect)
     lString16 word = textrect.getText();
     ldomNode *node = textrect.getNode();
 
-
     int page_width_int = this->GetWidth();
     float halfwidth = page_width_int / 2;
     lvRect page_margins = this->cfg_margins_;
@@ -2837,6 +2836,7 @@ float LVDocView::CalcRightSide(TextRect textrect)
     css_style_rec_t *style = node->getParentNode()->getStyle().get();
     css_text_align_t align = style->text_align;
 
+    //CRLog::error("letter = %s",LCSTR(word));
     if (two_columns)
     {
         right_line = right_side ? page_width_int : halfwidth;
@@ -2849,8 +2849,11 @@ float LVDocView::CalcRightSide(TextRect textrect)
     int leftshift = right_side ? rect.left - halfwidth : rect.left;
     lString16 mainname = node->getMainParentName();
 
-    //4 variants of right lines
-    if (align == css_ta_right)
+    // variants of right lines
+    if (mainname == "epigraph") {
+        result = right_line * 0.9;
+    }
+    else if (align == css_ta_right)
     {
         result = right_line - page_margins.right + (hyphwidth / 2);
     }
