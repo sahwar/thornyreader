@@ -3027,9 +3027,9 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
     LVArray<lvRect> para_array = this->GetPageParaEnds();
 
 #if DEBUG_DRAW_IMAGE_HITBOXES
-    LVArray<ImgRect> images_array = this->GetPageImages(img_inline);
-#else
     LVArray<ImgRect> images_array = this->GetPageImages();
+#else
+    LVArray<ImgRect> images_array = this->GetPageImages(img_inline);
 #endif //DEBUG_DRAW_IMAGE_HITBOXES
 
     LVRef<ldomXRange> range = this->GetPageDocRange();
