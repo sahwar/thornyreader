@@ -30,7 +30,6 @@ static char utf8[32 * 1024];
 static char paraend[3] = { '\n',0};
 static fz_rect last_char;
 static int length;
-//static FILE* f
 
 void toResponse(CmdResponse& response, fz_rect& bounds, fz_irect* rr, const char* str, int len)
 {
@@ -44,7 +43,6 @@ void toResponse(CmdResponse& response, fz_rect& bounds, fz_irect* rr, const char
 
     DEBUG_L(L_DEBUG_TEXT, LCTX, "processText: add word: %d %f %f %f %f %s",len, left, top, right, bottom, utf8);
 
-    //fprintf(f, "%f %f %f %f ", left, top,right, bottom);
     response.addFloat(left);
     response.addFloat(top);
     response.addFloat(right);
@@ -149,11 +147,6 @@ void processLine(CmdResponse& response, fz_context *ctx, fz_rect& bounds, fz_tex
 
 void MuPdfBridge::processText(int pageNo, const char* pattern, CmdResponse& response)
 {
-    //f = fopen("/sdcard/rects_PDF.txt", "w");
-    //if (f == NULL)
-    //{
-    //    return;
-    //}
     fz_page *page = getPage(pageNo, false);
     if (page == NULL)
     {
@@ -297,7 +290,6 @@ void MuPdfBridge::processText(int pageNo, const char* pattern, CmdResponse& resp
         ERROR_L(LCTX, "%s", msg);
         response.result = RES_INTERNAL_ERROR;
     }
-//fclose(f);
     DEBUG_L(L_DEBUG_TEXT, LCTX, "processText: end");
 }
 
