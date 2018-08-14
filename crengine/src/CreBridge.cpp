@@ -591,6 +591,14 @@ void CreBridge::processOutline(CmdRequest& request, CmdResponse& response)
     }
     return;
 #endif
+#if 0
+    for (int i = 0; i < outline.length(); i++) {
+        LvTocItem* row = outline[i];
+        uint16_t row_page = (uint16_t) ExportPage(columns, row->getPage());
+        CRLog::trace("%s, %d, %d, %s",
+                     LCSTR(row->getName()), row_page, row->getLevel() - 1, LCSTR(row->getPath()));
+    }
+#endif
 #endif
     for (int i = 0; i < outline.length(); i++) {
         LvTocItem* row = outline[i];
@@ -601,7 +609,6 @@ void CreBridge::processOutline(CmdRequest& request, CmdResponse& response)
         responseAddString(response, row->getName());
         responseAddString(response, row->getPath());
     }
-
 }
 
 void CreBridge::processQuit(CmdRequest& request, CmdResponse& response)
