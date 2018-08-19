@@ -11,17 +11,24 @@
 #define FALLBACK_FONT_ARRAY_SIZE 500
 #define FALLBACK_CYCLE_MAX 5
 #define FONT_FOLDER "/system/fonts/"
-#define FALLBACK_FONTS_ENABLE 1
+#define SYSTEM_FALLBACK_FONTS_ENABLE 1
+#define FALLBACK_FACE_DEFAULT lString8("Roboto") // lString8("NONE") to switch it off
 
 #define META_MAX_LENGTH 2000
+#define CHAR_HEIGHT_MIN 5
+#define PARAEND_REPEAT_MAX 2
+
+extern int gTextLeftShift;
 
 #ifdef TRDEBUG
 #define DUMP_DOMTREE 0
-// define to non-zero (1..5) to see block bounds // NOW IT IS IN CRCONFIG
-//#define DEBUG_TREE_DRAW 1
+#define DEBUG_TREE_DRAW 0 // define to non-zero (1..5) to see block bounds
+#define DEBUG_CRE_PARA_END_BLOCKS 0
+#define DEBUG_DRAW_IMAGE_HITBOXES 0
 #else
 #define DUMP_DOMTREE 0
 #define DEBUG_TREE_DRAW 0
+#define DEBUG_CRE_PARA_END_BLOCKS 0
 #endif // TRDEBUG
 
 #endif //CRCONFIG_H

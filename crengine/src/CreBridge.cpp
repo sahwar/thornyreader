@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <crengine/include/crconfig.h>
 
 #include "thornyreader/include/thornyreader.h"
 #include "thornyreader/include/StProtocol.h"
@@ -179,6 +180,10 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
     CmdDataIterator iter(request.first);
     if (!doc_view_) {
         doc_view_ = new LVDocView();
+        if  (FALLBACK_FACE_DEFAULT != lString8("NONE"))
+        {
+            fontMan->InitFallbackFontDefault();
+        }
     }
     while (iter.hasNext()) {
         uint32_t key;
@@ -247,9 +252,7 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
             doc_view_->UpdatePageMargins();
             doc_view_->RequestRender();
         } else if (key == CONFIG_CRE_FONT_FACE_FALLBACK) {
-            fontMan->SetFallbackFontFace(UnicodeToUtf8(lString16(val)));
-            doc_view_->UpdatePageMargins();
-            doc_view_->RequestRender();
+          //
         } else if (key == CONFIG_CRE_FONT_SIZE) {
             int int_val = atoi(val);
             int array_lenght = sizeof(ALLOWED_FONT_SIZES) / sizeof(int);
@@ -306,6 +309,7 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
                 return;
             }
             doc_view_->SetTextAlign(int_val);
+            doc_view_->UpdatePageMargins();
             doc_view_->RequestRender();
         } else if (key == CONFIG_CRE_HYPHENATION) {
             int int_val = atoi(val);
@@ -318,6 +322,7 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
             } else {
                 HyphMan::activateDictionary(lString16(HYPH_DICT_ID_ALGORITHM));
             }
+            doc_view_->UpdatePageMargins();
             doc_view_->RequestRender();
         } else if (key == CONFIG_CRE_FLOATING_PUNCTUATION) {
             int int_val = atoi(val);
@@ -329,6 +334,8 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
             if (bool_val != gFlgFloatingPunctuationEnabled) {
                 gFlgFloatingPunctuationEnabled = bool_val;
             }
+            doc_view_->UpdatePageMargins();
+            doc_view_->RequestRender();
         } else if (key == CONFIG_CRE_FIRSTPAGE_THUMB) {
             int int_val = atoi(val);
             if (int_val < 0 || int_val > 1) {
@@ -436,7 +443,8 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
     CmdDataIterator iter(request.first);
     uint32_t external_page = 0;
     iter.getInt(&external_page);
-    if (!iter.isValid()) {
+    if (!iter.isValid())
+    {
         CRLog::error("processPageText bad request data");
         response.result = RES_BAD_REQ_DATA;
         return;
@@ -446,60 +454,22 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
 #ifdef DEBUG_TEXT
     CRLog::debug("processPageText external_page=%d page=%d page_width=%d page_height=%d",
             external_page, page, doc_view_->GetWidth(), doc_view_->GetHeight());
-    CRLog::trace("processPageText text: %s", LCSTR(doc_view_->GetPageText(page)));
 #endif
-    ldomXRangeList list;
-    doc_view_->GetCurrentPageText(list);
-    if (list.empty()) {
-        return;
-    }
-    float page_width = doc_view_->GetWidth();
-    float page_height = doc_view_->GetHeight();
-    for (int i = 0; i < list.length(); i++) {
-        ldomXRange* text = list[i];
-        lvRect raw_rect;
-        text->getRect(raw_rect);
-        lvRect rect = lvRect(raw_rect.left, raw_rect.top, raw_rect.right, raw_rect.bottom);
-        if (!doc_view_->DocToWindowRect(rect)) {
-#ifdef TRDEBUG
-            ldomNode* start_node = text->getStart().getNode();
-            ldomNode* end_node = text->getEnd().getNode();
-            CRLog::warn("processPageText DocToWindowRect fail %s\n  %d:%d-%d:%d\n  %s %d\n  %s %d",
-                        LCSTR(text->getHRef()),
-                        raw_rect.left, raw_rect.right, raw_rect.top, raw_rect.bottom,
-                        LCSTR(text->getStart().toString()), start_node->getDataIndex(),
-                        LCSTR(text->getEnd().toString()), end_node->getDataIndex());
-#endif
-            continue;
-        }
-        float l = rect.left / page_width;
-        float t = rect.top / page_height;
-        float r = rect.right / page_width;
-        float b = rect.bottom / page_height;
-        lString16 word = text->GetRangeText();
-        response.addFloat(l);
-        response.addFloat(t);
-        response.addFloat(r);
-        response.addFloat(b);
-        responseAddString(response, word);
-#ifdef DEBUG_TEXT
-        ldomNode* start_node = text->getStart().getNode();
-        ldomNode* end_node = text->getEnd().getNode();
-        CRLog::trace("processPageText %d:%d-%d:%d %d:%d-%d:%d\n  %s %d\n  %s %d",
-                     rect.left, rect.right, rect.top, rect.bottom,
-                     raw_rect.left, raw_rect.right, raw_rect.top, raw_rect.bottom,
-                     LCSTR(text->getStart().toString()), start_node->getDataIndex(),
-                     LCSTR(text->getEnd().toString()), end_node->getDataIndex());
-#endif
+    LVArray<Hitbox> hitboxes = doc_view_->GetPageHitboxes();
+    for (int i = 0; i < hitboxes.length(); i++)
+    {
+        Hitbox currHitbox = hitboxes.get(i);
+        response.addFloat(currHitbox._left);
+        response.addFloat(currHitbox._top);
+        response.addFloat(currHitbox._right);
+        response.addFloat(currHitbox._bottom);
+        responseAddString(response, currHitbox._text);
     }
 #undef DEBUG_TEXT
 }
 
 void CreBridge::processPageLinks(CmdRequest& request, CmdResponse& response)
 {
-#ifdef TRDEBUG
-#define DEBUG_LINKS
-#endif //TRDEBUG
     response.cmd = CMD_RES_LINKS;
     CmdDataIterator iter(request.first);
     uint32_t external_page = 0;
@@ -511,42 +481,20 @@ void CreBridge::processPageLinks(CmdRequest& request, CmdResponse& response)
     }
     uint32_t page = (uint32_t) ImportPage(external_page, doc_view_->GetColumns());
     doc_view_->GoToPage(page);
-#ifdef DEBUG_LINKS
-    CRLog::debug("processPageLinks external_page=%d page=%d page_width=%d page_height=%d",
-            external_page, page, doc_view_->GetWidth(), doc_view_->GetHeight());
-    CRLog::trace("processPageLinks text: %s", LCSTR(doc_view_->GetPageText(page)));
-#endif
-    ldomXRangeList list;
-    doc_view_->GetCurrentPageLinks(list);
-    if (list.empty()) {
-        return;
-    }
-    float page_width = doc_view_->GetWidth();
-    float page_height = doc_view_->GetHeight();
-    for (int i = 0; i < list.length(); i++) {
-        ldomXRange* link = list[i];
-        lvRect raw_rect;
-        link->getRect(raw_rect);
-        lvRect rect = lvRect(raw_rect.left, raw_rect.top, raw_rect.right, raw_rect.bottom);
-        if (!doc_view_->DocToWindowRect(rect)) {
-#ifdef TRDEBUG
-            ldomNode* start_node = link->getStart().getNode();
-            ldomNode* end_node = link->getEnd().getNode();
-            CRLog::warn("processPageLinks DocToWindowRect fail %s\n  %d:%d-%d:%d\n  %s %d\n  %s %d",
-                        LCSTR(link->getHRef()),
-                        raw_rect.left, raw_rect.right, raw_rect.top, raw_rect.bottom,
-                        LCSTR(link->getStart().toString()), start_node->getDataIndex(),
-                        LCSTR(link->getEnd().toString()), end_node->getDataIndex());
-#endif
-            continue;
-        }
-        float l = rect.left / page_width;
-        float t = rect.top / page_height;
-        float r = rect.right / page_width;
-        float b = rect.bottom / page_height;
-        lString16 href = link->getHRef();
+    LVArray<Hitbox> pageLinks = doc_view_->GetPageLinks();
+
+    for (int i = 0; i < pageLinks.length(); i++)
+    {
         uint16_t target_page = 0;
-        if (href.length() > 1 && href[0] == '#') {
+        Hitbox curr_link = pageLinks.get(i);
+        float l = curr_link._left;
+        float t = curr_link._top;
+        float r = curr_link._right;
+        float b = curr_link._bottom;
+        lString16 href = curr_link._text;
+
+        if (href.length() > 1 && href[0] == '#')
+        {
             lString16 ref = href.substr(1, href.length() - 1);
             lUInt16 id = doc_view_->GetCrDom()->getAttrValueIndex(ref.c_str());
             ldomNode* node = doc_view_->GetCrDom()->getNodeById(id);
@@ -574,18 +522,7 @@ void CreBridge::processPageLinks(CmdRequest& request, CmdResponse& response)
         } else {
             responseAddLinkUnknown(response, href, l, t, r, b);
         }
-#ifdef DEBUG_LINKS
-        ldomNode* start_node = link->getStart().getNode();
-        ldomNode* end_node = link->getEnd().getNode();
-        CRLog::trace("processPageLinks %s %d\n  %d:%d-%d:%d %d:%d-%d:%d\n  %s %d\n  %s %d",
-                     LCSTR(href), target_page, rect.left, rect.right, rect.top, rect.bottom,
-                     raw_rect.left, raw_rect.right, raw_rect.top, raw_rect.bottom,
-                     LCSTR(link->getStart().toString()), start_node->getDataIndex(),
-                     LCSTR(link->getEnd().toString()), end_node->getDataIndex());
-
-#endif
     }
-#undef DEBUG_LINKS
 }
 
 void CreBridge::processPageByXPath(CmdRequest& request, CmdResponse& response)
@@ -644,14 +581,31 @@ void CreBridge::processOutline(CmdRequest& request, CmdResponse& response)
     LVPtrVector<LvTocItem, false> outline;
     doc_view_->GetOutline(outline);
     CRLog::trace("processOutline size: %d", outline.length());
-    if (outline.length() > 5000) {
-        return;
+#ifdef TRDEBUG
+#if 0
+    for (int i = 0; i < 60000; i++) {
+        response.addWords((uint16_t) OUTLINE_TARGET_XPATH, 1);
+        response.addInt((uint32_t) 0);
+        responseAddString(response, lString16("chapter ").appendDecimal(i));
+        responseAddString(response, lString16("xpath"));
     }
+    return;
+#endif
+#if 0
+    for (int i = 0; i < outline.length(); i++) {
+        LvTocItem* row = outline[i];
+        uint16_t row_page = (uint16_t) ExportPage(columns, row->getPage());
+        CRLog::trace("%s, %d, %d, %s",
+                     LCSTR(row->getName()), row_page, row->getLevel() - 1, LCSTR(row->getPath()));
+    }
+#endif
+#endif
     for (int i = 0; i < outline.length(); i++) {
         LvTocItem* row = outline[i];
         uint16_t row_page = (uint16_t) ExportPage(columns, row->getPage());
         response.addWords((uint16_t) OUTLINE_TARGET_XPATH, row_page);
-        response.addInt((uint32_t) row->getLevel());
+        // Crengine level is one-based while ThornyReader using zero-based levels
+        response.addInt((uint32_t) row->getLevel() - 1);
         responseAddString(response, row->getName());
         responseAddString(response, row->getPath());
     }
@@ -752,4 +706,11 @@ void CreBridge::process(CmdRequest& request, CmdResponse& response)
             break;
     }
     //response.print(LCTX);
+}
+
+int main(int argc, char *argv[])
+{
+    ThornyStart("crengine");
+    CreBridge cre;
+    return cre.main(argc, argv);
 }

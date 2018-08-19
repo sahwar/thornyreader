@@ -14,11 +14,12 @@
 #include "include/lvtinydom.h"
 #include "include/fb2def.h"
 #include "include/lvrend.h"
+#include "include/crconfig.h"
 
 //#define DEBUG_TREE_DRAW 3
-// define to non-zero (1..5) to see block bounds
+// define to non-zero (1..5) to see block bounds // NOW IT IS IN CRCONFIG
 //#define DEBUG_TREE_DRAW 1
-#define DEBUG_TREE_DRAW 0
+
 //#define DEBUG_DUMP_ENABLED
 #ifdef DEBUG_DUMP_ENABLED
 class simpleLogFile
@@ -1596,7 +1597,7 @@ int renderBlockElement( LVRendPageContext & context, ldomNode * enode, int x, in
 }
 
 void DrawDocument( LVDrawBuf & drawbuf, ldomNode * enode, int x0, int y0, int dx, int dy, int doc_x, int doc_y, int page_height, ldomMarkedRangeList * marks,
-                   ldomMarkedRangeList *bookmarks)
+                   ldomMarkedRangeList *bookmarks, lvRect margins,int columns)
 {
     if ( enode->isElement() )
     {
@@ -1649,7 +1650,7 @@ void DrawDocument( LVDrawBuf & drawbuf, ldomNode * enode, int x0, int y0, int dx
                 for (int i=0; i<cnt; i++)
                 {
                     ldomNode * child = enode->getChildNode( i );
-                    DrawDocument( drawbuf, child, x0, y0, dx, dy, doc_x, doc_y, page_height, marks, bookmarks ); //+fmt->getX() +fmt->getY()
+                    DrawDocument( drawbuf, child, x0, y0, dx, dy, doc_x, doc_y, page_height, marks, bookmarks,margins,columns ); //+fmt->getX() +fmt->getY()
                 }
 #if (DEBUG_TREE_DRAW!=0)
                 drawbuf.FillRect( doc_x+x0, doc_y+y0, doc_x+x0+fmt.getWidth(), doc_y+y0+1, color );
@@ -1695,7 +1696,22 @@ void DrawDocument( LVDrawBuf & drawbuf, ldomNode * enode, int x0, int y0, int dx
                         ldomMarkedRangeList nmarks( marks, rc );
                         txform->Draw( &drawbuf, doc_x+x0 + padding_left, doc_y+y0 + padding_top, &nmarks, nbookmarks );
                     } else {
-                        txform->Draw( &drawbuf, doc_x+x0 + padding_left, doc_y+y0 + padding_top, marks, nbookmarks );
+                        if ( gFlgFloatingPunctuationEnabled  )
+                        {
+                            if(enode->getNodeName() == "image" || enode->getNodeName() == "img")
+                            {
+                                txform->Draw(&drawbuf, doc_x + x0 + padding_left, doc_y + y0 + padding_top, marks, nbookmarks);
+                            }
+                            else
+                            {
+                                txform->Draw(&drawbuf, doc_x + x0 + padding_left + gTextLeftShift, doc_y + y0 + padding_top, marks, nbookmarks);
+                            }
+                        }
+
+                        else
+                        {
+                            txform->Draw(&drawbuf, doc_x + x0 + padding_left, doc_y + y0 + padding_top, marks, nbookmarks);
+                        }
                     }
                     if (nbookmarks)
                         delete nbookmarks;

@@ -2676,7 +2676,7 @@ bool LvXmlParser::Parse()
                     tagname.lowercase();
                 }
 
-                if(tagname=="style") //|| tagname=="table" || tagname=="tr" || tagname=="td") // skipping all <style> tags and <table> <tr> <td> tags
+                /*if(tagname=="style") //|| tagname=="table" || tagname=="tr" || tagname=="td") // skipping all <style> tags and <table> <tr> <td> tags
                 {
                     //if (attrname=="name")
                     //{ if(attrvalue.pos("override")!=-1 || attrvalue.pos("GramE")!=-1 )// || attrvalue.pos("")!=-1 ){
@@ -2689,8 +2689,13 @@ bool LvXmlParser::Parse()
                     }
                     break;
                     //}}
-                }
+                }*/
 
+                if (tagname=="br" && close_flag)
+                {
+                    callback_->OnText(L"\u200B", 1, flags);
+                    //callback_->OnText(L"&", 1, flags);
+                }
                 if(tagname=="blockquote")
                 {
                     if (!in_blockquote && !close_flag)
@@ -3165,6 +3170,10 @@ int PreProcessXmlString(lChar16* str, int len, lUInt32 flags, const lChar16* enc
                 continue;
             }
         } else {
+            if (ch==173)  // add filtered chars here
+            {
+                continue;
+            }
             if (ch=='\r' || ch=='\n' || ch=='\t')
                 ch = ' ';
         }

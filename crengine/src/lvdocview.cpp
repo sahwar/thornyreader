@@ -11,6 +11,7 @@
 
  *******************************************************/
 
+#include <map>
 #include "thornyreader/include/thornyreader.h"
 #include "include/lvdocview.h"
 #include "include/CreBridge.h"
@@ -199,8 +200,13 @@ void LVDocView::UpdatePageMargins()
 		{
 			align = new_margin_right;
 		}
-		new_margin_left += align;
-		new_margin_right -= align;
+        gTextLeftShift = align;
+		//new_margin_left += align;
+		//new_margin_right -= align;
+	}
+	else
+	{
+		gTextLeftShift = 0;
 	}
 	if (margins_.left != new_margin_left
 	    || margins_.right != new_margin_right
@@ -479,7 +485,8 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
         }
         else
         {
-            return false;
+	        LvDomAutocloseWriter writer(cr_dom_, false, HTML_AUTOCLOSE_TABLE);
+	        parser = new LvHtmlParser(stream_, &writer);
         }
 #endif //ENABLE_ANTIWORD == 1
 	}
@@ -544,7 +551,8 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 if (DUMP_DOMTREE == 1)
 {
     CRLog::error("dumping domtree");
-    LVStreamRef out = LVOpenFileStream("/data/data/org.readera/files/temp.xml", LVOM_WRITE);
+    LVStreamRef out = LVOpenFileStream("/sdcard/temp.xml", LVOM_WRITE);
+    //LVStreamRef out = LVOpenFileStream("/data/data/org.readera.trdevel/files/temp.xml", LVOM_WRITE);
     cr_dom_->saveToStream(out, NULL, true);
 }
 #if 0
@@ -665,7 +673,7 @@ void LVDocView::DrawPageTo(LVDrawBuf *drawbuf, LVRendPageInfo &page, lvRect *pag
 	clip.left = pageRect->left + margins_.left;
 	clip.top = pageRect->top + margins_.top + offset;
 	clip.bottom = pageRect->top + margins_.top + height + offset;
-	clip.right = pageRect->left + pageRect->width() - margins_.right;
+	clip.right = pageRect->left + pageRect->width() - margins_.right + gTextLeftShift;
 	if (page.type == PAGE_TYPE_COVER)
 	{
 		clip.top = pageRect->top + margins_.top;
@@ -709,7 +717,9 @@ void LVDocView::DrawPageTo(LVDrawBuf *drawbuf, LVRendPageInfo &page, lvRect *pag
 		             -start + offset,
 		             height_,
 		             &marked_ranges_,
-		             &bookmark_ranges_);
+		             &bookmark_ranges_,
+				     margins_,
+                     GetColumns());
 	}
 	// draw footnotes
 	int fny = clip.top + (page.height ? page.height + FOOTNOTE_MARGIN : FOOTNOTE_MARGIN);
@@ -1213,50 +1223,49 @@ bool LVDocView::WindowToDocPoint(lvPoint &pt)
 }
 
 /// converts point from document to window coordinates, returns true if success
-bool LVDocView::DocToWindowRect(lvRect &rect)
+bool LVDocView::DocToWindowRect(lvRect &rect, bool modify)
 {
-	CHECK_RENDER("DocToWindowRect()")
-	if (IsScrollMode())
+    CHECK_RENDER("DocToWindowRect()")
+    int page = GetCurrPage();
+    if (page < 0 || page > pages_list_.length())
+    {
+        return false; // went out of bounds of pages array
+    }
+    int index = -1;
+
+    if(rect.top+1 < pages_list_[page]->start)
+    {
+        return false;  //upper borderline check
+    }
+    else if (rect.top + 1 <= (pages_list_[page]->start + pages_list_[page]->height))
+    {
+        index = 0; // Left side of double-column page
+    }
+    else if (GetColumns() != 2 ||  page + 1 > pages_list_.length())
+    {
+        //CRLog::error("NOT PASSED BY VERTICAL CHECKS. Index = %d",index);
+        //CRLog::error("rect.top+1 <= (pages_list_[page]->start + pages_list_[page]->height)");
+        //CRLog::error("%d <= (%d )",rect.top+1, pages_list_[page]->start + pages_list_[page]->height);
+        return false; // went out of bounds of pages array
+    }
+    else  if (rect.top + 1 <= (pages_list_[page + 1]->start + (pages_list_[page + 1]->height)))
+    {
+        index = 1; // Right side of double-column page
+    }
+    if (index < 0)
+    {
+        return false;
+    }
+	if(modify)
 	{
-		rect.top -= offset_;
-		rect.bottom -= offset_;
-		rect.left += margins_.left;
-		rect.right += margins_.left;
-		return true;
+		rect.left = rect.left + margins_.left + page_rects_[index].left;
+		rect.right = rect.right + margins_.left + page_rects_[index].left;
+		rect.top = rect.top + margins_.top - pages_list_[page + index]->start;
+		rect.bottom = rect.bottom + margins_.top - pages_list_[page + index]->start;
 	}
-	else
-	{
-		int page = GetCurrPage();
-		if (page >= 0 && page < pages_list_.length() && rect.top >= pages_list_[page]->start)
-		{
-			int index = -1;
-			if (rect.bottom <= (pages_list_[page]->start + pages_list_[page]->height))
-			{
-				index = 0;
-			}
-			else if (GetColumns() == 2 && page + 1 < pages_list_.length() &&
-			         rect.bottom <=
-			         (pages_list_[page + 1]->start + pages_list_[page + 1]->height))
-			{
-				index = 1;
-			}
-			if (index >= 0)
-			{
-				int right = rect.right + page_rects_[index].left + margins_.left;
-				if (right < page_rects_[index].right - margins_.right)
-				{
-					rect.left = rect.left + page_rects_[index].left + margins_.left;
-					rect.right = right;
-					rect.top = rect.top + margins_.top - pages_list_[page + index]->start;
-					rect.bottom = rect.bottom + margins_.top - pages_list_[page + index]->start;
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-	return false;
+	return true;
 }
+
 
 void LVDocView::UpdateLayout()
 {
@@ -1383,6 +1392,7 @@ void LVDocView::ClearSelection()
 	UpdateSelections();
 }
 
+/*
 /// selects first link on page, if any. returns selected link range, null if no links.
 ldomXRange *LVDocView::SelectFirstPageLink()
 {
@@ -1395,6 +1405,7 @@ ldomXRange *LVDocView::SelectFirstPageLink()
 	UpdateSelections();
 	return sel[0];
 }
+*/
 
 /// update selection ranges
 void LVDocView::UpdateSelections()
@@ -1453,21 +1464,10 @@ void LVDocView::UpdateBookmarksRanges()
 	ranges.getRanges(bookmark_ranges_);
 }
 
-/// Minimum EM width of page (prevents show two pages for windows that not enougn wide)
-#define MIN_EM_PER_PAGE 20
-
 int LVDocView::GetColumns()
 {
-	if (viewport_mode_ == MODE_SCROLL
-	    || width_ < cfg_font_size_ * MIN_EM_PER_PAGE
-	    || width_ * 5 < height_ * 6)
-	{
-		return 1;
-	}
-	return page_columns_;
+	return viewport_mode_ == MODE_SCROLL ? 1 : page_columns_;
 }
-
-#undef MIN_EM_PER_PAGE
 
 /// sets current bookmark
 void LVDocView::SetBookmark(ldomXPointer bm)
@@ -1803,11 +1803,15 @@ LVRef<ldomXRange> LVDocView::GetPageDocRange(int page_index)
 		{
 			return res;
 		}
-		ldomXPointer start = cr_dom_->createXPointer(lvPoint(0, page->start));
-		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(m_dx + m_dy, page->start + page->height - 1));
-		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
-		//ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height), 1);
-		ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, page->start + page->height - 1), 1);
+        int columns = GetColumns();
+        int end_y = page->start + (height_ * columns);
+        if (page_index + columns < pages_list_.length())
+        {
+            LVRendPageInfo *nextpage = pages_list_[page_index + columns];
+            end_y = nextpage->start;
+        }
+        ldomXPointer start = cr_dom_->createXPointer(lvPoint(0, page->start));
+        ldomXPointer end = cr_dom_->createXPointer(lvPoint(0, end_y), 1);
 		if (start.isNull() || end.isNull())
 		{
 			return res;
@@ -1817,7 +1821,26 @@ LVRef<ldomXRange> LVDocView::GetPageDocRange(int page_index)
 	return res;
 }
 
-void LVDocView::GetCurrentPageLinks(ldomXRangeList &links_list)
+void LVDocView::GetImageScaleParams(ldomNode* node, int &imgheight, int &imgwidth)
+{
+    lvRect margins = this->cfg_margins_;
+    int width = (viewport_mode_ == MODE_PAGES && GetColumns() > 1)?(this->GetWidth()/2):this->GetWidth();
+    int maxheight = this->GetHeight() - (margins.bottom + margins.top);
+    int	maxwidth  = width - (margins.left + margins.right);
+    LVImageSource *image = node->getObjectImageSource().get();
+    imgheight = image->GetHeight();
+    imgwidth = image->GetWidth();
+    int pscale_x = 1000 * maxwidth / imgwidth;
+    int pscale_y = 1000 * maxheight / imgheight;
+    int pscale = pscale_x < pscale_y ? pscale_x : pscale_y;
+    int maxscale = 3 * 1000;
+    if (pscale > maxscale)
+        pscale = maxscale;
+    imgheight = imgheight * pscale / 1000;
+    imgwidth  = imgwidth  * pscale / 1000;
+}
+
+void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
 {
 	links_list.clear();
 	LVRef<ldomXRange> page_range = GetPageDocRange();
@@ -1827,70 +1850,103 @@ void LVDocView::GetCurrentPageLinks(ldomXRangeList &links_list)
 	}
 	class LinkKeeper : public ldomNodeCallback
 	{
-		ldomXRangeList &list_;
+	    LVDocView * doc_view_;
+        LVArray<TextRect> &list_;
 		void ProcessFinalNode(ldomNode *node)
-		{
-			int end_index = node->isText() ? node->getText().length() : node->getChildCount();
-			ldomXPointerEx start = ldomXPointerEx(node, 0);
-			ldomXPointerEx end = ldomXPointerEx(node, end_index);
-			lvRect start_rect;
-			lvRect end_rect;
-			if (!start.getRect(start_rect) || !end.getRect(end_rect))
-			{
-				CRLog::error("GetCurrentPageLinks getRect fail");
-				return;
-			}
-			if (start_rect.top == end_rect.top && start_rect.bottom == end_rect.bottom)
-			{
-				// Singleline link
-				list_.add(new ldomXRange(start, end));
-				return;
-			}
-			lvRect curr_rect;
-			for (int i = end_index - 1; i >= 0; i--)
-			{
-				ldomXPointerEx curr = ldomXPointerEx(node, i);
-				if (!curr.getRect(curr_rect))
-				{
-					CRLog::error("GetCurrentPageLinks getRect fail");
-					return;
-				}
-				if (curr_rect.top == start_rect.top)
-				{
-					if (curr_rect.bottom == start_rect.bottom)
-					{
-						// Запрыгнули на верхнюю строчку
-						list_.add(new ldomXRange(start, curr));
-						ldomXPointerEx prev = ldomXPointerEx(node, i + 1);
-						list_.add(new ldomXRange(prev, end));
-						break;
-					}
-					else
-					{
-						CRLog::error("GetCurrentPageLinks tops equals, bottoms doesnt");
-					}
-				}
-				else if (curr_rect.top != end_rect.top)
-				{
-					if (curr_rect.bottom != end_rect.bottom)
-					{
-						ldomXPointerEx prev = ldomXPointerEx(node, i + 1);
-						list_.add(new ldomXRange(prev, end));
-						end = ldomXPointerEx(curr);
-						if (!end.getRect(end_rect))
-						{
-							CRLog::error("GetCurrentPageLinks getRect fail");
-							return;
-						}
-					}
-					else
-					{
-						CRLog::error("GetCurrentPageLinks tops not equals, bottoms does");
-					}
-				}
-			}
-		}
-		void ProcessLinkNode(ldomNode *node)
+        {
+            ldomXRange nodeRange = ldomXRange(node);
+            ldomNode *parent_node = node->getParentNode();
+            if (parent_node == nullptr)
+            {
+                return;
+            }
+            lString16 text = node->getText();
+            int pos = nodeRange.getStart().getOffset();
+            int len = text.length();
+            int end = nodeRange.getEnd().getOffset();
+            if (len > end)
+            {
+                len = end;
+            }
+            lString16 href = node->getHRef();
+	        LVFont *font = doc_view_->GetBaseFont().get();
+            LVArray<TextRect> pre;
+            for (; pos < len; pos++)
+            {
+                ldomWord word = ldomWord(node, pos, pos + 1);
+                lvRect rect = word.getRect();
+                lString16 string = word.getText();
+                pre.add(TextRect(node, rect, string));
+            }
+            if(pre.empty())
+            {
+	            return;
+            }
+            TextRect word = pre.get(0);
+            lvRect rect = word.getRect();
+
+            lvRect last = rect;
+            for (int i = 0; i < pre.length(); i++)
+            {
+
+                TextRect word = pre.get(i);
+                lvRect raw_rect = word.getRect();
+                lString16 string = word.getText();
+                int lastheight = last.bottom - last.top;
+                if (raw_rect.bottom - raw_rect.top >= lastheight * 1.5)
+                {
+                    int curwidth = font->getCharWidth(string.firstChar());
+                    raw_rect.bottom = raw_rect.top + lastheight;
+                    raw_rect.right = raw_rect.right + curwidth;
+                }
+                if (raw_rect.top == rect.top && raw_rect.bottom == rect.bottom)
+                {
+                    rect.right = raw_rect.right;
+                }
+                else
+                {
+                    list_.add(TextRect(node, rect, href));
+                    rect = word.getRect();
+                }
+                last = raw_rect;
+            }
+            list_.add(TextRect(node, rect, href));
+        }
+
+        void ProcessImageNode(ldomNode *node)
+        {
+            if (!node->isImage())
+            {
+                return;
+            }
+
+            //CRLog::error("in node = %s", LCSTR(node->getNodeName()));
+
+            int end_index = node->getText().length();
+            ldomXPointerEx end = ldomXPointerEx(node, end_index);
+            ldomXPointer xp = ldomXPointer(node, end_index);
+
+            int imgheight = 0;
+            int imgwidth = 0;
+            doc_view_->GetImageScaleParams(node, imgheight, imgwidth);
+
+            lvRect imgrect;
+            if (!xp.getRect(imgrect))
+            {
+                CRLog::error("Unable to get imagerect!");
+            }
+
+            css_style_rec_t *style = node->getStyle().get();
+            css_style_rec_t *parent_style = node->getParentNode()->getStyle().get();
+
+            imgrect.right=imgrect.left+imgwidth;
+            imgrect.bottom=imgrect.top+imgheight;
+
+            lString16 href = node->getHRef();
+            list_.add(TextRect(node, imgrect, href));
+        }
+
+        void ProcessLinkNode(ldomNode *node)
 		{
 			for (lUInt32 i = 0; i < node->getChildCount(); i++)
 			{
@@ -1899,6 +1955,10 @@ void LVDocView::GetCurrentPageLinks(ldomXRangeList &links_list)
 				{
 					ProcessFinalNode(child);
 				}
+                else if (child->isImage())
+                {
+                    ProcessImageNode(child);
+                }
 				else
 				{
 					ProcessLinkNode(child);
@@ -1907,7 +1967,7 @@ void LVDocView::GetCurrentPageLinks(ldomXRangeList &links_list)
 		}
 	public:
 		bool text_is_first_ = true;
-		LinkKeeper(ldomXRangeList &list) : list_(list) {}
+		LinkKeeper(LVArray<TextRect> &list, LVDocView* doc_view) : list_(list),doc_view_(doc_view) {}
 		// Called for each text fragment in range
 		virtual void onText(ldomXRange *node_range)
 		{
@@ -1918,10 +1978,10 @@ void LVDocView::GetCurrentPageLinks(ldomXRangeList &links_list)
 			text_is_first_ = false;
 			ldomNode *node = node_range->getStart().getNode();
 			ldomNode *element_node = node->getParentNode();
-			if (element_node->isNull() || element_node->getNodeId() != el_a)
+			if (element_node->isNull() || node->getHRef() == lString16::empty_str)
 			{
-				return;
-			}
+                return;
+            }
 			ProcessLinkNode(element_node);
 #ifdef TRDEBUG
 			lString16 text = element_node->getText();
@@ -1937,26 +1997,25 @@ void LVDocView::GetCurrentPageLinks(ldomXRangeList &links_list)
 #endif
 		}
 		// Called for each node in range
-		virtual bool onElement(ldomXPointerEx *ptr)
+        virtual bool onElement(ldomNode *node)
 		{
-			ldomNode *element_node = ptr->getNode();
-			if (element_node->getNodeId() != el_a)
+			if (node->getNodeId() != el_a)
 			{
 				return true;
 			}
 #ifdef TRDEBUG
-			if (element_node->getChildCount() == 0)
+			if (node->getChildCount() == 0)
 			{
 				// Empty link in malformed doc, example: <a name="sync_on_demand"></a>
 				CRLog::trace("GetCurrentPageLinks empty link in malformed doc");
 			}
 #endif
-			ProcessLinkNode(element_node);
+			ProcessLinkNode(node);
 			return true;
 		}
 	};
-	LinkKeeper callback(links_list);
-	page_range->forEach(&callback);
+	LinkKeeper callback(links_list,this);
+    page_range->forEach2(&callback);
 	if (viewport_mode_ == MODE_PAGES && GetColumns() > 1)
 	{
 		// Process second page
@@ -1965,147 +2024,186 @@ void LVDocView::GetCurrentPageLinks(ldomXRangeList &links_list)
 		if (!page_range.isNull())
 		{
 			callback.text_is_first_ = true;
-			page_range->forEach(&callback);
+            page_range->forEach2(&callback);
 		}
 	}
 }
 
-void LVDocView::GetCurrentPageText(ldomXRangeList &list)
+LVArray<lvRect> LVDocView::GetCurrentPageParas()
 {
-	list.clear();
+	LVArray<lvRect> result;
 	LVRef<ldomXRange> page_range = GetPageDocRange();
 	if (page_range.isNull())
 	{
-		return;
+		return result;
 	}
-	class TextKeeper : public ldomNodeCallback
+	class ParaKeeper : public ldomNodeCallback
 	{
-		ldomXRangeList &list_;
-		void ProcessFinalNode(ldomNode *node)
+		LVArray<lvRect> para_rect_array;
+		bool endnode_found_ = false;
+		int unused_;
+
+		bool NodeIsAllowed(ldomNode * node)
+        {
+            LVArray<lString16> allowed;
+            allowed.add(lString16("p"));
+            //allowed.add(lString16("ul"));
+            allowed.add(lString16("li"));
+            allowed.add(lString16("h1"));
+            allowed.add(lString16("h2"));
+            allowed.add(lString16("h3"));
+            allowed.add(lString16("h4"));
+            allowed.add(lString16("h5"));
+            allowed.add(lString16("h6"));
+            allowed.add(lString16("subtitle"));
+            allowed.add(lString16("blockquote"));
+            allowed.add(lString16("autoBoxing"));
+            allowed.add(lString16("br"));
+            allowed.add(lString16("date"));
+            //allowed.add(lString16("code"));
+            //allowed.add(lString16("pagebreak"));
+
+            lString16 nodename = node->getNodeName();
+            if(node->getParentNode() != NULL)
+            {
+                css_display_t display = node->getParentNode()->getStyle().get()->display;
+                if(display == css_d_run_in)
+                {
+                    return false;
+                }
+            }
+
+            for (int i = 0; i < allowed.length(); i++)
+            {
+	            //if (node->isText()))
+	            //{
+	            if (nodename.compare(allowed.get(i))==0)
+	            {
+		            return true;
+	            }
+	            //}
+            }
+            return false;
+        }
+
+		lvRect ProcessNodeParaends(ldomNode *node, ldomXRange* range)
 		{
-			int end_index = node->isText() ? node->getText().length() : node->getChildCount();
-			ldomXPointerEx start = ldomXPointerEx(node, 0);
-			ldomXPointerEx end = ldomXPointerEx(node, end_index);
-			lvRect start_rect;
-			lvRect end_rect;
-			if (!start.getRect(start_rect) || !end.getRect(end_rect))
-			{
-				CRLog::error("GetCurrentPageText getRect fail");
-				return;
-			}
-			if (start_rect.top == end_rect.top && start_rect.bottom == end_rect.bottom)
-			{
-				// Singleline link
-				list_.add(new ldomXRange(start, end));
-				return;
-			}
-			lvRect curr_rect;
-			for (int i = end_index - 1; i >= 0; i--)
-			{
-				ldomXPointerEx curr = ldomXPointerEx(node, i);
-				if (!curr.getRect(curr_rect))
-				{
-					CRLog::error("GetCurrentPageText getRect fail");
-					return;
-				}
-				if (curr_rect.top == start_rect.top)
-				{
-					if (curr_rect.bottom == start_rect.bottom)
-					{
-						// Запрыгнули на верхнюю строчку
-						list_.add(new ldomXRange(start, curr));
-						ldomXPointerEx prev = ldomXPointerEx(node, i + 1);
-						list_.add(new ldomXRange(prev, end));
-						break;
-					}
-					else
-					{
-						CRLog::error("GetCurrentPageText tops equals, bottoms doesnt");
-					}
-				}
-				else if (curr_rect.top != end_rect.top)
-				{
-					if (curr_rect.bottom != end_rect.bottom)
-					{
-						ldomXPointerEx prev = ldomXPointerEx(node, i + 1);
-						list_.add(new ldomXRange(prev, end));
-						end = ldomXPointerEx(curr);
-						if (!end.getRect(end_rect))
-						{
-							CRLog::error("GetCurrentPageText getRect fail");
-							return;
-						}
-					}
-					else
-					{
-						CRLog::error("GetCurrentPageText tops not equals, bottoms does");
-					}
-				}
-			}
-		}
-		void ProcessLinkNode(ldomNode *node)
-		{
+            //CRLog::error("in node = %s",LCSTR(node->getNodeName()));
+            lvRect paraend;
 			for (lUInt32 i = 0; i < node->getChildCount(); i++)
 			{
 				ldomNode *child = node->getChildNode(i);
 				if (child->isText())
 				{
-					ProcessFinalNode(child);
+					paraend = ProcessFinalNode_GetNodeEnd(child);
+                  //  CRLog::error("Final node processed");
+                  //  CRLog::error("final node = %s",LCSTR(node->getNodeName()));
+                  //  CRLog::error("final text = %s",LCSTR(child->getText()));
 				}
 				else
 				{
-					ProcessLinkNode(child);
-				}
+                //    CRLog::error("diving deeper");
+					paraend = ProcessNodeParaends(child,range);
+                }
+              //  CRLog::error("node ended");
+                if (child == range->getEndNode())
+                {
+                    //CRLog::error("endnode found for processnodeparaends");
+                    endnode_found_ = true;
+                }
 			}
+            if(NodeIsAllowed(node))
+            {
+             //   CRLog::error("Node added");
+                para_rect_array.add(paraend);
+             //   CRLog::error("paraend = [%d:%d][%d:%d]",paraend.left,paraend.right,paraend.top,paraend.bottom);
+            }
+            return paraend;
 		}
+
+		lvRect ProcessFinalNode_GetNodeEnd(ldomNode *node)
+		{
+			lvRect empty_rect(0, 0, 0, 0);
+			ldomXPointerEx end;
+			if (node->isText())
+			{
+				int end_index = node->getText().length();
+				end = ldomXPointerEx(node, end_index);
+			}
+			else
+			{
+				return empty_rect;
+			}
+
+			lvRect end_rect;
+			if (!end.getRect(end_rect))
+			{
+				CRLog::warn("Unable to get node end coordinates. Ignoring");
+				//para_rect_array.add(empty_rect);
+				return empty_rect;
+			}
+            //CRLog::error("node = %s",LCSTR(node->getNodeName()));
+            //CRLog::error("text = %s",LCSTR(node->getText()));
+            //CRLog::error("rect = [%d:%d][%d:%d]",end_rect.left,end_rect.right,end_rect.top,end_rect.bottom);
+			//para_rect_array.add(end_rect);
+            end_rect.left += gTextLeftShift;
+            end_rect.right += gTextLeftShift;
+            end_rect.right -=1;
+			return end_rect;
+		}
+
 	public:
 		bool text_is_first_ = true;
-		TextKeeper(ldomXRangeList &list) : list_(list) {}
-		// Called for each text fragment in range
-		virtual void onText(ldomXRange *node_range)
-		{
-			if (!text_is_first_)
-			{
-				return;
-			}
-			text_is_first_ = false;
-			ldomNode *node = node_range->getStart().getNode();
-			ldomNode *element_node = node->getParentNode();
-			if (element_node->isNull())
-			{
-				return;
-			}
-			ProcessLinkNode(element_node);
-#ifdef TRDEBUG
-			lString16 text = element_node->getText();
-			int start = node_range->getStart().getOffset();
-			int end = node_range->getEnd().getOffset();
-			if (start < end)
-			{
-				text = text.substr(start, end - start);
-			}
-			ldomNode *end_node = node_range->getEnd().getNode();
-			CRLog::debug("GetCurrentPageText first text on page: %d-%d %s",
-						 node->getDataIndex(), end_node->getDataIndex(), LCSTR(text));
-#endif
-		}
-		// Called for each node in range
-		virtual bool onElement(ldomXPointerEx *ptr)
-		{
-			ldomNode *element_node = ptr->getNode();
-#ifdef TRDEBUG
-			if (element_node->getChildCount() == 0)
-			{
-				// Empty link in malformed doc, example: <a name="sync_on_demand"></a>
-				CRLog::trace("GetCurrentPageText empty link in malformed doc");
-			}
-#endif
-			ProcessLinkNode(element_node);
-			return true;
-		}
-	};
-	TextKeeper callback(list);
-	page_range->forEach(&callback);
+
+		ParaKeeper(int &unused) : unused_(unused)	{	}
+
+        // Called for each text fragment in range
+        void processText(ldomNode *node1, ldomXRange *range)
+        {
+            ldomXRange node_range = ldomXRange(node1);
+
+            if (!text_is_first_)
+            {
+                return;
+            }
+            text_is_first_ = false;
+            ldomNode *node = node_range.getStart().getNode();
+            if (node->isNull())
+            {
+                return;
+            }
+            while (node != NULL && node->getParentNode() != NULL)
+            {
+                node = node->getParentNode();
+                if (NodeIsAllowed(node))
+                {
+                    break;
+                }
+            }
+            if (node->getParentNode() == NULL)
+            {
+                return;
+            }
+            ProcessNodeParaends(node, range);
+        }
+
+        virtual bool processElement(ldomNode *node, ldomXRange *range)
+        {
+            ProcessNodeParaends(node, range);
+            return (endnode_found_) ? true : false;
+        }
+
+        LVArray<lvRect> GetParaArray()
+        {
+            return para_rect_array;
+        }
+    };
+
+	int unused = 0;
+	ParaKeeper callback(unused);
+    page_range->forEach2(&callback);
+	result = callback.GetParaArray();
+
 	if (viewport_mode_ == MODE_PAGES && GetColumns() > 1)
 	{
 		// Process second page
@@ -2114,29 +2212,119 @@ void LVDocView::GetCurrentPageText(ldomXRangeList &list)
 		if (!page_range.isNull())
 		{
 			callback.text_is_first_ = true;
-			page_range->forEach(&callback);
+            page_range->forEach2(&callback);
+			result.add(callback.GetParaArray());
 		}
 	}
+	return result;
 }
 
-/// get page text, -1 for current page
-lString16 LVDocView::GetPageText(int page_index)
+LVArray<ImgRect> LVDocView::GetCurrentPageImages()
 {
-	CHECK_RENDER("GetPageText()")
-	if (page_index < 0 || page_index >= pages_list_.length())
+
+	LVArray<ImgRect> result;
+	LVRef<ldomXRange> page_range = GetPageDocRange();
+	if (page_range.isNull())
 	{
-		page_index = GetCurrPage();
+		return result;
 	}
-	lString16 text;
-	LVRef<ldomXRange> range = GetPageDocRange(page_index);
-	text = range->GetRangeText();
+	class ImageKeeper : public ldomNodeCallback
+	{
+		LVArray<ImgRect> img_rect_array;
+		LVDocView* doc_view_;
+	public:
+
+		ImageKeeper(LVDocView* doc_view) : doc_view_(doc_view) {	}
+		// Called for each text fragment in range
+		virtual void onText(ldomXRange *node_range)
+		{
+			return;
+		}
+		// Called for each node in range
+		virtual bool onElement(ldomNode *node)
+        {
+            if (!node->isImage())
+            {
+                return true;
+            }
+
+            int end_index = node->getText().length();
+            ldomXPointerEx end = ldomXPointerEx(node, end_index);
+            ldomXPointer xp = ldomXPointer(node, end_index);
+
+            css_style_rec_t *style = node->getStyle().get();
+            css_style_rec_t *parent_style = node->getParentNode()->getStyle().get();
+            lvRect imgrect;
+            if (!xp.getRect(imgrect))
+            {
+                CRLog::error("Unable to get imagerect!");
+            }
+
+	        int imgheight = 0;
+	        int imgwidth = 0;
+	        doc_view_->GetImageScaleParams(node, imgheight, imgwidth);
+
+	        if(node->getHRef() != lString16::empty_str && style->display != css_d_inline)
+            {
+                imgrect.left  = imgrect.left  + gTextLeftShift;
+                imgrect.right = imgrect.right + gTextLeftShift;
+            }
+            else if (style->display == css_d_block)
+            {
+                imgrect.top = imgrect.top + style->font_size.value;
+                //cite p image fix
+                if (node->getParentNode()->getNodeName()=="p")
+                {
+                    if (node->getParentNode()->getParentNode()->getNodeName() == "cite")
+                    {
+                        imgrect.left = imgrect.left + style->font_size.value;
+                    }
+                }
+	            if (node->getParentNode()->getNodeName()=="div")
+	            {
+		            if (node->getParentNode()->getParentNode()->getNodeName() == "span")
+		            {
+			            imgrect.left = imgrect.left + gTextLeftShift;
+                        imgrect.top = imgrect.top - style->font_size.value;
+		            }
+	            }
+            }
+
+            imgrect.right=imgrect.left+imgwidth;
+            imgrect.bottom=imgrect.top+imgheight;
+
+            if(style->display == css_d_inline)
+            {
+                imgrect.left  = imgrect.left  + gTextLeftShift;
+                imgrect.right = imgrect.right + gTextLeftShift;
+            }
+            img_rect_array.add(ImgRect(node,imgrect));
+
+			return false;
+		}
+		LVArray<ImgRect> GetImgArray()
+		{
+			return img_rect_array;
+		}
+	};
+
+
+	ImageKeeper callback(this);
+    page_range->forEach2(&callback);
+	result = callback.GetImgArray();
+
 	if (viewport_mode_ == MODE_PAGES && GetColumns() > 1)
 	{
 		// Process second page
-		range = GetPageDocRange(page_index + 1);
-		text = text + range->GetRangeText();
+		int page_index = GetCurrPage();
+		page_range = GetPageDocRange(page_index + 1);
+		if (!page_range.isNull())
+		{
+            page_range->forEach2(&callback);
+			result.add(callback.GetImgArray());
+		}
 	}
-	return text;
+	return result;
 }
 
 /// sets new list of bookmarks, removes old values
@@ -2613,3 +2801,560 @@ bool LVDocView::NeedCheckImage()
     }
     return false;
 }
+
+unsigned long int getkey(lvRect rect)
+{
+    lString16 key;
+	unsigned long int a;
+    a = abs(((rect.topLeft().x*rect.bottomRight().x)-(rect.topLeft().y*rect.bottomRight().y)) % 1000000);
+    return a;
+}
+
+float LVDocView::CalcRightSide(TextRect textrect)
+{
+    float result;
+    lvRect rect = textrect.getRect();
+    DocToWindowRect(rect);
+    lString16 word = textrect.getText();
+    ldomNode *node = textrect.getNode();
+
+    int page_width_int = this->GetWidth();
+    float halfwidth = page_width_int / 2;
+    lvRect page_margins = this->cfg_margins_;
+    //lvRect nodemargins = node->getFullMargins();
+    //CRLog::error("cfg  margins [%d:%d][%d:%d]",page_margins.left,page_margins.right,page_margins.top,page_margins.bottom);
+    //CRLog::error("node margins [%d:%d][%d:%d]",nodemargins.left,nodemargins.right,nodemargins.top,nodemargins.bottom);
+    bool two_columns = this->GetColumns() > 1;
+    bool right_side = two_columns ? rect.left > halfwidth : false;
+    int right_line;
+    bool nomargins = (page_margins.right < 20) ? true : false;  //todo take nomargins from docview, set nomargins in docview from bridge
+
+    LVFont *font = this->base_font_.get();
+    LVFont::glyph_info_t glyph;
+    int hyphwidth = font->getCharWidth(UNICODE_SOFT_HYPHEN_CODE);
+    int curwidth = font->getCharWidth(word.firstChar());
+    css_style_rec_t *style = node->getParentNode()->getStyle().get();
+    css_text_align_t align = style->text_align;
+
+    //CRLog::error("letter = %s",LCSTR(word));
+    if (two_columns)
+    {
+        right_line = right_side ? page_width_int : halfwidth;
+    }
+    else
+    {
+        right_line = page_width_int;
+    }
+    //return right_line - right_line - ( hyphwidth / 2 );
+    int leftshift = right_side ? rect.left - halfwidth : rect.left;
+    lString16 mainname = node->getMainParentName();
+
+    // variants of right lines
+    if (mainname == "epigraph") {
+        result = right_line * 0.9;
+    }
+    else if (align == css_ta_right)
+    {
+        result = right_line - page_margins.right + (hyphwidth / 2);
+    }
+    else if (align == css_ta_center || align == css_ta_left)
+    {
+        result = rect.right + curwidth + (hyphwidth / 2);
+    }
+
+    else if ((mainname == "poem" || mainname == "stanza" || mainname == "blockquote") )
+    {
+        result = right_line - leftshift + gTextLeftShift + (hyphwidth / 2);
+    }
+    else if(nomargins)
+    {
+        result = right_line - ( hyphwidth / 2 );
+    }
+    //else if( mainname == "annotation" )
+    //{
+	//    result = right_line - ( hyphwidth * 2 );
+    //}
+    else if (mainname == "li")
+    {
+        result = right_line - hyphwidth;
+    }
+	else //css_ta_justify AND margins ON
+	{
+        result = right_line - leftshift + hyphwidth;
+	}
+
+    //some fixes:
+	if (result < rect.right) // Plan B
+	{
+        if (nomargins)
+        {
+            result = right_line - (hyphwidth / 2);
+        }
+        else
+        {
+            result = right_line - (hyphwidth * 2);
+        }
+	}
+	if (result > right_line) // plan C
+	{
+		result = right_line - (hyphwidth / 2);
+	}
+	return result;
+}
+
+LVArray<lvRect> LVDocView::GetPageParaEnds()
+{
+	LVArray<lvRect> result;
+	LVArray<lvRect> raw_para_array = this->GetCurrentPageParas();
+
+	int offset = this->GetOffset();
+	int page_height_int = this->GetHeight();
+	bool two_columns = this->GetColumns() > 1;
+	unsigned long long int key;
+	lvRect margins = this->cfg_margins_;
+
+	typedef std::map< unsigned long long int, int> Rectmap;
+	Rectmap m;
+
+	for (int i = 0; i < raw_para_array.length(); i++)
+	{
+		lvRect rawrect = raw_para_array.get(i);
+		//CRLog::error("raw_pararect = [%d:%d][%d:%d]",rawrect.left,rawrect.right,rawrect.top,rawrect.bottom);
+		if (rawrect == lvRect(0, 0, 0, 0))
+		{
+			continue;
+		}
+		if (rawrect.top < offset)
+		{
+			continue;
+		}
+		int bottom = (two_columns) ? offset + page_height_int + page_height_int - margins.bottom : offset + page_height_int - margins.bottom;
+		if (rawrect.bottom > bottom)
+		{
+			continue;
+		}
+		if( rawrect.bottom - rawrect.top <= CHAR_HEIGHT_MIN)
+		{
+			continue;
+		}
+		key = getkey(rawrect);
+
+		if (m.find(key) != m.end())
+		{
+			continue;
+		}
+		m[key]= i;
+
+		if( !this->DocToWindowRect(rawrect,false))
+		{
+			continue;
+		}
+		//if there's double paraends ion one line - write reverse cycle map filtering
+		//CRLog::error("pararect: [%d:%d] [%d:%d]", rawrect.left, rawrect.right, rawrect.top-offset, rawrect.bottom-offset);
+		result.add(rawrect);
+	}
+	raw_para_array.clear();
+
+	return result;
+}
+
+LVArray<ImgRect> LVDocView::GetPageImages(image_display_t type)  //display type :0 == all; 1 == css_d_block; 2 == inline;
+{
+	LVArray<ImgRect> result ;
+	lvRect margins = this->cfg_margins_;
+
+    int width = (viewport_mode_ == MODE_PAGES && GetColumns() > 1)?(this->GetWidth()/2):this->GetWidth();
+    int maxheight = this->GetHeight() - (margins.bottom + margins.top);
+    int	maxwidth  = width - (margins.left + margins.right);
+
+    LVArray<ImgRect> raw_image_array= this->GetCurrentPageImages();
+
+	typedef std::map< unsigned long long int, int> Rectmap;
+	Rectmap m;
+	unsigned long long int key;
+
+	for (int i = 0; i < raw_image_array.length(); i++)
+	{
+		lvRect rawrect = raw_image_array.get(i).getRect();
+		css_display_t curtype =  raw_image_array.get(i).getNode()->getStyle().get()->display;
+        //display type :0 == all; 1 == css_d_block; 2 == inline;
+
+		if(curtype == css_d_none)
+        {
+            continue;
+        }
+		if(type == img_block && curtype != css_d_block)
+		{
+			continue;
+		}
+		if(type == img_inline && curtype != css_d_inline && curtype != css_d_inline_table)
+		{
+			continue;
+		}
+		if (rawrect == lvRect(0,0,0,0))
+        {
+            continue;
+        }
+		key = getkey(rawrect);
+
+		if (m.find(key) != m.end())
+		{
+			continue;
+		}
+		m[key]= i;
+		result.add(raw_image_array.get(i));
+	}
+	raw_image_array.clear();
+
+	return result;
+}
+
+LVArray<Hitbox> LVDocView::GetPageHitboxes()
+{
+	//CRLog::trace("GETPAGEHITBOXES start");
+    LVArray<Hitbox> result;
+    float page_width    = this->GetWidth();
+    float page_height   = this->GetHeight();
+
+    LVFont * font = this->base_font_.get();
+	int footnotesheightr = 0;
+	//checking whether this is the last page in document, to prevent sigsegv crashes
+    if(this->page_ < this->pages_list_.length()-1)
+    {
+	    int footnoteslength = pages_list_[this->page_ + 1]->footnotes.length();
+	    for (int fn = 0; fn < footnoteslength; fn++)
+        {
+            footnotesheightr = footnotesheightr + pages_list_[this->page_+1]->footnotes[fn].height;
+        }
+    }
+    LVArray<lvRect> para_array = this->GetPageParaEnds();
+
+#if DEBUG_DRAW_IMAGE_HITBOXES
+    LVArray<ImgRect> images_array = this->GetPageImages();
+#else
+    LVArray<ImgRect> images_array = this->GetPageImages(img_inline);
+#endif //DEBUG_DRAW_IMAGE_HITBOXES
+
+    LVRef<ldomXRange> range = this->GetPageDocRange();
+    lvRect margins = this->cfg_margins_;
+    ldomXRange text = *range;
+
+    int strheight_last = 0;
+    int para_counter = 0;
+    int img_counter = 0;
+    int img_top = 0;
+    int img_left = 0;
+    int img_right = 0;
+
+
+    LVArray<TextRect> word_chars;
+    //CRLog::trace("RANGECHARS start");
+    text.getRangeChars(word_chars);
+    //CRLog::trace("RANGECHARS end");
+    for (int i = 0; i < word_chars.length(); ++i)
+    {
+        lString16 word = word_chars.get(i).getText();
+        //CRLog::error("letter = %s",LCSTR(word));
+        lvRect rect = word_chars.get(i).getRect();
+        ldomNode* node = word_chars.get(i).getNode();
+        int strheight_curr = rect.bottom - rect.top;
+
+        //paragraph breaks implementation
+        if(!this->DocToWindowRect(rect,false))
+        {
+            continue;
+        }
+
+	    int para_repeat_counter = 0;
+	    int last_top = 0 ;
+	    while (para_counter < para_array.length() && rect.top > para_array.get(para_counter).top)
+	    {
+		    lvRect para_rect = para_array.get(para_counter);
+
+		    this->DocToWindowRect(para_rect);
+		    if(para_repeat_counter < PARAEND_REPEAT_MAX && para_rect.top != last_top)
+		    {
+				#if DEBUG_CRE_PARA_END_BLOCKS
+			    float l = (para_rect.left + (strheight_curr / 2)) / page_width;
+                float r = (para_rect.right + (strheight_curr * 2)) / page_width;
+                float t = (para_rect.top + 10) / page_height;
+                float b = (para_rect.bottom - 10) / page_height;
+				#else
+			    float l = para_rect.right / page_width;
+			    float r = (para_rect.right + (strheight_curr / 4)) / page_width;
+			    float t = para_rect.top / page_height;
+			    float b = para_rect.bottom / page_height;
+			    #endif // DEBUG_PARA_END_BLOCKS
+
+			    #ifdef TRDEBUG
+			    //CRLog::error("[%s%s%s%s%s]",
+			    //        LCSTR(word_chars.get(i).getText()),
+			    //        LCSTR(word_chars.get(i+1).getText()),
+			    //        LCSTR(word_chars.get(i+2).getText()),
+			    //        LCSTR(word_chars.get(i+3).getText()),
+			    //        LCSTR(word_chars.get(i+4).getText()));
+				#endif //TRDEBUG
+			    lString16 para_end = lString16("\n");// + lString16::itoa(para_counter);
+			    Hitbox *hitbox = new Hitbox(l, r, t, b, para_end);
+			    result.add(*hitbox);
+			    para_repeat_counter++;
+			    last_top = para_rect.top;
+		    }
+		para_counter++;
+	    }
+
+        while (img_counter < images_array.length())
+        {
+            lvRect img_rect = images_array.get(img_counter).getRect();
+
+            if (rect.top < img_rect.top)
+            {
+                break;
+            }
+
+            img_counter++;
+            if (rect.top == img_rect.top)
+            {
+                //CRLog::error("letter       = %s",LCSTR(word));
+                //CRLog::error("rect.bottom     = %d",rect.bottom);
+                //CRLog::error("img_rect.bottom = %d",img_rect.bottom);
+                if (rect.bottom-strheight_curr < img_rect.bottom)
+                {
+                	lvRect img_rect2 = img_rect;
+                	DocToWindowRect(img_rect2);
+                    img_top = img_rect2.top;
+                    img_left = img_rect2.left;
+                    img_right = img_rect2.right;
+                    //CRLog::error("img_top      = %d",img_top);
+                }
+                break;
+            }
+        }
+
+	    this->DocToWindowRect(rect);
+
+        //usual line break implementation
+        if (strheight_last != 0 && strheight_curr >= strheight_last + (strheight_last/2))
+        {
+            float pre_r = this->CalcRightSide(word_chars.get(i));
+
+	        float l = rect.right / page_width;
+	        float r = pre_r / page_width;
+	        float t = rect.top / page_height;
+	        float b = (rect.top + strheight_last) / page_height;
+	        //word=word+lString16("+00");
+            // на случай второго переноса в stanza
+	        int rightzone = (this->GetColumns()==1)? (GetWidth()*3/4) : (GetWidth()*7/8);
+            if(rect.left > rightzone)
+            {
+                l = rect.left / page_width;
+                //word=word+lString16("+001");
+            }
+
+            //инлайновые изображения
+            if (rect.top == img_top && word_chars.length() > i + 1)
+            {
+                int charwidth = font->getCharWidth(word.firstChar());
+                int height = node->getParentNode()->getStyle().get()->font_size.value;
+                height = height + (height / 4);
+                l = rect.left / page_width;
+                r = rect.right / page_width;
+                t = (rect.bottom - height) / page_height;
+                b = rect.bottom / page_height;
+
+                lvRect lastrect = word_chars.get(i - 1).getRect();
+                DocToWindowRect(lastrect);
+                lvRect nextrect = word_chars.get(i + 1).getRect();
+                DocToWindowRect(nextrect);
+	            //word=word+lString16("+0");
+                if (nextrect.top > img_top) //последний символ в строке с инлайновым изображением
+                {
+                    //word=word+lString16("+1");
+                    l = (rect.left)    / page_width;
+                    r = (rect.right)   / page_width;
+                    t = (lastrect.bottom - height) / page_height;
+                    b = (lastrect.bottom) / page_height;
+
+                    if(rect.left <= img_left)
+                    {
+	                    //   word=word+lString16("+2");
+                        l = (rect.right) / page_width;
+                        r = pre_r / page_width;
+                    }
+
+                    if(rect.right <= img_right)
+                    {
+	                    //   word=word+lString16("+3");
+                        l = rect.right / page_width;
+                        r = rect.left / page_width;
+                    }
+
+                    if (lastrect.top != img_top ) //первый И последний символ в строке с инлайновым изображением
+                    {
+	                    //    word=word+lString16("+4");
+                        l = (rect.left)    / page_width;
+                        r = (rect.right)   / page_width;
+                        b = (nextrect.top) / page_height;
+                        t = (nextrect.top - height) / page_height;
+                    }
+                    img_top = 0;
+                }
+            }
+
+	        if (rect.top < margins.top)
+	        {
+		        t = (rect.top - strheight_last) / page_height;
+		        b = (rect.top + 10) / page_height;
+	        }
+
+	        //CRLog::error("linebreak letter = %s",LCSTR(word));
+	        Hitbox *hitbox = new Hitbox(l, r, t, b, word);
+	        result.add(*hitbox);
+        }
+        else
+        { //usual single-line words
+            if (strheight_curr > CHAR_HEIGHT_MIN)
+            {
+	            strheight_last = strheight_curr;
+            }
+            else
+            {
+                #ifdef TRDEBUG
+                //CRLog::error("invalid character [%s] %x : too short height!",LCSTR(word),word.firstChar());
+                #endif
+                continue;
+            }
+            // filling between-nodes empty space (right direction)
+            if(word == " " && word_chars.length() > i + 1)
+            {
+                lvRect nextrect = word_chars.get(i + 1).getRect();
+                DocToWindowRect(nextrect);
+                if (nextrect.height() < strheight_curr * 1.5 && rect.right < nextrect.left && rect.top == nextrect.top)
+                {
+                    rect.right = nextrect.left;
+                }
+            }
+            // filling between-nodes empty space (left direction)
+            if(word == " " && i > 0)
+            {
+                lvRect lastrect = word_chars.get(i - 1 ).getRect();
+                DocToWindowRect(lastrect);
+                if (rect.left > lastrect.right && lastrect.height() < strheight_curr * 1.5 && rect.top == lastrect.top)
+                {
+                    rect.left = lastrect.right;
+                }
+            }
+            float l = rect.left / page_width;
+            float t = rect.top / page_height;
+            float r = rect.right / page_width;
+            float b = rect.bottom / page_height;
+	        //word=word+lString16("+01");
+            if (rect.top == img_top && word_chars.length() > i + 1)
+            {
+	            //	word=word+lString16("+11");
+                int charheight = node->getParentNode()->getStyle().get()->font_size.value;
+                charheight = charheight + (charheight / 4);
+                l = rect.left / page_width;
+                r = rect.right / page_width;
+                t = (rect.bottom - charheight) / page_height;
+                b = rect.bottom / page_height;
+
+                lvRect nextrect = word_chars.get(i + 1).getRect();
+                DocToWindowRect(nextrect);
+                if (nextrect.top > img_top) //последний символ в строке с инлайновым изображением
+                {
+                    //word = word + lString16("+12");
+                    int charwidth = font->getCharWidth(word.firstChar());
+                    l = (rect.right)                / page_width;
+                    r = (rect.right + charwidth)    / page_width;
+                    t = (nextrect.top - charheight) / page_height;
+                    b = (nextrect.top)              / page_height;
+                }
+            }
+
+            //CRLog::error("usual letter = %s rect [%f:%f]:[%f:%f]", LCSTR(word),l*page_width,t*page_height,r*page_width,b*page_height);
+
+            Hitbox *hitbox = new Hitbox(l, r, t, b, word);
+            result.add(*hitbox);
+        }
+    }
+    //adding last para end on page if needed
+    if (para_counter < para_array.length())
+    {
+        lvRect rect = para_array.get(para_counter);
+
+        if (this->DocToWindowRect(rect))
+        {
+            if( rect.bottom - rect.top > CHAR_HEIGHT_MIN)
+            {
+				#if DEBUG_CRE_PARA_END_BLOCKS
+                float l = (rect.right + (strheight_last / 2)) / page_width;
+                float r = (rect.right + (strheight_last)) / page_width;
+                float t = (rect.top + 10) / page_height;
+                float b = (rect.bottom - 10) / page_height;
+				#else
+                float l = rect.right / page_width;
+                float r = (rect.right + (strheight_last / 4)) / page_width;
+                float t = rect.top / page_height;
+                float b = rect.bottom / page_height;
+				#endif // DEBUG_PARA_END_BLOCKS
+                lString16 para_end = lString16("\n");
+                Hitbox *hitbox = new Hitbox(l, r, t, b, para_end);
+                result.add(*hitbox);
+            }
+        }
+    }
+#ifdef TRDEBUG
+#if DEBUG_DRAW_IMAGE_HITBOXES
+	for (int i = 0; i < images_array.length(); i++)
+	{
+		lvRect imgrect = images_array.get(i).getRect();
+		if (this->DocToWindowRect(imgrect))
+		{
+			float l = imgrect.left / page_width;
+			float r = imgrect.right / page_width;
+			float t = (imgrect.top) / page_height;
+			float b = (imgrect.bottom) / page_height;
+			lString16 imagestring = lString16("IMAGE");
+			Hitbox *hitbox = new Hitbox(l, r, t, b, imagestring);
+			result.add(*hitbox);
+		}
+	}
+#endif
+#endif //TRDEBUG
+	//CRLog::trace("GETPAGEHITBOXES end");
+
+	return result;
+}
+
+LVArray<Hitbox> LVDocView::GetPageLinks()
+{
+	LVArray<Hitbox> result;
+	float page_width  = GetWidth();
+	float page_height = GetHeight();
+
+    LVArray<TextRect> list;
+	GetCurrentPageLinks(list);
+	if (list.empty()) {
+		return result;
+	}
+
+    for (int i = 0; i < list.length(); i++)
+	{
+		TextRect curr = list.get(i);
+		lString16 href = curr.getText();
+		lvRect rect = curr.getRect();
+		if (!DocToWindowRect(rect))
+		{
+			continue;
+		}
+		float l = (rect.left + gTextLeftShift) / page_width;
+		float t = rect.top / page_height;
+		float r = (rect.right + gTextLeftShift) / page_width;
+		float b = rect.bottom / page_height;
+		Hitbox *hitbox = new Hitbox(l, r, t, b, href);
+		result.add(*hitbox);
+	}
+	return result;
+ }
+font_ref_t LVDocView::GetBaseFont() { return base_font_; };

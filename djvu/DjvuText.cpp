@@ -15,6 +15,7 @@
  */
 
 #include <stdlib.h>
+#include <cstring>
 
 #include "StLog.h"
 #include "StProtocol.h"
@@ -23,7 +24,6 @@
 
 #define LCTX "EBookDroid.DJVU.Decoder.Search"
 #define L_DEBUG_TEXT false
-
 void djvu_get_djvu_words(miniexp_t expr, const char* pattern, ddjvu_pageinfo_t *pi, CmdResponse& response)
 {
     if (!miniexp_consp(expr))
@@ -62,23 +62,36 @@ void djvu_get_djvu_words(miniexp_t expr, const char* pattern, ddjvu_pageinfo_t *
         if (miniexp_stringp(head))
         {
             const char* text = miniexp_to_str(head);
+            float t = 1.0 - coords[1] / height;
+            float b = 1.0 - coords[3] / height;
+
+            int charnum = strlen(text);
+            float charwidth = (coords[2] - coords[0])/charnum;
+            float lastleft = coords[0];
+            for (int i = 0; i < charnum ; ++i)
+            {
+                char ch[2] = {text[i], 0};
+                 response.addFloat(lastleft / width);
+                response.addFloat(t < b ? t : b);
+                response.addFloat((lastleft + charwidth) / width);
+                response.addFloat(t > b ? t : b);
+                response.addIpcString(ch, true);
+                lastleft = lastleft + charwidth;
+            }
+            char space[2] = {' ', 0};
+            response.addFloat(lastleft / width);
+            response.addFloat(t < b ? t : b);
+            response.addFloat((lastleft+(charwidth/4)) / width);
+            response.addFloat(t > b ? t : b);
+            response.addIpcString(space, true);
 
             DEBUG_L(L_DEBUG_TEXT, LCTX,
                 "processText: %d, %d, %d, %d: %s", coords[0], coords[1], coords[2], coords[3], text);
-
-            float t = 1.0 - coords[1] / height;
-            float b = 1.0 - coords[3] / height;
-            response.addFloat(coords[0] / width);
-            response.addFloat(t < b ? t : b);
-            response.addFloat(coords[2] / width);
-            response.addFloat(t > b ? t : b);
-            response.addIpcString(text, true);
         }
         else if (miniexp_consp(head))
         {
             djvu_get_djvu_words(head, pattern, pi, response);
         }
-
         expr = miniexp_cdr(expr);
     }
 }

@@ -29,7 +29,7 @@ APP_ABI                 := armeabi-v7a arm64-v8a x86 x86_64
 
 ## Third-party
 
-ThornyReader uses number of other projects, mainly CoolReader, MuPDF, DjVuLibre
+ThornyReader uses number of other projects, mainly EBookDroid, CoolReader, MuPDF, DjVuLibre
 and Libmobi. You can find all original copyright notices for used projects
 in the corresponding source directories.
 

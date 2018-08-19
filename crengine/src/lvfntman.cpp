@@ -221,9 +221,10 @@ bool LVEmbeddedFontList::deserialize(SerialBuf & buf) {
  */
 int LVFont::getVisualAligmentWidth()
 {
+    //return this->getSize();
     if ( _visual_alignment_width==-1 ) {
-        lChar16 chars[] = { getHyphChar(), ',', '.', '!', ':', ';',
-                            (lChar16)L'\xff0c', (lChar16)L'\x3302', (lChar16)L'\xff01', 0 };
+        lChar16 chars[] = { getHyphChar(), ',', '.', '!', ':', ';', 0 };
+        //                  (lChar16)L'\xff0c', (lChar16)L'\x3302', (lChar16)L'\xff01', 0 };
         //                  (lChar16)L'，', (lChar16)L'。', (lChar16)L'！', 0 };
         //                  65292 12290 65281
         //                  ff0c 3002 ff01
@@ -715,6 +716,7 @@ protected:
     hinting_mode_t _hintingMode;
     bool          _fallbackFontIsSet;
     LVFontRef     _fallbackFont;
+    bool          _fallbackSystemInit = false;
 
 public:
 
@@ -727,13 +729,34 @@ public:
 
     /// get fallback font for this font
     LVFont * getFallbackFont() {
-        if ( _fallbackFontIsSet )
-        {return _fallbackFont.get();}
+        if (_fallbackFontIsSet)
+        {
+            return _fallbackFont.get();
+        }
 
-        if ( fontMan->GetFallbackFontFace()!=_faceName ) // to avoid circular link, disable fallback for fallback font
+        _fallbackFont = fontMan->GetFallbackFont(_size);
+        LVFont * result = _fallbackFont.get();
+        if  (result)
+        {
+            _fallbackFontIsSet = true;
+            return result;
+        }
+        if(_fallbackSystemInit)
+        {
+            return result;
+        }
+        if( SYSTEM_FALLBACK_FONTS_ENABLE )
+        {
+            fontMan->InitFallbackFonts();
+            _fallbackSystemInit = true;
             _fallbackFont = fontMan->GetFallbackFont(_size);
-        _fallbackFontIsSet = true;
-        return _fallbackFont.get();
+            result = _fallbackFont.get();
+            if  (result)
+            {
+                _fallbackFontIsSet = true;
+            }
+            return result;
+        }
     }
 
     LVFont *nextFallbackFont()
@@ -981,16 +1004,6 @@ public:
             return getGlyphInfoItem(glyph_index, glyph);
         }
 
-        //removing those symbols because of alignment width check
-        if ((code == 65292) || (code == 13058) || (code == 65281))
-        {
-            glyph_index = getCharIndex(code, def_char);
-            return getGlyphInfoItem(glyph_index, glyph);
-        }
-        if  (FALLBACK_FONTS_ENABLE)
-        {
-            fontMan->InitFallbackFonts();
-        }
         LVFont *fallback = getFallbackFont();
         if (!fallback) // Fallback not initialized
         {
@@ -998,14 +1011,21 @@ public:
             return getGlyphInfoItem( glyph_index, glyph);
         }
         glyph_index = fallback->getCharIndex(code, 0);
-
+        //CRLog::error("code       = %c = %d = %x",code,code,code);
+        //CRLog::error("glyphindex = %lc = %d = %x",glyph_index,glyph_index,glyph_index);
         if (glyph_index != 0)
         {
             return fallback->getGlyphInfoItem(glyph_index, glyph);
         }
         lString8 nextface;
         lString8 curface = fontMan->GetFallbackFontFace();
-        fontMan->GetFallbackFontArraySize();
+
+        //CRLog::error("Curface : %s", curface.c_str());
+        if  (SYSTEM_FALLBACK_FONTS_ENABLE)
+        {
+            fontMan->InitFallbackFonts();
+        }
+
         while (fontMan->AllowFallbackCycle())
         {
             //CRLog::error("Cycle!");
@@ -1914,6 +1934,7 @@ private:
     int         _fallbackIndex = 0;
     int         _cycleCounter = 0;
     bool        _fallbackFontsInitalized = false;
+    bool        _fallbackFontDefaultInitalized = false;
 public:
 
     virtual void FallbackFontFaceNext()
@@ -2088,22 +2109,13 @@ public:
         {
             return;
         }
+        _fallbackFontsInitalized = true;
+
         CRLog::trace("Fallback fonts initialisation...");
         lString8Collection fonts;
         lString8Collection faces;
 
         GetSystemFallbackFontsList(fonts);
-        if (fonts.length() == 0)
-        {
-            CRLog::error("No fallback font files found!");
-            faces.add(lString8("Roboto"));//default
-            AddFallbackFontFaceIntoArray(faces.at(0));
-            lString8 fallbackface = GetFallbackFontFaceFromArray(0);
-            SetFallbackFontFace(fallbackface);
-            _fallbackFontsInitalized = true;
-            return;
-        }
-        faces.add(lString8("Roboto"));//default
         for (int i = 0; i < fonts.length(); ++i)
         {
             faces.addAll(RegisterFont(fonts.at(i)));
@@ -2114,17 +2126,43 @@ public:
             AddFallbackFontFaceIntoArray(faces.at(i));
         }
 
-        if (_fallbackFontFaceArrayLength > 0)
+        if (_fallbackFontDefaultInitalized)
         {
-            lString8 fallbackface = GetFallbackFontFaceFromArray(0);
-            SetFallbackFontFace(fallbackface);
-            CRLog::trace("Fallback face: %s",fallbackface.c_str());
+            return;
         }
-        else
+
+        if (_fallbackFontFaceArrayLength == 0)
         {
             CRLog::error("No fallback faces found!");
+            return;
         }
-        _fallbackFontsInitalized = true;
+
+        lString8 fallbackface = GetFallbackFontFaceFromArray(0);
+        SetFallbackFontFace(fallbackface);
+        CRLog::trace("Fallback face: %s",fallbackface.c_str());
+
+    }
+
+    virtual void InitFallbackFontDefault()
+    {
+        if (_fallbackFontDefaultInitalized)
+        {
+            return;
+        }
+
+        CRLog::trace("Default fallback font initialisation...");
+        AddFallbackFontFaceIntoArray(FALLBACK_FACE_DEFAULT);
+
+        if (_fallbackFontFaceArrayLength == 0)
+        {
+            CRLog::error("Default fallback face not found!!");
+            return;
+        }
+
+        lString8 fallbackface = GetFallbackFontFaceFromArray(0);
+        SetFallbackFontFace(fallbackface);
+        CRLog::trace("Default fallback face set : %s",fallbackface.c_str());
+        _fallbackFontDefaultInitalized = true;
     }
 
     bool isBitmapModeForSize( int size )

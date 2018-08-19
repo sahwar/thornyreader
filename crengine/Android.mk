@@ -24,7 +24,6 @@ LOCAL_C_INCLUDES := \
 
 LOCAL_SRC_FILES := \
 	src/CreBridge.cpp \
-	src/CreMain.cpp \
 	src/trlog.cpp \
 	src/bookmark.cpp \
 	src/lvtoc.cpp \
@@ -55,7 +54,8 @@ LOCAL_SRC_FILES := \
     src/rtfimp.cpp \
     src/txtselector.cpp \
     src/wordfmt.cpp \
-    src/mobihandler.cpp
+    src/mobihandler.cpp \
+    src/crconfig.cpp
 
 LOCAL_SRC_FILES += \
     libpng/pngerror.c  \

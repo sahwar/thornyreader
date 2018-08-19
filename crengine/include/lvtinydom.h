@@ -502,6 +502,8 @@ public:
     bool isRoot() const;
     /// returns true if node is text
     inline bool isText() const { return _handle._dataIndex && !(_handle._dataIndex&1); }
+    /// returns true if node is image node
+    inline bool isImage() const { return (this->getNodeName()=="img" ||this->getNodeName()=="image"); }
     /// returns true if node is element
     inline bool isElement() const { return _handle._dataIndex && (_handle._dataIndex&1); }
     /// returns true if node is and element that has children
@@ -637,6 +639,7 @@ public:
     ldomNode * removeChild( lUInt32 index );
     /// returns XPath segment for this element relative to parent element (e.g. "p[10]")
     lString16 getXPathSegment();
+    lString16 getXPath();
     /// creates stream to read base64 encoded data from element
     LVStreamRef createBase64Stream();
     /// returns object image source
@@ -655,6 +658,12 @@ public:
     ldomNode * modify();
     /// for display:list-item node, get marker
     bool getNodeListMarker( int & counterValue, lString16 & marker, int & markerWidth );
+    /// returns href attribute of <A> element, null string if not found
+    lString16 getHRef();
+    //returns lvrect that contains accumulative sum of all margins of node and all parent nodes
+    lvRect getFullMargins();
+    //returns string name if any parent name is from white list
+    lString16 getMainParentName();
 };
 
 /**
@@ -1190,7 +1199,40 @@ public:
     /// called for each found text fragment in range
     virtual void onText(ldomXRange*) { }
     /// called for each found node in range
-    virtual bool onElement(ldomXPointerEx*) { return true; }
+    virtual bool onElement(ldomNode*) { return true; }
+    virtual void processText(ldomNode* node, ldomXRange* range);
+    virtual bool processElement(ldomNode* node, ldomXRange* range);
+};
+
+class TextRect
+{
+private:
+    ldomNode* node_;
+    lvRect rect_;
+    lString16 string_;
+public:
+    TextRect() :  node_(nullptr),rect_(lvRect(0,0,0,0)),string_(lString16::empty_str) {}
+    TextRect(ldomNode* node,lvRect rect, lString16 string) :node_(node),rect_(rect){
+        string_ = string.ReplaceUnusualSpaces();
+    }
+
+    lString16 getText(){ return string_;};
+    lvRect getRect(){ return rect_;};
+    ldomNode* getNode(){ return node_;};
+    void setRect(lvRect rect){ rect_ = rect;};
+};
+
+class ImgRect
+{
+private:
+    ldomNode* node_;
+    lvRect rect_;
+public:
+    ImgRect() :  node_(nullptr),rect_(lvRect(0,0,0,0)) {}
+    ImgRect(ldomNode* node,lvRect rect ) :node_(node),rect_(rect){}
+
+    lvRect getRect(){ return rect_;};
+    ldomNode* getNode(){ return node_;};
 };
 
 /// range for word inside text node
@@ -1230,6 +1272,7 @@ public:
         lString16 txt = _node->getText();
         return txt.substr( _start, _end-_start );
     }
+    lvRect getRect();
 };
 
 /// DOM range
@@ -1237,6 +1280,8 @@ class ldomXRange {
     ldomXPointerEx _start;
     ldomXPointerEx _end;
     lUInt32 _flags;
+    ldomNode* _startnode = NULL;
+    ldomNode* _endnode = NULL;
 public:
     ldomXRange() : _flags(0) { }
     ldomXRange( const ldomXPointerEx & start, const ldomXPointerEx & end, lUInt32 flags=0 )
@@ -1309,16 +1354,16 @@ public:
     void setFlags( lUInt32 flags ) { _flags = flags; }
     /// returns true if this interval intersects specified interval
     bool checkIntersection( ldomXRange & v );
-    /// returns text between two XPointer positions
-    lString16 GetRangeText( lChar16 blockDelimiter='\n', int maxTextLen=0 );
     /// get all words from specified range
     void getRangeWords( LVArray<ldomWord> & list );
+
+    void getRangeChars( LVArray<TextRect> & list );
     /// returns href attribute of <A> element, null string if not found
     lString16 getHRef();
     /// sets range to nearest word bounds, returns true if success
     static bool getWordRange( ldomXRange & range, ldomXPointer & p );
-    /// run callback for each node in range
-    void forEach( ldomNodeCallback * callback );
+    /// run callback for each node in range REIMPLEMENTED FOR TEXT HITBOX EXTRACTION
+    void forEach2( ldomNodeCallback * callback );
     /// returns rectangle (in doc coordinates) for range. Returns true if found.
     bool getRect( lvRect & rect );
     /// returns nearest common element for start and end points
@@ -1326,6 +1371,16 @@ public:
     /// searches for specified text inside range
     bool findText(lString16 pattern, bool caseInsensitive, bool reverse, LVArray<ldomWord>& words,
                   int maxCount, int maxHeight, bool checkMaxFromStart = false);
+    //foreach2 process text node
+    void processText(ldomNode* node, ldomNodeCallback *callback);
+    //foreach2 process element node
+    bool processElement(ldomNode *node, ldomNodeCallback *callback);
+    //foreach2 get node that contains xpointer of end of range
+    ldomNode* getEndNode();
+    //foreach2 get node that contains xpointer of start of range
+    ldomNode* getStartNode();
+    //get first common ancestor of nodes n1 and n2
+    ldomNode* getAncestor(ldomNode* n1, ldomNode* n2);
 };
 
 class ldomMarkedText

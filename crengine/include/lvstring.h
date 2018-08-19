@@ -98,6 +98,7 @@ int decodeDecimal( const lChar16 * str, int len );
 #define CH_PROP_SIGN        0x0100 ///< sign character flag
 #define CH_PROP_ALPHA_SIGN  0x0200 ///< alpha sign character flag
 #define CH_PROP_DASH        0x0400 ///< minus, emdash, endash, ... (- signs)
+#define CH_PROP_HIEROGLYPH  0x0800 ///< all symbols that are not in upper tags
 
 /// retrieve character properties mask array for wide c-string
 void lStr_getCharProps( const lChar16 * str, int sz, lUInt16 * props );
@@ -681,6 +682,8 @@ public:
 
     //removes UFFD (unicode questionmark) from the end of the line.
     lString16 TrimEndQuestionChar(lString16 & str);
+    //converting all different spaces to one type space
+    lString16 ReplaceUnusualSpaces();
 };
 
 /// calculates hash for wide string

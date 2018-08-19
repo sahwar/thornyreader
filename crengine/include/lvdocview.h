@@ -14,6 +14,7 @@
 #include "lvdrawbuf.h"
 #include "lvptrvec.h"
 #include "bookmark.h"
+#include "StProtocol.h"
 
 /// document view mode: pages/scroll
 enum LVDocViewMode
@@ -58,6 +59,30 @@ public:
     ldomWordEx* ReducePattern();
     // selects word of current page with specified coords;
     void SelectWord(int x, int y);
+};
+
+class Hitbox
+{
+public:
+    float _left;
+    float _right;
+    float _top;
+    float _bottom;
+    lString16 _text;
+    Hitbox() {};
+    Hitbox(float left, float right, float top, float bottom, lString16 text)
+    {
+        _left = left;
+        _right = right;
+        _top = top;
+        _bottom = bottom;
+        _text = text;
+    };
+    ~Hitbox(){};
+    void TrHitboxesArrayModify()
+    {
+        //stub
+    };
 };
 
 class LVDocView
@@ -148,8 +173,11 @@ public:
     /// clears selection
     void ClearSelection();
     /// get list of links
-    void GetCurrentPageLinks(ldomXRangeList& list);
-    void GetCurrentPageText(ldomXRangeList& list);
+    void GetCurrentPageLinks(LVArray<TextRect>& links_list);
+    // get list of paraends on current page
+    LVArray<lvRect> GetCurrentPageParas();
+    // get list of images on current page
+    LVArray<ImgRect> GetCurrentPageImages();
     /// selects first link on page, if any. returns selected link range, null if no links.
     ldomXRange* SelectFirstPageLink();
     /// invalidate formatted data, request render
@@ -171,8 +199,8 @@ public:
     LVImageSourceRef getImageByPoint(lvPoint pt);
     /// converts point from window to document coordinates, returns true if success
     bool WindowToDocPoint(lvPoint& pt);
-    /// converts rect from documsnt to window coordinates, returns true if success
-    bool DocToWindowRect(lvRect& rect);
+    /// converts rect from document to window coordinates, returns true if success
+    bool DocToWindowRect(lvRect &rect, bool modify=true);
     /// returns document
     CrDom* GetCrDom() { return cr_dom_; }
     /// draws scaled image into buffer, clear background according to current settings
@@ -222,6 +250,25 @@ public:
     /// load document from file
     bool LoadDoc(int doc_format, const char* file_name, uint32_t compressed_size,
                              bool smart_archive);
+    //returns array of lvRect-s containing para ends location within page
+    LVArray<lvRect> GetPageParaEnds();
+    //returns calculated right side of hitbox based on apge properties
+    float CalcRightSide(TextRect textrect);
+    //returns array of Hitbox objects that contain hitbox info about characters on current docview page
+    enum image_display_t {
+        img_all,
+        img_block,
+        img_inline
+    };
+    LVArray<Hitbox> GetPageLinks();
+    //returns array of Hitbox objects that contain hitbox info about characters on current docview page
+    LVArray<Hitbox> GetPageHitboxes();
+    //returns array of lvRects, that contains info about image location on current docview page
+    LVArray<ImgRect> GetPageImages(image_display_t type=img_all);
+    //rewrites imgheight and imgwidth to corresponding values of scaled image.
+    void GetImageScaleParams(ldomNode *node, int &imgheight, int &imgwidth);
+    font_ref_t GetBaseFont();
+
     LVDocView();
     ~LVDocView();
 };

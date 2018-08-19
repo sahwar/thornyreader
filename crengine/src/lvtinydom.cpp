@@ -9,12 +9,14 @@
    See LICENSE file for details
 *******************************************************/
 
+#include <map>
 #include <stdlib.h>
 #include <zlib.h>
 #include "include/lvstring.h"
 #include "include/lvtinydom.h"
 #include "include/fb2def.h"
 #include "include/lvrend.h"
+#include "include/crconfig.h"
 
 /// Data compression level (0=no compression, 1=fast compressions, 3=normal compression)
 #ifndef DOC_DATA_COMPRESSION_LEVEL
@@ -3029,9 +3031,11 @@ img_scaling_option_t::img_scaling_option_t()
 img_scaling_options_t::img_scaling_options_t()
 {
     img_scaling_option_t option;
-    zoom_in_inline = option;
+    img_scaling_option_t option_inline;
+    //option_inline.mode=IMG_NO_SCALE;
+    zoom_in_inline = option_inline;
     zoom_in_block = option;
-    zoom_out_inline = option;
+    zoom_out_inline = option_inline;
     zoom_out_block = option;
 }
 
@@ -3342,13 +3346,14 @@ bool ldomXPointer::getRect(lvRect & rect) const
             lastIndex = i;
             lastLen =  isObject ? 0 : src->t.len;
             lastOffset = isObject ? 0 : src->t.offset;
-            ldomXPointerEx xp2((ldomNode*)src->object, lastOffset);
-            if ( xp2.compare(xp)>0 ) {
+            ldomXPointerEx xp2((ldomNode *) src->object, lastOffset);
+           /* if (xp2.compare(xp) > 0)
+            {
                 srcIndex = i;
                 srcLen = lastLen;
                 offset = lastOffset;
                 break;
-            }
+            }*/
         }
         if ( srcIndex == -1 ) {
             if ( lastIndex<0 )
@@ -3568,6 +3573,29 @@ lString16 ldomNode::getXPathSegment()
     return lString16::empty_str;
 }
 
+lString16 ldomNode::getXPath()
+{
+    lString16 result;
+    lString16 brackets = lString16("[" + lString16::itoa(this->getNodeIndex()+1) + "]");
+    lString16 curlevel = lString16("(" + lString16::itoa(this->getNodeLevel()) + ")");
+
+    if (this->isText())
+    {
+        result.append(lString16("Text") + brackets + curlevel);
+    }
+    else
+    {
+        result.append(this->getXPathSegment() + curlevel);
+    }
+    ldomNode *parent = this->getParentNode();
+    while (parent != NULL)
+    {
+        result = parent->getXPathSegment() + "(" + lString16::itoa(parent->getNodeLevel()) +")/" + result ;
+        //result = parent->getXPathSegment() + "/" + result;
+        parent = parent->getParentNode();
+    }
+    return result;
+}
 lString16 ldomXPointer::toString()
 {
     lString16 path;
@@ -5188,45 +5216,195 @@ bool ldomXPointerEx::prevVisibleFinal()
     }
 }
 
-/// run callback for each node in range
-void ldomXRange::forEach( ldomNodeCallback * callback )
+ldomNode* ldomXRange::getEndNode()
 {
-    if ( isNull() )
-        return;
-    ldomXRange pos( _start, _end, 0 );
-    bool allowGoRecurse = true;
-    while ( !pos._start.isNull() && pos._start.compare( _end ) < 0 ) {
-        ldomNode * node = pos._start.getNode();
-        //CRLog::trace("path: %s", UnicodeToUtf8(pos._start.toString()).c_str());
-        if ( node->isElement() ) {
-            allowGoRecurse = callback->onElement( &pos.getStart() );
-        } else if ( node->isText() ) {
-            lString16 txt = node->getText();
-            pos._end = pos._start;
-            pos._start.setOffset( 0 );
-            pos._end.setOffset( txt.length() );
-            if ( _start.getNode() == node ) {
-                pos._start.setOffset( _start.getOffset() );
+    if (_endnode == NULL)
+    {
+        _endnode = this->_end.getNode();
+    }
+    return _endnode;
+}
+
+ldomNode* ldomXRange::getStartNode()
+{
+    if (_startnode == NULL)
+    {
+        _startnode = this->_start.getNode();
+    }
+    return _startnode;
+}
+
+ldomNode* ldomXRange::getAncestor(ldomNode* n1, ldomNode* n2)
+{
+    typedef std::map< int, ldomNode*> nodemap;
+    nodemap m;
+
+    ldomNode * a;
+    ldomNode * b;
+    ldomNode * p;
+
+    if (n1 == NULL || n2 == NULL)
+    {
+        return NULL;
+    }
+    ldomNode *p1 = n1->getParentNode();
+    ldomNode *p2 = n2->getParentNode();
+
+    if (p1 == NULL || p2 == NULL) return NULL;
+    if (n1 == n2) return p1;
+    if (n1 == p2) return p1;
+    if (n2 == p1) return p2;
+
+    if(n1->getNodeLevel() > n2->getNodeLevel())
+    {
+        a = n1; b = n2;
+    }
+    else
+    {
+        a = n2; b = n1;
+    }
+
+    p = a;
+    while (p->getParentNode() != NULL)
+    {
+        p = p->getParentNode();
+        int key = p->getNodeLevel();
+        m[key]= p;
+    }
+
+    p = b;
+    while (p->getParentNode() != NULL)
+    {
+        p = p->getParentNode();
+        int key = p->getNodeLevel();
+        if (m.find(key)!= m.end())
+        {
+            if(p == m.at(key))
+            {
+                return p;
             }
-            if ( _end.getNode() == node && pos._end.getOffset() > _end.getOffset()) {
-                pos._end.setOffset( _end.getOffset() );
-            }
-            callback->onText( &pos );
-            allowGoRecurse = false;
         }
-        // move to next item
-        bool stop = false;
-        if ( !allowGoRecurse || !pos._start.child(0) ) {
-             while ( !pos._start.nextSibling() ) {
-                if ( !pos._start.parent() ) {
-                    stop = true;
-                    break;
+    }
+    return NULL;
+}
+
+
+/// run callback for each node in range
+void ldomXRange::forEach2(ldomNodeCallback *callback)
+{
+    if ( _start.isNull() || _end.isNull() )
+    {
+        return;
+    }
+
+    ldomNode *start = getStartNode();
+    ldomNode *end   = getEndNode();
+    ldomNode *common_parent   = getAncestor(start,end);
+    int level = (common_parent != NULL) ? common_parent->getNodeLevel() : 1;
+
+    //CRLog::error("start  path = %s",LCSTR(start->getXPath()));
+    //CRLog::error("end    path = %s",LCSTR(end->getXPath()));
+    //CRLog::error("parent path = %s",LCSTR(common_parent->getXPath()));
+    //CRLog::error("parent lvl  = %d",common_parent->getNodeLevel());
+
+    ldomNode *node = start;
+    ldomNode *parent = node->getParentNode();
+
+    int index = node->getNodeIndex();
+
+    bool endfound = false;
+    while (parent->getNodeLevel() >= level)
+    {
+        for (int i = index; i < parent->getChildCount(); i++)
+        {
+            node = parent->getChildNode(i);
+
+            if (node->isText())
+            {
+                //CRLog::error("TEXT nodepath = %s",LCSTR(node->getXPath()));
+                callback->processText(node, this);
+            }
+            else
+            {
+                //CRLog::error("ELEMENT nodepath = %s",LCSTR(node->getXPath()));
+                if (callback->onElement(node))
+                {
+                    endfound = callback->processElement(node, this);
+                }
+            }
+
+            endfound = (endfound || (node == this->getEndNode())) ? true : false;
+            if (endfound)
+            {
+                //CRLog::error("FOREACH FINISH nodepath = %s",LCSTR(node->getXPath()));
+                return;
+            }
+        }
+        index = parent->getNodeIndex() + 1;
+        parent = parent->getParentNode();
+        //CRLog::error("parentpath = %s",LCSTR(parent->getXPath()));
+        if (parent == end)
+        {
+            //CRLog::error("PARENT EXIT");
+            return;
+        }
+        if (parent->getNodeLevel() == level)
+        {
+            //CRLog::error("WE'RE IN COMMON PARENT!!!!!");
+        }
+    }
+}
+
+void ldomNodeCallback::processText(ldomNode* node, ldomXRange * range)
+{
+    ldomXRange noderange = ldomXRange(node);
+
+    if (node == range->getEndNode())
+    {
+        noderange.setEnd(range->getEnd());
+    }
+    if(node == range->getStartNode() )
+    {
+        noderange.setStart(range->getStart());
+    }
+    this->onText(&noderange);
+    /*
+    lString16 text = node->getText().substr(noderange.getStart().getOffset(),noderange.getEnd().getOffset());
+    CRLog::error("full  text = %s",LCSTR(node->getText()));
+    CRLog::error("substrtext = %s",LCSTR(text));
+    */
+}
+
+bool ldomNodeCallback::processElement(ldomNode* node, ldomXRange * range)
+{
+    for (lUInt32 i = 0; i < node->getChildCount(); i++)
+    {
+        ldomNode *child = node->getChildNode(i);
+
+        if (child->isText())
+        {
+            //CRLog::error("_______TEXT nodepath = %s",LCSTR(child->getXPath()));
+            processText(child,range);
+        }
+        else
+        {
+            //CRLog::error("_______ELEMENT nodepath = %s",LCSTR(child->getXPath()));
+
+            if (this->onElement(child))
+            {
+                if(processElement(child, range))
+                {
+                    return true;
                 }
             }
         }
-        if ( stop )
-            break;
+
+        if (child == range->getEndNode())
+        {
+            return true;
+        }
     }
+    return false;
 }
 
 /// get all words from specified range
@@ -5245,8 +5423,19 @@ void ldomXRange::getRangeWords(LVArray<ldomWord>& words_list) {
                 len = end;
             }
             int beginOfWord = -1;
+            int TRFLAGS = 0 ;
+            TRFLAGS |= CH_PROP_ALPHA;
+            TRFLAGS |= CH_PROP_DIGIT;
+            TRFLAGS |= CH_PROP_PUNCT;
+            TRFLAGS |= CH_PROP_HYPHEN;
+            TRFLAGS |= CH_PROP_VOWEL;
+            TRFLAGS |= CH_PROP_CONSONANT;
+            TRFLAGS |= CH_PROP_SIGN;
+            TRFLAGS |= CH_PROP_ALPHA_SIGN;
+            TRFLAGS |= CH_PROP_DASH;
+
             for (int i = nodeRange->getStart().getOffset(); i <= len; i++) {
-                int alpha = lGetCharProps(text[i]) & CH_PROP_ALPHA;
+                int alpha = lGetCharProps(text[i]) & TRFLAGS; //  words check here
                 if (alpha && beginOfWord < 0) {
                     beginOfWord = i;
                 }
@@ -5266,8 +5455,194 @@ void ldomXRange::getRangeWords(LVArray<ldomWord>& words_list) {
         }
     };
     WordsCollector collector(words_list);
-    forEach(&collector);
+    forEach2(&collector);
 }
+
+
+/// get all words from specified range
+void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
+    class WordsCollector : public ldomNodeCallback {
+        LVArray<TextRect>& list_;
+    public:
+        WordsCollector(LVArray<TextRect>& list) : list_(list) {}
+
+        bool AllowTextNodeShift(ldomNode* node)
+        {
+            ldomNode* parentnode = node->getParentNode();
+            css_style_rec_t *style = parentnode->getStyle().get();
+            if (style == nullptr)
+            {
+                return false;
+            }
+            int whitespace = style->white_space;
+            if (style->white_space != css_ws_normal)
+            {
+                return false;
+            }
+            while (parentnode!=NULL)
+            {
+                if (parentnode == NULL)
+                {
+                    return false;
+                }
+                lString16 name = parentnode->getNodeName();
+                if(name == "a")
+                {
+                    return false;
+                }
+                int index = node->getNodeIndex();
+                if(name == "style" && index !=0)
+                {
+                    return false;
+                }
+                if(name == "style" && index ==0)
+                {
+                    return true;
+                }
+                if(name == "body" || name == "section")
+                {
+                    return false;
+                }
+                if(name == "p" && index == 0)
+                {
+                    return true;
+                }
+                if(name == "blockquote" && index == 0)
+                {
+                    return true;
+                }
+                node = parentnode;
+                parentnode = parentnode->getParentNode();
+            }
+            return false;
+        };
+
+        /// called for each found text fragment in range
+        virtual void onText(ldomXRange* nodeRange) {
+            ldomNode* node = nodeRange->getStart().getNode();
+            ldomNode* parent_node = node->getParentNode();
+            if(parent_node == nullptr)
+            {
+                return;
+            }
+            lString16 text = node->getText();
+            int pos = nodeRange->getStart().getOffset();
+            int len = text.length();
+            int end = nodeRange->getEnd().getOffset();
+            if (len > end)
+            {
+                len = end;
+            }
+            int TRFLAGS = 0;
+            TRFLAGS |= CH_PROP_ALPHA;
+            TRFLAGS |= CH_PROP_DIGIT;
+            TRFLAGS |= CH_PROP_PUNCT;
+            TRFLAGS |= CH_PROP_SPACE;
+            TRFLAGS |= CH_PROP_HYPHEN;
+            TRFLAGS |= CH_PROP_VOWEL;
+            TRFLAGS |= CH_PROP_CONSONANT;
+            TRFLAGS |= CH_PROP_SIGN;
+            TRFLAGS |= CH_PROP_ALPHA_SIGN;
+            TRFLAGS |= CH_PROP_DASH;
+            TRFLAGS |= CH_PROP_HIEROGLYPH;
+
+            int leftshift = 0;
+            int shift =0;
+
+            for (; pos < len; pos++)
+            {
+                ldomWord word = ldomWord(node, pos, pos + 1);
+                lvRect rect = word.getRect();
+                lString16 string = word.getText();
+                if (text[pos] == ' ' || text[pos] == '\t' || string == L"\u200B" )
+                {
+                    leftshift = leftshift + (rect.right - rect.left);
+                    continue;
+                }
+                break;
+            }
+            if (leftshift > 0 && AllowTextNodeShift(node))
+            {
+                // alone_space_in_node shift prohibition
+                if ( pos == len && pos == 1 && (text == " " || text == "\t") )
+                {
+                    leftshift = 0;
+                }
+
+                for (; pos < len - 1; pos++)
+                {
+                    ldomWord word = ldomWord(node, pos, pos + 1);
+                    lvRect rect = word.getRect();
+                    lString16 string = word.getText();
+                    rect.left = rect.left - leftshift + gTextLeftShift;
+                    rect.right = rect.right - leftshift + gTextLeftShift -1;
+                    list_.add(TextRect(node, rect, string));
+                }
+                //last char zero width fix
+                ldomWord word = ldomWord(node, len - 1, len);
+                lvRect rect = word.getRect();
+                lString16 string = word.getText();
+                rect.left = rect.left - leftshift + gTextLeftShift;
+                rect.right = rect.right + gTextLeftShift-1;
+                list_.add(TextRect(node, rect, string));
+            }
+            else
+            {
+                pos = nodeRange->getStart().getOffset();
+                for (; pos < len; pos++)
+                {
+                    ldomWord word = ldomWord(node, pos, pos + 1);
+                    lvRect rect = word.getRect();
+                    lString16 string = word.getText();
+                    if (text[pos] == ' ' || text[pos] == '\t' || string == L"\u200B" || string == L"\u00A0" )
+                    {
+                        continue;
+                    }
+                    break;
+                }
+
+                if (pos == len)// && node->getNodeIndex() == 0)
+                {
+                    css_style_rec_t *style = parent_node->getStyle().get();
+                    if (style->display == css_d_block || parent_node->getNodeName() == "br")
+                    {
+                        return;
+                    }
+                }
+
+                pos = nodeRange->getStart().getOffset();
+                for (; pos < len ; pos++)
+                {
+                    ldomWord word = ldomWord(node, pos, pos + 1);
+                    lvRect rect = word.getRect();
+                    lString16 string = word.getText();
+                    rect.left = rect.left + gTextLeftShift;
+                    rect.right = rect.right + gTextLeftShift-1;
+                    list_.add(TextRect(node, rect, string));
+                }
+            }
+        }
+        /// called for each found node in range
+        virtual bool onElement(ldomXPointerEx* ptr) {
+            ldomNode* elem = ptr->getNode();
+            if (elem->getRendMethod() == erm_invisible) {
+                return false;
+            }
+            return true;
+        }
+    };
+    WordsCollector collector(words_list);
+    return forEach2(&collector);
+}
+
+/*ALPHACHECK
+//int alpha = lGetCharProps(text[pos]) & TRFLAGS; //  words check here
+if (alpha)
+{
+ do stuff here
+}
+*/
+
 
 /// adds all visible words from range, returns number of added words
 int ldomWordExList::addRangeWords( ldomXRange & range, bool /*trimPunctuation*/ ) {
@@ -5518,77 +5893,6 @@ void ldomWordExList::init()
     }
 }
 
-/// returns text between two XPointer positions
-lString16 ldomXRange::GetRangeText(lChar16 blockDelimiter, int maxTextLen)
-{
-    class TextCollector : public ldomNodeCallback {
-    private:
-        bool lastText;
-        bool newBlock;
-        lChar16 delimiter;
-        int maxLen;
-        lString16 text_;
-    public:
-        TextCollector(lChar16 blockDelimiter, int maxTextLen)
-                : lastText(false), newBlock(true), delimiter(blockDelimiter), maxLen(maxTextLen) {
-        }
-        /// destructor
-        virtual ~TextCollector() {}
-        /// called for each found text fragment in range
-        virtual void onText(ldomXRange* node_range) {
-            if (newBlock && !text_.empty()) {
-                text_ << delimiter;
-            }
-            lString16 text = node_range->getStart().getNode()->getText();
-            int start = node_range->getStart().getOffset();
-            int end = node_range->getEnd().getOffset();
-            if (start < end) {
-                text_ << text.substr(start, end - start);
-            }
-            lastText = true;
-            newBlock = false;
-        }
-        /// called for each found node in range
-        virtual bool onElement(ldomXPointerEx* ptr) {
-            ldomNode* elem = ptr->getNode();
-            if (elem->getRendMethod() == erm_invisible)
-                return false;
-            switch (elem->getStyle()->display) {
-                /*
-                case css_d_inherit:
-                case css_d_block:
-                case css_d_list_item:
-                case css_d_compact:
-                case css_d_marker:
-                case css_d_table:
-                case css_d_inline_table:
-                case css_d_table_row_group:
-                case css_d_table_header_group:
-                case css_d_table_footer_group:
-                case css_d_table_row:
-                case css_d_table_column_group:
-                case css_d_table_column:
-                case css_d_table_cell:
-                case css_d_table_caption:
-                */
-                default:
-                    newBlock = true;
-                    return true;
-                case css_d_none:
-                    return false;
-                case css_d_inline:
-                case css_d_run_in:
-                    newBlock = false;
-                    return true;
-            }
-        }
-        /// get collected text
-        lString16 getText() { return text_; }
-    };
-    TextCollector callback(blockDelimiter, maxTextLen);
-    forEach(&callback);
-    return callback.getText();
-}
 
 /// returns href attribute of <A> element, null string if not found
 lString16 ldomXPointer::getHRef()
@@ -8082,6 +8386,30 @@ LVStreamRef ldomNode::createBase64Stream()
     return istream;
 }
 
+lString16 ldomNode::getHRef()
+{
+    if (isNull())
+    {
+        return lString16::empty_str;
+    }
+    ldomNode *node = this;
+    while (node && !node->isElement())
+        node = node->getParentNode();
+    while (node && node->getNodeId() != el_a)
+       node = node->getParentNode();
+
+    if (!node)
+    {
+        return lString16::empty_str;
+    }
+    lString16 ref = node->getAttributeValue(LXML_NS_ANY, attr_href);
+    if (!ref.empty() && ref[0] != '#')
+    {
+        ref = DecodeHTMLUrlString(ref);
+    }
+    return ref;
+}
+
 class NodeImageProxy : public LVImageSource
 {
     ldomNode * _node;
@@ -8461,6 +8789,40 @@ ldomNode* ldomNode::modify()
     return this;
 }
 
+lvRect ldomNode::getFullMargins()
+{
+    lvRect margins = lvRect(0,0,0,0);
+    ldomNode* node = this;
+    while(node != NULL && node->getParentNode()!=NULL)
+    {
+        if(!node->isText())
+        {
+            css_style_rec_t *style = node->getStyle().get();
+            margins.left   += style->margin[0].value;
+            margins.right  += style->margin[1].value;
+            margins.top    += style->margin[2].value;
+            margins.bottom += style->margin[3].value;
+        }
+        node = node->getParentNode();
+    }
+    return margins;
+}
+
+lString16 ldomNode::getMainParentName()
+{
+    lString16 result;
+    ldomNode* node = this;
+    while(node != NULL && node->getParentNode()!=NULL)
+    {
+        if(node->isNodeName("li") || node->isNodeName("poem") || node->isNodeName("stanza") || node->isNodeName("annotation")|| node->isNodeName("blockquote"))
+        {
+            return node->getNodeName();
+        }
+        node = node->getParentNode();
+    }
+    return lString16::empty_str;
+}
+
 void CrDomBase::dumpStatistics() {
 //#define TINYNODECOLLECTION_DUMPSTATISTICS
 #ifdef TINYNODECOLLECTION_DUMPSTATISTICS
@@ -8506,4 +8868,18 @@ void CrDomBase::dumpStatistics() {
                 _tinyElementCount,
                 _tinyElementCount * (sizeof(tinyElement) + 8 * 4) / 1024);
 #endif //TINYNODECOLLECTION_DUMPSTATISTICS
+}
+
+lvRect ldomWord::getRect()
+{
+    lvRect result;
+    ldomXPointer start = this->getStartXPointer();
+    ldomXPointer end =this->getEndXPointer();
+    ldomXPointerEx startex = start;
+    ldomXPointerEx endex = end;
+    ldomXRange range;
+    range.setStart(startex);
+    range.setEnd(endex);
+    range.getRect(result);
+    return result;
 }
