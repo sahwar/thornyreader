@@ -3237,13 +3237,14 @@ ldomXPointer CrDom::createXPointer(lvPoint pt, int direction)
 lvPoint ldomXPointer::toPoint() const
 {
     lvRect rc;
+    //к GetRect добавлен параметр, который отвечает за включение проблемного участка кода.
     if (!getRect(rc, true))
         return lvPoint(-1, -1);
     return rc.topLeft();
 }
 
 /// returns caret rectangle for pointer inside formatted document
-bool ldomXPointer::getRect(lvRect & rect ,  bool forlvpoint) const
+bool ldomXPointer::getRect(lvRect & rect ,bool forlvpoint) const
 {
     //CRLog::trace("ldomXPointer::getRect()");
     if (isNull()) {
@@ -3347,16 +3348,17 @@ bool ldomXPointer::getRect(lvRect & rect ,  bool forlvpoint) const
             lastLen =  isObject ? 0 : src->t.len;
             lastOffset = isObject ? 0 : src->t.offset;
             ldomXPointerEx xp2((ldomNode *) src->object, lastOffset);
-            if ( forlvpoint )
+            // Проблемный участок, от которого одновременно зависит
+            // генерация оглавлений (Гаррисон), и генерация хитбоксов в некоторых случаях (Storia della mafia)
+            // К функции GetRect добавлен параметр forlvpoint, который при вызове в генерации оглавлений, включает этот кусок.
+            if (forlvpoint && xp2.compare(xp) > 0)
             {
-                if (xp2.compare(xp) > 0)
-                {
-                    srcIndex = i;
-                    srcLen = lastLen;
-                    offset = lastOffset;
-                    break;
-                }
+                srcIndex = i;
+                srcLen = lastLen;
+                offset = lastOffset;
+                break;
             }
+            //конец проблемного участка кода
         }
         if ( srcIndex == -1 ) {
             if ( lastIndex<0 )
