@@ -1009,7 +1009,7 @@ public:
 		return *_data != *v._data;
 	}
     /// returns caret rectangle for pointer inside formatted document
-    bool getRect(lvRect & rect) const;
+    bool getRect(lvRect & rect, bool forlvpoint = false) const;
     /// returns coordinates of pointer inside formatted document
     lvPoint toPoint() const;
     /// converts to string
