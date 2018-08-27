@@ -3237,13 +3237,13 @@ ldomXPointer CrDom::createXPointer(lvPoint pt, int direction)
 lvPoint ldomXPointer::toPoint() const
 {
     lvRect rc;
-    if (!getRect(rc))
+    if (!getRect(rc, true))
         return lvPoint(-1, -1);
     return rc.topLeft();
 }
 
 /// returns caret rectangle for pointer inside formatted document
-bool ldomXPointer::getRect(lvRect & rect) const
+bool ldomXPointer::getRect(lvRect & rect ,  bool forlvpoint) const
 {
     //CRLog::trace("ldomXPointer::getRect()");
     if (isNull()) {
@@ -3347,13 +3347,16 @@ bool ldomXPointer::getRect(lvRect & rect) const
             lastLen =  isObject ? 0 : src->t.len;
             lastOffset = isObject ? 0 : src->t.offset;
             ldomXPointerEx xp2((ldomNode *) src->object, lastOffset);
-           /* if (xp2.compare(xp) > 0)
+            if ( forlvpoint )
             {
-                srcIndex = i;
-                srcLen = lastLen;
-                offset = lastOffset;
-                break;
-            }*/
+                if (xp2.compare(xp) > 0)
+                {
+                    srcIndex = i;
+                    srcLen = lastLen;
+                    offset = lastOffset;
+                    break;
+                }
+            }
         }
         if ( srcIndex == -1 ) {
             if ( lastIndex<0 )
