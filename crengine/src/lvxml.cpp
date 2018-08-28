@@ -3069,21 +3069,24 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                 }
                 //TODO add/remove table tags sanitizer
 
-                //bold italic undrelined text handling
+                //bold italic underlined text handling
                 if (in_rpr)
                 {
                    // CRLog::error("In R tagname == %s",LCSTR(tagname));
                     if (tagname == "b")
                     {
                         rpr_b = true;
+                            m_state = ps_attr;
                     }
                     if (tagname == "i")
                     {
                         rpr_i = true;
+                            m_state = ps_attr;
                     }
                     if (tagname == "u")
                     {
                         rpr_u = true;
+                            m_state = ps_attr;
                     }
                 }
 
@@ -3152,6 +3155,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
 
                 if(tagname == "t")
                 {
+                    m_state = ps_attr;
                     if(ilvl)
                     {
                         tagname = "li";
@@ -3159,6 +3163,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                         ilvl = false;
                     }
                     in_t = true;
+                    break;
                 }
 
                 if(tagname=="blockquote")
@@ -3370,7 +3375,6 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                                 callback_->OnTagOpen(L"", L"h3");
                                 break;
                             default:
-                                in_header = false;
                                 break;
                         }
                         in_header = false;
@@ -3383,12 +3387,12 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     }
                     else if (rpr_i)
                     {
-                        //callback_->OnTagOpen(L"", L"i");
+                        callback_->OnTagOpen(L"", L"i");
                         rpr_i = false;
                     }
                     else if (rpr_u)
                     {
-                        //callback_->OnTagOpen(L"", L"u");
+                        callback_->OnTagOpen(L"", L"u");
                         rpr_u = false;
                     }
                     in_t = false;
@@ -3405,7 +3409,6 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     }
                 }
                 m_state = ps_lt;
-                //CRLog::trace("LvXmlParser::Parse() ps_text ret");
             }
                 break;
             default:

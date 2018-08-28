@@ -7956,6 +7956,12 @@ void ldomNode::initNodeStyle()
 #endif
         css_style_ref_t style = parent->getStyle();
         LVFontRef font = parent->getFont();
+        int counter = 0;
+        while (style.isNull() && parent->getParentNode()!=NULL && counter < MAX_DOM_LEVEL)
+        {
+            parent = parent->getParentNode();
+            style = parent->getStyle();
+        }
         setNodeStyleRend(this, style, font);
     }
 }
