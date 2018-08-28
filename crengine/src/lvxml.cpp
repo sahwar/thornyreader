@@ -2997,15 +2997,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     break;
                     //}}
                 }
-
-                if(tagns == "w" ||
-                   tagns == "wp"||
-                   tagns == "pic" ||
-                   tagns == "a"
-                        )
-                {
-                    tagns = "";
-                }
+                tagns = "";
 
                 //removing OpenXML tags from tree
                 if (tagname == "proofErr"
@@ -3045,7 +3037,18 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     || tagname == "prstgeom"
                     || tagname == "avlst"
                     || tagname == "drawing"
-                    || tagname == "wrapsquare")
+                    || tagname == "wrapsquare"
+                    || tagname == "spacing"
+                    || tagname == "rfonts"
+                    || tagname == "sz"
+                    || tagname == "szcs"
+                    || tagname == "vertalign"
+                    || tagname == "rstyle"
+                    || tagname == "noproof"
+                    || tagname == "extlst"
+                    || tagname == "uselocaldpi"
+                    || tagname == "tab"
+                                  )
                 {
                     if (SkipTillChar('>'))
                     {
@@ -3072,21 +3075,31 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                 //bold italic underlined text handling
                 if (in_rpr)
                 {
+                    bool remove = false;
                    // CRLog::error("In R tagname == %s",LCSTR(tagname));
                     if (tagname == "b")
                     {
                         rpr_b = true;
-                            m_state = ps_attr;
+                        remove = true;
                     }
                     if (tagname == "i")
                     {
                         rpr_i = true;
-                            m_state = ps_attr;
+                        remove = true;
                     }
                     if (tagname == "u")
                     {
                         rpr_u = true;
-                            m_state = ps_attr;
+                        remove = true;
+                    }
+                    if(remove)
+                    {
+                        if (SkipTillChar('>'))
+                        {
+                            m_state = ps_text;
+                            ch = ReadCharFromBuffer();
+                        }
+                        break;
                     }
                 }
 
@@ -3214,6 +3227,11 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     {
                         callback_->OnText(L"\u200B", 1, flags);
                     }
+                }
+
+                if (tagname == "hyperlink")
+                {
+                    tagname = "a";
                 }
 
                 if (close_flag)
@@ -3366,15 +3384,16 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     {
                         switch (pstyle_value){
                             case 1:
-                                callback_->OnTagOpen(L"", L"h1");
+                                callback_->OnTagOpen(L"", lString16("h1").c_str());
                                 break;
                             case 2:
-                                callback_->OnTagOpen(L"", L"h2");
+                                callback_->OnTagOpen(L"", lString16("h4").c_str());
                                 break;
                             case 3:
-                                callback_->OnTagOpen(L"", L"h3");
+                                callback_->OnTagOpen(L"", lString16("h6").c_str());
                                 break;
                             default:
+                                in_header = false;
                                 break;
                         }
                         in_header = false;
@@ -3382,17 +3401,17 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     }
                     if (rpr_b)
                     {
-                        callback_->OnTagOpen(L"", L"b");
+                        callback_->OnTagOpen(L"", lString16("b").c_str());
                         rpr_b = false;
                     }
                     else if (rpr_i)
                     {
-                        callback_->OnTagOpen(L"", L"i");
+                        callback_->OnTagOpen(L"", lString16("i").c_str());
                         rpr_i = false;
                     }
                     else if (rpr_u)
                     {
-                        callback_->OnTagOpen(L"", L"u");
+                        //callback_->OnTagOpen(L"", lString16("u").c_str());
                         rpr_u = false;
                     }
                     in_t = false;
