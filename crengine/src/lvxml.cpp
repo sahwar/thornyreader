@@ -3396,7 +3396,8 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                 {
                     callback_->OnAttribute(attrns.c_str(), lString16("type").c_str(), lString16("note").c_str());
                     attrname= "href";
-                    callback_->OnText(attrvalue.c_str(),1,0);
+                    lString16 mark = "[" + attrvalue + "]";
+                    callback_->OnText(mark.c_str(),1,0);
                     attrvalue = lString16("#") + attrvalue;
                     in_footnoteref = false;
                 }
