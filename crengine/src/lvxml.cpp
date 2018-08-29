@@ -3237,7 +3237,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                 if (close_flag)
                 {
                     callback_->OnTagClose(tagns.c_str(), tagname.c_str());
-                    //CRLog::trace("</%s>", LCSTR(tagname));
+                    //CRLog::trace("</%s:%s>", LCSTR(tagns),LCSTR(tagname));
                     if (SkipTillChar('>'))
                     {
                         m_state = ps_text;
@@ -3253,7 +3253,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     in_xml_tag = false;
                 }
                 callback_->OnTagOpen(tagns.c_str(), tagname.c_str());
-                //CRLog::trace("<%s>", LCSTR(tagname));
+                //CRLog::trace("<%s:%s>", LCSTR(tagns),LCSTR(tagname));
 
                 m_state = ps_attr;
                 //CRLog::trace("LvXmlParser::Parse() ps_lt ret");
