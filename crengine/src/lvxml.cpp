@@ -3387,18 +3387,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     if(attrname == "val")
                     {
                         in_header = true;
-                        if (attrvalue == "1")
-                        {
-                            pstyle_value = 1;
-                        }
-                        if (attrvalue == "2")
-                        {
-                            pstyle_value = 2;
-                        }
-                        if (attrvalue == "3")
-                        {
-                            pstyle_value = 3;
-                        }
+                        pstyle_value = atoi(LCSTR(attrvalue));
                     }
                     in_pstyle = false;
                 }
@@ -3446,9 +3435,18 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                                 callback_->OnTagOpen(L"", lString16("h1").c_str());
                                 break;
                             case 2:
-                                callback_->OnTagOpen(L"", lString16("h4").c_str());
+                                callback_->OnTagOpen(L"", lString16("h2").c_str());
                                 break;
                             case 3:
+                                callback_->OnTagOpen(L"", lString16("h3").c_str());
+                                break;
+                            case 4:
+                                callback_->OnTagOpen(L"", lString16("h4").c_str());
+                                break;
+                            case 5:
+                                callback_->OnTagOpen(L"", lString16("h5").c_str());
+                                break;
+                            case 6:
                                 callback_->OnTagOpen(L"", lString16("h6").c_str());
                                 break;
                             default:
