@@ -3130,18 +3130,25 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     if (tagname == "b")
                     {
                         rpr_b = true;
-                        remove = true;
-                    }
-                    if (tagname == "i")
-                    {
-                        rpr_i = true;
+                        rpr_i = false;
+                        rpr_u = false;
                         remove = true;
                     }
                     if (tagname == "u")
                     {
+                        rpr_b = false;
+                        rpr_i = false;
                         rpr_u = true;
                         remove = true;
                     }
+                    if (tagname == "i")
+                    {
+                        rpr_b = false;
+                        rpr_i = true;
+                        rpr_u = false;
+                        remove = true;
+                    }
+
                     if(remove)
                     {
                         if (SkipTillChar('>'))
@@ -3227,6 +3234,12 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     }
                     in_t = true;
                     break;
+                }
+                if(tagname == "t" && close_flag)
+                {
+                    rpr_b = false;
+                    rpr_i = false;
+                    rpr_u = false;
                 }
 
                 if(tagname=="blockquote")
@@ -3469,7 +3482,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     }
                     else if (rpr_u)
                     {
-                        //callback_->OnTagOpen(L"", lString16("u").c_str());
+                        callback_->OnTagOpen(L"", lString16("u").c_str());
                         rpr_u = false;
                     }
                     in_t = false;
