@@ -250,6 +250,10 @@ td, th {
   text-indent: 0px;
   padding: 3px;
 }
+td > p {
+text-indent: 0px;
+text-align: center;
+}
 th {
   font-weight: bold;
   text-align: center;
