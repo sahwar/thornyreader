@@ -378,6 +378,14 @@ static LVStreamRef ThResolveStream(int doc_format, const char *absolute_path_cha
 				found_count++;
 			}
 		}
+        else if (doc_format == DOC_FORMAT_DOCX)
+        {
+            if (name_lowercase.endsWith(".docx"))
+            {
+                entry_name = name;
+                found_count++;
+            }
+        }
 	}
 	if (found_count == 1)
 	{
@@ -561,14 +569,13 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 #ifdef TRDEBUG
 if (DUMP_DOMTREE == 1)
 {
-	CRLog::error("dumping domtree");
-	LVStreamRef out = LVOpenFileStream("/sdcard/download/temp.xml", LVOM_WRITE);
-	//LVStreamRef out = LVOpenFileStream("/mnt/shell/emulated/10/Android/data/org.readera.trdevel/files/temp.xml", LVOM_WRITE);
-	//LVStreamRef out = LVOpenFileStream("/data/data/org.readera.trdevel/files/temp.xml", LVOM_WRITE);
-	if(cr_dom_->saveToStream(out, NULL, true))
-	{
-		CRLog::error("dumped successfully");
-	}
+    CRLog::error("dumping domtree");
+    //LVStreamRef out = LVOpenFileStream("/sdcard/download/temp.xml", LVOM_WRITE);
+    LVStreamRef out = LVOpenFileStream("/data/data/org.readera.trdevel/files/temp.xml", LVOM_WRITE);
+    if(cr_dom_->saveToStream(out, NULL, true))
+    {
+    	CRLog::error("dumped successfully");
+    }
 }
 #if 0
     lString16 stylesheet = cr_dom_->createXPointer(L"/FictionBook/stylesheet").getText();
@@ -2931,6 +2938,10 @@ float LVDocView::CalcRightSide(TextRect textrect)
 	if (result > right_line) // plan C
 	{
 		result = right_line - (hyphwidth / 2);
+	}
+	if(node->getXPath().pos("td")!=-1)
+	{
+		result = rect.right+curwidth;
 	}
 	return result;
 }
