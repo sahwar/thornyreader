@@ -35,6 +35,34 @@ lString16 DocxGetMainFilePath(LVContainerRef m_arc)
     return lString16::empty_str;
 }
 
+lString16 DocxGetFootnotesFilePath(LVContainerRef m_arc)
+{
+    LVStreamRef container_stream = m_arc->OpenStream(L"[Content_Types].xml", LVOM_READ);
+    if (!container_stream.isNull())
+    {
+        CrDom *doc = LVParseXMLStream(container_stream);
+        if (doc)
+        {
+            for (int i = 1; i < 50; i++)
+            {
+                ldomNode *item = doc->nodeFromXPath(lString16("Types/Override[") << fmt::decimal(i) << "]");
+                if (!item)
+                {
+                    break;
+                }
+                lString16 partname = item->getAttributeValue("PartName");
+                lString16 contentType = item->getAttributeValue("ContentType");
+                if (contentType.endsWith("footnotes+xml"))
+                {
+                    return partname;
+                }
+            }
+            delete doc;
+        }
+    }
+    return lString16::empty_str;
+}
+
 //left that method for toc or other usage implementetion
 DocxItems DocxParseContentTypes(LVContainerRef m_arc)
 {
@@ -85,6 +113,7 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
         CRLog::error("No main document file found! This is either not a docx file, or the file is corrupted!");
         return false;
     }
+    lString16 footnotesFilePath = DocxGetFootnotesFilePath(arc);
     EncryptedDataContainer *decryptor = new EncryptedDataContainer(arc);
     if (decryptor->open())
     {
@@ -100,13 +129,6 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
     }
 
     m_doc->setDocParentContainer(m_arc);
-
-    lString16 codeBase;
-    //lString16 css;
-    {
-        codeBase = LVExtractPath(rootfilePath, false);
-        CRLog::trace("codeBase=%s", LCSTR(codeBase));
-    }
 
     LVStreamRef content_stream = m_arc->OpenStream(rootfilePath.c_str(), LVOM_READ);
 
@@ -179,8 +201,6 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
     LVStreamRef stream2 = m_arc->OpenStream(rootfilePath.c_str(), LVOM_READ);
     if (!stream2.isNull())
     {
-
-        //LvXmlParser
         LvHtmlParser parser(stream2, &appender, firstpage_thumb);
         if (parser.ParseDocx(docxItems))
         {
@@ -188,10 +208,34 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
         }
         else
         {
-            CRLog::error("Document type is not XML/XHTML for fragment %s", LCSTR(rootfilePath));
+            CRLog::error("Unable to parse docx file at [%s]", LCSTR(rootfilePath));
         }
     }
-
+    LVStreamRef stream3;
+    if(!footnotesFilePath.empty())
+    {
+        stream3 = m_arc->OpenStream(footnotesFilePath.c_str(), LVOM_READ);
+        if (!stream3.isNull())
+        {
+            LvHtmlParser parser(stream3, &appender, firstpage_thumb);
+            if (parser.ParseDocx(docxItems))
+            {
+                // valid
+            }
+            else
+            {
+                CRLog::error("Unable to parse footnotes file at [%s]", LCSTR(footnotesFilePath));
+            }
+        }
+        else
+        {
+            CRLog::error("Failed opening footnotes file at [%s]",LCSTR(footnotesFilePath));
+        }
+    }
+    else
+    {
+        CRLog::trace("No footnotes found in docx package.");
+    }
     writer.OnTagClose(L"", L"body");
     writer.OnStop();
 
