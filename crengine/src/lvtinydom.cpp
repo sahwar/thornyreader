@@ -6131,7 +6131,10 @@ ldomNode * LvDocFragmentWriter::OnTagOpen( const lChar16 * nsname, const lChar16
         if ( !lStr_cmp(tagname, "style") )
             headStyleState = 1;
     }
-    if ( !insideTag && baseTag==tagname ) {
+    /* These changes are made for docx footnotes to be parsed successfully. Needs tests.
+     * Revert if these changes break something else.*/
+    //todo : Test other document formats when docx scan will be available.
+    if ( !insideTag /*&& baseTag==tagname*/ ) {
         insideTag = true;
         if ( !baseTagReplacement.empty() ) {
             baseElement = parent->OnTagOpen(L"", baseTagReplacement.c_str());
