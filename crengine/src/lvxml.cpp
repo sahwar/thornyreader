@@ -2908,6 +2908,8 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
     bool in_pstyle = false;
     bool in_t = false;
     bool in_header= false;
+    bool in_table= false;
+    bool in_footnoteref= false;
 
     bool rpr_b=false;
     bool rpr_i=false;
@@ -2987,7 +2989,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                 tagname.lowercase();
                 //CRLog::error("%s:%s",LCSTR(tagns),LCSTR(tagname));
 
-                if(tagname=="style") //|| tagname=="table" || tagname=="tr" || tagname=="td") // skipping all <style> tags and <table> <tr> <td> tags
+                if (tagname == "style") //|| tagname=="table" || tagname=="tr" || tagname=="td") // skipping all <style> tags and <table> <tr> <td> tags
                 {
                     if (SkipTillChar('>'))
                     {
@@ -3048,7 +3050,27 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     || tagname == "extlst"
                     || tagname == "uselocaldpi"
                     || tagname == "tab"
-                                  )
+                    || tagname == "tcpr"
+                    || tagname == "trpr"
+                    || tagname == "tblpr"
+                    || tagname == "tcw"
+                    || tagname == "tcborders"
+                    || tagname == "shd"
+                    || tagname == "top"
+                    || tagname == "left"
+                    || tagname == "right"
+                    || tagname == "bottom"
+                    || tagname == "insideh"
+                    || tagname == "insidev"
+                    || tagname == "tblgrid"
+                    || tagname == "gridcol"
+                    || tagname == "tblw"
+                    || tagname == "tblind"
+                    || tagname == "tblborders"
+                    || tagname == "tbllayout"
+                    || tagname == "tbllook"
+                    || tagname == "jc"
+                    || tagname == "ind")
                 {
                     if (SkipTillChar('>'))
                     {
@@ -3058,12 +3080,30 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     break;
                 }
 
-
-
                 //table handling
-                if (tagname == "tbl")
+                if (tagname == "tbl" && !close_flag)
                 {
                     tagname = "table";
+                    in_table = true;
+                }
+
+                if (tagname == "tbl" && close_flag)
+                {
+                    tagname = "table";
+                    in_table = false;
+                }
+
+                if (in_table)
+                {
+                    if (tagname == "pstyle")
+                    {
+                        if (SkipTillChar('>'))
+                        {
+                            m_state = ps_text;
+                            ch = ReadCharFromBuffer();
+                        }
+                        break;
+                    }
                 }
 
                 if (tagname == "tc")
@@ -3071,6 +3111,16 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     tagname = "td";
                 }
                 //TODO add/remove table tags sanitizer
+
+
+                //footnotes handling
+
+                if (tagname == "footnotereference")
+                {
+                    in_footnoteref = true;
+                    tagname = "a";
+                    m_state = ps_attr;
+                }
 
                 //bold italic underlined text handling
                 if (in_rpr)
@@ -3351,6 +3401,15 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                         }
                     }
                     in_pstyle = false;
+                }
+                //footnote handling
+                if(in_footnoteref)
+                {
+                    callback_->OnAttribute(attrns.c_str(), lString16("type").c_str(), lString16("note").c_str());
+                    attrname= "href";
+                    callback_->OnText(attrvalue.c_str(),1,0);
+                    attrvalue = lString16("#") + attrvalue;
+                    in_footnoteref = false;
                 }
                 //embedded image handling
                 if(in_blip_img)
