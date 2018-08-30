@@ -2910,11 +2910,14 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
     bool in_header= false;
     bool in_table= false;
     bool in_footnoteref= false;
+    bool in_footnote= false;
 
     bool rpr_b=false;
     bool rpr_i=false;
     bool rpr_u=false;
     bool ilvl=false;
+    bool noattrib = false;
+
     int pstyle_value= 0;
 
 
@@ -3072,6 +3075,10 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     || tagname == "jc"
                     || tagname == "ind"
                     || tagname == "numpr"
+                    || tagname == "tblcellmar"
+                    || tagname == "prooferr"
+                    || tagname == "separator"
+                    || tagname == "continuationseparator"
                         )
                 {
                     if (SkipTillChar('>'))
@@ -3122,6 +3129,14 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     in_footnoteref = true;
                     tagname = "a";
                     m_state = ps_attr;
+                }
+
+                if (tagname == "footnote" && !close_flag)
+                {
+                    CRLog::error("in footnote! open flag");
+                    in_footnote = true;
+                    m_state = ps_attr;
+                    break;
                 }
 
                 //bold italic underlined text handling
@@ -3396,6 +3411,15 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     attrns = "";
                 }
 
+                if (attrname== "rsidr" || attrname== "rsidrdefault" || attrname== "rsidp"|| attrname== "rsidrpr"|| attrname== "space" )
+                {
+                    noattrib = true;
+                }
+                else
+                {
+                    noattrib = false;
+                }
+
                 if(in_pstyle)
                 {
                     if(attrname == "val")
@@ -3416,6 +3440,12 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     attrvalue = lString16("#") + attrvalue;
                     in_footnoteref = false;
                 }
+                if(in_footnote){
+                    if(attrname == "type" && (attrvalue == "separator" || attrvalue =="continuationSeparator"))
+                    {
+                        in_footnote = false;
+                    }
+                }
                 //embedded image handling
                 if(in_blip_img)
                 {
@@ -3431,7 +3461,10 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                 if ((flags & TXTFLG_CONVERT_8BIT_ENTITY_ENCODING) && m_conv_table) {
                     PreProcessXmlString(attrvalue, 0, m_conv_table);
                 }
-                callback_->OnAttribute(attrns.c_str(), attrname.c_str(), attrvalue.c_str());
+                if(!noattrib)
+                {
+                    callback_->OnAttribute(attrns.c_str(), attrname.c_str(), attrvalue.c_str());
+                }
                 if (in_xml_tag && attrname == "encoding")
                 {
                     SetCharset(attrvalue.c_str());
@@ -3441,6 +3474,16 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                 break;
             case ps_text:
             {
+                if (in_footnote)
+                {
+                    CRLog::error("adding pagebreak");
+                    callback_->OnTagOpen(L"", L"pagebreak");
+                    callback_->OnText(L"\u200B", 1, flags);
+                    callback_->OnTagClose(L"", L"pagebreak");
+
+                    in_footnote = false;
+                }
+
                 //bold italic underline list tag insertion
                 if (in_t)
                 {
