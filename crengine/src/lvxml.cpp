@@ -2992,16 +2992,6 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                 tagname.lowercase();
                 //CRLog::error("%s:%s",LCSTR(tagns),LCSTR(tagname));
 
-                if (tagname == "style") //|| tagname=="table" || tagname=="tr" || tagname=="td") // skipping all <style> tags and <table> <tr> <td> tags
-                {
-                    if (SkipTillChar('>'))
-                    {
-                        m_state = ps_text;
-                        ch = ReadCharFromBuffer();
-                    }
-                    break;
-                    //}}
-                }
                 tagns = "";
 
                 //removing OpenXML tags from tree
@@ -3079,6 +3069,35 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     || tagname == "prooferr"
                     || tagname == "separator"
                     || tagname == "continuationseparator"
+                    || tagname == "autospacede"
+                    || tagname == "autospacedn"
+                    || tagname == "adjustrightind"
+                    || tagname == "formulas"
+                    || tagname == "f"
+                    || tagname == "stroke"
+                    || tagname == "shapetype"
+                    || tagname == "object"
+                    || tagname == "path"
+                    || tagname == "lock"
+                    || tagname == "shape"
+                    || tagname == "oleobject"
+                    || tagname == "bookmarkend"
+                    || tagname == "bookmarkstart"
+                    || tagname == "contextualspacing"
+                    || tagname == "color"
+                    || tagname == "imagedata"
+                    || tagname == "tabs"
+                    || tagname == "keepnext"
+                    || tagname == "keeplines"
+                    || tagname == "widowcontrol"
+                    || tagname == "snaptogrid"
+                    || tagname == "nofill"
+                    || tagname == "inline"
+                    || tagname == "ln"
+                    || tagname == "srcrect"
+                    || tagname == "lastrenderedpagebreak"
+                    || tagname == "vmerge"
+                    || tagname == "style"
                         )
                 {
                     if (SkipTillChar('>'))
