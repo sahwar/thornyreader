@@ -3070,7 +3070,9 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     || tagname == "tbllayout"
                     || tagname == "tbllook"
                     || tagname == "jc"
-                    || tagname == "ind")
+                    || tagname == "ind"
+                    || tagname == "numpr"
+                        )
                 {
                     if (SkipTillChar('>'))
                     {
@@ -3228,8 +3230,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     m_state = ps_attr;
                     if(ilvl)
                     {
-                        tagname = "li";
-
+                        callback_->OnTagOpen(L"", lString16("li").c_str());
                         ilvl = false;
                     }
                     in_t = true;
@@ -3401,6 +3402,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     {
                         in_header = true;
                         pstyle_value = atoi(LCSTR(attrvalue));
+                        // can be val="Normal"
                     }
                     in_pstyle = false;
                 }
@@ -3410,7 +3412,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     callback_->OnAttribute(attrns.c_str(), lString16("type").c_str(), lString16("note").c_str());
                     attrname= "href";
                     lString16 mark = "[" + attrvalue + "]";
-                    callback_->OnText(mark.c_str(),1,0);
+                    callback_->OnText(mark.c_str(), mark.length(),0);
                     attrvalue = lString16("#") + attrvalue;
                     in_footnoteref = false;
                 }
@@ -3464,6 +3466,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                                 callback_->OnTagOpen(L"", lString16("h6").c_str());
                                 break;
                             default:
+                                //val="Normal"
                                 in_header = false;
                                 break;
                         }
