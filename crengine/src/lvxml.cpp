@@ -2910,7 +2910,8 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
     bool in_header= false;
     bool in_table= false;
     bool in_footnoteref= false;
-    bool in_footnote= false;
+    bool in_footnote = false;
+    bool allow_footnote_pbr= false;
 
     bool rpr_b=false;
     bool rpr_i=false;
@@ -3152,17 +3153,19 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
 
                 if (tagname == "footnote" && !close_flag)
                 {
-                    CRLog::error("in footnote! open flag");
                     in_footnote = true;
                     m_state = ps_attr;
-                    break;
+                    //break;
+                }
+                if (tagname == "footnote" && close_flag && in_footnote)
+                {
+                    allow_footnote_pbr = true;
                 }
 
                 //bold italic underlined text handling
                 if (in_rpr)
                 {
                     bool remove = false;
-                   // CRLog::error("In R tagname == %s",LCSTR(tagname));
                     if (tagname == "b")
                     {
                         rpr_b = true;
@@ -3463,6 +3466,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                     if(attrname == "type" && (attrvalue == "separator" || attrvalue =="continuationSeparator"))
                     {
                         in_footnote = false;
+                        allow_footnote_pbr = false;
                     }
                 }
                 //embedded image handling
@@ -3493,14 +3497,14 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                 break;
             case ps_text:
             {
-                if (in_footnote)
+                if (allow_footnote_pbr)
                 {
-                    CRLog::error("adding pagebreak");
                     callback_->OnTagOpen(L"", L"pagebreak");
                     callback_->OnText(L"\u200B", 1, flags);
                     callback_->OnTagClose(L"", L"pagebreak");
 
                     in_footnote = false;
+                    allow_footnote_pbr = false;
                 }
 
                 //bold italic underline list tag insertion
