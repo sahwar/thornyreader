@@ -2912,11 +2912,16 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
     bool in_footnoteref= false;
     bool in_footnote = false;
     bool in_hyperlink = false;
+    bool in_tocref = false;
+    bool in_toc = false;
+    bool in_sdtcontent = false;
+    bool in_sdt_a = false;
     bool allow_footnote_pbr= false;
 
     bool rpr_b=false;
     bool rpr_i=false;
     bool rpr_u=false;
+    bool rpr_webhidden=false;
     bool ilvl=false;
     bool noattrib = false;
 
@@ -3084,7 +3089,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     || tagname == "shape"
                     || tagname == "oleobject"
                     || tagname == "bookmarkend"
-                    || tagname == "bookmarkstart"
+                    //|| tagname == "bookmarkstart"
                     || tagname == "contextualspacing"
                     || tagname == "color"
                     || tagname == "imagedata"
@@ -3100,6 +3105,17 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     || tagname == "lastrenderedpagebreak"
                     || tagname == "vmerge"
                     || tagname == "style"
+                    || tagname == "webhidden"
+                    || tagname == "sdtpr"
+                    || tagname == "docpartobj"
+                    || tagname == "docpartgallery"
+                    || tagname == "docpartunique"
+                    || tagname == "sdtendpr"
+                    || tagname == "fldchar"
+                    || tagname == "sdtendpr"
+                    || tagname == "sdt"
+                    || tagname == "id"
+                    //|| tagname == ""
                         )
                 {
                     if (SkipTillChar('>'))
@@ -3337,6 +3353,37 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     in_hyperlink = true;
                 }
 
+                //toc handling
+                if(tagname== "sdtcontent" && !close_flag)
+                {
+                    in_sdtcontent = true;
+                }
+
+                if(tagname== "sdtcontent" && close_flag)
+                {
+                    in_sdtcontent = false;
+                }
+
+                if(in_sdtcontent)
+                {
+                    if(tagname == "a")
+                    {
+                        in_sdt_a = true;
+                    }
+                }
+                if(tagname== "instrtext")
+                {
+                    if (SkipTillChar('<'))
+                    {
+                        m_state = ps_text;
+                        //ch = ReadCharFromBuffer();
+                    }
+                    break;
+                }
+                if(tagname== "bookmarkstart")
+                {
+                    in_tocref = true;
+                }
                 if (close_flag)
                 {
                     callback_->OnTagClose(tagns.c_str(), tagname.c_str());
@@ -3492,6 +3539,28 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                         attrname = "href";
                     }
                     in_hyperlink = false;
+                }
+                //toc handling
+                if(in_tocref)
+                {
+                    if(attrname == "id")
+                    {
+                        m_state = ps_attr;
+                        break;
+                    }
+                    else if (attrname == "name")
+                    {
+                        attrname = "id";
+                    }
+                }
+                if(in_sdt_a)
+                {
+                    if(attrname == "anchor")
+                    {
+                        attrname = "href";
+                        attrvalue = lString16("#") + attrvalue;
+                    }
+                    in_sdt_a = false;
                 }
 
                 if ((flags & TXTFLG_CONVERT_8BIT_ENTITY_ENCODING) && m_conv_table) {
