@@ -107,7 +107,7 @@ public:
     /// parses input stream
     virtual bool Parse() = 0;
     /// parses input stream
-    virtual bool ParseDocx(DocxItems docxItems) = 0;
+    virtual bool ParseDocx(DocxItems docxItems,DocxLinks docxLinks) = 0;
     /// resets parsing, moves to beginning of stream
     virtual void Reset() = 0;
     /// stops parsing in the middle of file, to read header only
@@ -299,7 +299,7 @@ public:
     /// parses input stream
     virtual bool Parse();
 
-    virtual bool ParseDocx(DocxItems docxItems) { return false; };
+    virtual bool ParseDocx(DocxItems docxItems,DocxLinks docxLinks) { return false; };
 
     virtual void FullDom();
 };
@@ -326,7 +326,7 @@ public:
     //parse
     virtual bool Parse();
 
-    virtual bool ParseDocx(DocxItems docxItems);
+    virtual bool ParseDocx(DocxItems docxItems, DocxLinks docxLinks);
     /// sets charset by name
     virtual void SetCharset(const lChar16* name);
     /// resets parsing, moves to beginning of stream
@@ -351,7 +351,7 @@ public:
     /// Returns true if format is recognized by parser
     virtual bool CheckFormat();
     virtual bool Parse();
-    virtual bool ParseDocx(DocxItems docxItems);
+    virtual bool ParseDocx(DocxItems docxItems, DocxLinks docxLinks);
     //virtual bool ParseDocx(DocxItems docxItems);
     LvHtmlParser(LVStreamRef stream, LvXMLParserCallback * callback);
     LvHtmlParser(LVStreamRef stream, LvXMLParserCallback * callback, bool need_coverpage);

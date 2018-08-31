@@ -2880,7 +2880,7 @@ bool LvXmlParser::Parse()
     return !error;
 }
 
-bool LvXmlParser::ParseDocx(DocxItems docxItems)
+bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
 {
     Reset();
     callback_->OnStart(this);
@@ -2911,6 +2911,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
     bool in_table= false;
     bool in_footnoteref= false;
     bool in_footnote = false;
+    bool in_hyperlink = false;
     bool allow_footnote_pbr= false;
 
     bool rpr_b=false;
@@ -3333,6 +3334,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                 if (tagname == "hyperlink")
                 {
                     tagname = "a";
+                    in_hyperlink = true;
                 }
 
                 if (close_flag)
@@ -3479,6 +3481,17 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems)
                         attrvalue = docxItems.findHrefById(rID);
                     }
                     in_blip_img =false;
+                }
+
+                //hyperlinks handling
+                if(in_hyperlink)
+                {
+                    if (attrname == "id")
+                    {
+                        attrvalue = docxLinks.findTargetById(attrvalue);
+                        attrname = "href";
+                    }
+                    in_hyperlink = false;
                 }
 
                 if ((flags & TXTFLG_CONVERT_8BIT_ENTITY_ENCODING) && m_conv_table) {
@@ -4324,9 +4337,9 @@ bool LvHtmlParser::Parse()
     return LvXmlParser::Parse();
 }
 
-bool LvHtmlParser::ParseDocx(DocxItems docxItems)
+bool LvHtmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
 {
-    return LvXmlParser::ParseDocx(docxItems);
+    return LvXmlParser::ParseDocx(docxItems, docxLinks);
 }
 
 /// read file contents to string

@@ -63,6 +63,45 @@ lString16 DocxGetFootnotesFilePath(LVContainerRef m_arc)
     return lString16::empty_str;
 }
 
+DocxLinks DocxGetRelsLinks(LVContainerRef m_arc)
+{
+    DocxLinks linkslist;
+    LVStreamRef container_stream = m_arc->OpenStream(L"word/_rels/document.xml.rels", LVOM_READ);
+    if (!container_stream.isNull())
+    {
+        CrDom *doc = LVParseXMLStream(container_stream);
+        if (doc)
+        {
+
+            for (int i = 1; i < 300; i++)
+            {
+                ldomNode *item = doc->nodeFromXPath(lString16("Relationships/Relationship[") << fmt::decimal(i) << "]");
+                if (!item)
+                {
+                    break;
+                }
+                lString16 id = item->getAttributeValue("Id");
+                lString16 type = item->getAttributeValue("Type");
+                lString16 target = item->getAttributeValue("Target");
+                lString16 targetmode = item->getAttributeValue("TargetMode");
+
+                if (type.endsWith("hyperlink") && targetmode == "External")
+                {
+                    DocxLink *link = new DocxLink;
+                    link->id_=id;
+                    link->type_=type;
+                    link->target_=target;
+                    link->targetmode_=targetmode;
+                    linkslist.add(link);
+                }
+            }
+            delete doc;
+        }
+    }
+    return linkslist;
+}
+
+
 //left that method for toc or other usage implementetion
 DocxItems DocxParseContentTypes(LVContainerRef m_arc)
 {
@@ -197,12 +236,13 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
     writer.OnStart(NULL);
     writer.OnTagOpenNoAttr(L"", L"body");
 
+    DocxLinks docxLinks = DocxGetRelsLinks(m_arc);
 
     LVStreamRef stream2 = m_arc->OpenStream(rootfilePath.c_str(), LVOM_READ);
     if (!stream2.isNull())
     {
         LvHtmlParser parser(stream2, &appender, firstpage_thumb);
-        if (parser.ParseDocx(docxItems))
+        if (parser.ParseDocx(docxItems,docxLinks))
         {
             // valid
         }
@@ -218,7 +258,7 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
         if (!stream3.isNull())
         {
             LvHtmlParser parser(stream3, &appender, firstpage_thumb);
-            if (parser.ParseDocx(docxItems))
+            if (parser.ParseDocx(docxItems,docxLinks))
             {
                 // valid
             }
