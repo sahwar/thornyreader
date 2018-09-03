@@ -570,8 +570,9 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 if (DUMP_DOMTREE == 1)
 {
     CRLog::error("dumping domtree");
-    //LVStreamRef out = LVOpenFileStream("/sdcard/download/temp.xml", LVOM_WRITE);
-    LVStreamRef out = LVOpenFileStream("/data/data/org.readera.trdevel/files/temp.xml", LVOM_WRITE);
+    LVStreamRef out = LVOpenFileStream("/sdcard/download/temp.xml", LVOM_WRITE);
+    //LVStreamRef out = LVOpenFileStream("/mnt/shell/emulated/10/Android/data/org.readera.trdevel/files/temp.xml", LVOM_WRITE);
+    //LVStreamRef out = LVOpenFileStream("/data/data/org.readera.trdevel/files/temp.xml", LVOM_WRITE);
     if(cr_dom_->saveToStream(out, NULL, true))
     {
     	CRLog::error("dumped successfully");
