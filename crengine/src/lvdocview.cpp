@@ -550,10 +550,14 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 #ifdef TRDEBUG
 if (DUMP_DOMTREE == 1)
 {
-    CRLog::error("dumping domtree");
-    LVStreamRef out = LVOpenFileStream("/sdcard/temp.xml", LVOM_WRITE);
-    //LVStreamRef out = LVOpenFileStream("/data/data/org.readera.trdevel/files/temp.xml", LVOM_WRITE);
-    cr_dom_->saveToStream(out, NULL, true);
+	CRLog::error("dumping domtree");
+	LVStreamRef out = LVOpenFileStream("/sdcard/download/temp.xml", LVOM_WRITE);
+	//LVStreamRef out = LVOpenFileStream("/mnt/shell/emulated/10/Android/data/org.readera.trdevel/files/temp.xml", LVOM_WRITE);
+	//LVStreamRef out = LVOpenFileStream("/data/data/org.readera.trdevel/files/temp.xml", LVOM_WRITE);
+	if(cr_dom_->saveToStream(out, NULL, true))
+	{
+		CRLog::error("dumped successfully");
+	}
 }
 #if 0
     lString16 stylesheet = cr_dom_->createXPointer(L"/FictionBook/stylesheet").getText();
@@ -1828,16 +1832,19 @@ void LVDocView::GetImageScaleParams(ldomNode* node, int &imgheight, int &imgwidt
     int maxheight = this->GetHeight() - (margins.bottom + margins.top);
     int	maxwidth  = width - (margins.left + margins.right);
     LVImageSource *image = node->getObjectImageSource().get();
-    imgheight = image->GetHeight();
-    imgwidth = image->GetWidth();
-    int pscale_x = 1000 * maxwidth / imgwidth;
-    int pscale_y = 1000 * maxheight / imgheight;
-    int pscale = pscale_x < pscale_y ? pscale_x : pscale_y;
-    int maxscale = 3 * 1000;
-    if (pscale > maxscale)
-        pscale = maxscale;
-    imgheight = imgheight * pscale / 1000;
-    imgwidth  = imgwidth  * pscale / 1000;
+    if(image)
+    {
+	    imgheight = image->GetHeight();
+	    imgwidth = image->GetWidth();
+	    int pscale_x = 1000 * maxwidth / imgwidth;
+	    int pscale_y = 1000 * maxheight / imgheight;
+	    int pscale = pscale_x < pscale_y ? pscale_x : pscale_y;
+	    int maxscale = 3 * 1000;
+	    if (pscale > maxscale)
+		    pscale = maxscale;
+	    imgheight = imgheight * pscale / 1000;
+	    imgwidth = imgwidth * pscale / 1000;
+    }
 }
 
 void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
