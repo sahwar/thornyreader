@@ -85,6 +85,11 @@ cite p image{
 a, b, strong, q, u, del, s, strike, small, big, sub, sup, acronym, span, font {
   display: inline;
 }
+
+.hidden {
+display: none;
+}
+
 b, strong {
   font-weight: bold;
 }

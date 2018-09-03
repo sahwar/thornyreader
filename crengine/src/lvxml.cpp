@@ -2904,6 +2904,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
 
     bool in_blip_img = false;
     bool in_rpr = false;
+    bool in_r = false;
     bool in_ppr = false;
     bool in_pstyle = false;
     bool in_t = false;
@@ -2924,6 +2925,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
     bool rpr_webhidden=false;
     bool ilvl=false;
     bool noattrib = false;
+    bool nodraw = false;
 
     int pstyle_value= 0;
 
@@ -3005,7 +3007,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                 if (tagname == "proofErr"
                     //||  tagname == "rpr"
                     //|| tagname == "pstyle" // h1 h2 h3
-                    || tagname == "r"
+                    //|| tagname == "r"
                     //|| tagname == "ppr"
                     || tagname == "bcs"
                     || tagname == "ics"
@@ -3105,7 +3107,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     || tagname == "lastrenderedpagebreak"
                     || tagname == "vmerge"
                     || tagname == "style"
-                    || tagname == "webhidden"
+                    //|| tagname == "webhidden"
                     || tagname == "sdtpr"
                     || tagname == "docpartobj"
                     || tagname == "docpartgallery"
@@ -3123,6 +3125,38 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                         m_state = ps_text;
                         ch = ReadCharFromBuffer();
                     }
+                    break;
+                }
+
+                if(tagname == "r")
+                {
+                    if(!close_flag)
+                    {
+                        in_r = true;
+                    }
+                    if(close_flag)
+                    {
+                        if(nodraw)
+                        {
+                            callback_->OnTagClose(L"", lString16("span").c_str());
+                        }
+                        in_r = false;
+                        nodraw = false;
+                    }
+                    if (SkipTillChar('>'))
+                    {
+                        m_state = ps_text;
+                        ch = ReadCharFromBuffer();
+                    }
+                    break;
+                }
+
+                if (in_r && tagname == "webhidden")
+                {
+                    nodraw = true;
+                    callback_->OnTagClose(L"", lString16("a").c_str());
+                    callback_->OnTagOpen(L"", lString16("span").c_str());
+                    callback_->OnAttribute(L"", lString16("class").c_str(),L"hidden");
                     break;
                 }
 
@@ -3238,6 +3272,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     {
                         in_pstyle = true;
                         m_state = ps_attr;
+                        break;
                     }
                 }
 
