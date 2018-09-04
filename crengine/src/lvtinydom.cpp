@@ -2310,7 +2310,7 @@ bool hasInvisibleParent( ldomNode * node )
 
 void ldomNode::initNodeRendMethod()
 {
-    if ( !isElement() )
+    if (!isElement())
         return;
     if ( isRoot() ) {
         setRendMethod(erm_block);
@@ -2328,10 +2328,14 @@ void ldomNode::initNodeRendMethod()
 */
     int d = getStyle()->display;
 
-    if ( hasInvisibleParent(this) ) {
-        // invisible
-        //recurseElements( resetRendMethodToInvisible );
+    if (d == css_d_none)
+    {
         setRendMethod(erm_invisible);
+        recurseElements( resetRendMethodToInvisible );
+    //} else if (hasInvisibleParent(this)) {
+    //    // invisible
+    //    //recurseElements( resetRendMethodToInvisible );
+    //    setRendMethod(erm_invisible);
     } else if ( d==css_d_inline ) {
         // inline
         //CRLog::trace("switch all children elements of <%s> to inline", LCSTR(getNodeName()));
