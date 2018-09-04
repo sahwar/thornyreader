@@ -2915,7 +2915,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
     bool in_hyperlink = false;
     bool in_tocref = false;
     bool in_toc = false;
-    bool in_sdtcontent = false;
+    //bool in_sdtcontent = false;
     bool in_sdt_a = false;
     bool allow_footnote_pbr= false;
 
@@ -3117,6 +3117,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     || tagname == "sdtendpr"
                     || tagname == "sdt"
                     || tagname == "id"
+                    || tagname == "caps"
                     //|| tagname == ""
                         )
                 {
@@ -3389,7 +3390,8 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                 }
 
                 //toc handling
-                if(tagname== "sdtcontent" && !close_flag)
+                //not sure if need sdtcontent tags
+/*                if(tagname== "sdtcontent" && !close_flag)
                 {
                     in_sdtcontent = true;
                 }
@@ -3398,14 +3400,14 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                 {
                     in_sdtcontent = false;
                 }
-
-                if(in_sdtcontent)
+*/
+                //if(in_sdtcontent)
+                //{
+                if(tagname == "a")
                 {
-                    if(tagname == "a")
-                    {
-                        in_sdt_a = true;
-                    }
+                    in_sdt_a = true;
                 }
+                //}
                 if(tagname== "instrtext")
                 {
                     if (SkipTillChar('<'))
