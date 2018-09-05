@@ -3094,6 +3094,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
     bool in_sdt_a = false;
     bool in_td = false;
     bool allow_footnote_pbr= false;
+    bool just_r= false;
 
     bool rpr_b=false;
     bool rpr_i=false;
@@ -3105,7 +3106,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
 
     int pstyle_value= 0;
 
-    initDocxTagsFilter();
+    //initDocxTagsFilter();
 
     for (; !eof_ && !error && !firstpage_thumb_num_reached ;)
     {
@@ -3196,9 +3197,11 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     if(!close_flag)
                     {
                         in_r = true;
+                        just_r = false;
                     }
                     if(close_flag)
                     {
+                        just_r = true;
                         if(nodraw)
                         {
                             callback_->OnTagClose(L"", lString16("span").c_str());
@@ -3212,6 +3215,23 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                         ch = ReadCharFromBuffer();
                     }
                     break;
+                }
+
+                if(just_r)
+                {
+                    if(tagname == "bookmarkstart")
+                    {
+                        if (SkipTillChar('>'))
+                        {
+                            m_state = ps_text;
+                            ch = ReadCharFromBuffer();
+                        }
+                        break;
+                    }
+                    else
+                    {
+                        just_r = false;
+                    }
                 }
 
                 if (in_r && tagname == "webhidden")
@@ -3674,22 +3694,37 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     if (rpr_b)
                     {
                         callback_->OnTagOpen(L"", lString16("b").c_str());
-                        rpr_b = false;
                     }
                     else if (rpr_i)
                     {
                         callback_->OnTagOpen(L"", lString16("i").c_str());
-                        rpr_i = false;
                     }
                     else if (rpr_u)
                     {
                         callback_->OnTagOpen(L"", lString16("u").c_str());
+                    }
+                }
+                ReadText();
+                fragments_counter++;
+                if (in_t)
+                {
+                    if (rpr_b)
+                    {
+                        callback_->OnTagClose(L"", lString16("b").c_str());
+                        rpr_b = false;
+                    }
+                    else if (rpr_i)
+                    {
+                        callback_->OnTagClose(L"", lString16("i").c_str());
+                        rpr_i = false;
+                    }
+                    else if (rpr_u)
+                    {
+                        callback_->OnTagClose(L"", lString16("u").c_str());
                         rpr_u = false;
                     }
                     in_t = false;
                 }
-                ReadText();
-                fragments_counter++;
 
                 if(need_coverpage_)
                 {
