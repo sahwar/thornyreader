@@ -2881,176 +2881,170 @@ bool LvXmlParser::Parse()
 }
 
 void LvXmlParser::initDocxTagsFilter(){
-    if(!tags_init_)
-    {
-        lString16Collection tags;
-        tags.add(lString16("proofErr"));
-        tags.add(lString16("bcs"));
-        tags.add(lString16("ics"));
-        tags.add(lString16("lang"));
-        tags.add(lString16("highlight"));
-        tags.add(lString16("anchor"));
-        tags.add(lString16("simplepos"));
-        tags.add(lString16("positionh"));
-        tags.add(lString16("positionv"));
-        tags.add(lString16("extent"));
-        tags.add(lString16("effectextent"));
-        tags.add(lString16("wraptopandbottom"));
-        tags.add(lString16("docpr"));
-        tags.add(lString16("graphicframelocks"));
-        tags.add(lString16("cnv"));
-        tags.add(lString16("cnvpr"));
-        tags.add(lString16("cnvpicpr"));
-        tags.add(lString16("piclocks"));
-        tags.add(lString16("cnvgraphicframepr"));
-        tags.add(lString16("graphic"));
-        tags.add(lString16("graphicdata"));
-        tags.add(lString16("pic"));
-        tags.add(lString16("nvpicpr"));
-        tags.add(lString16("blipfill"));
-        tags.add(lString16("stretch"));
-        tags.add(lString16("fillrect"));
-        tags.add(lString16("sppr"));
-        tags.add(lString16("xfrm"));
-        tags.add(lString16("off"));
-        tags.add(lString16("ext"));
-        tags.add(lString16("prstgeom"));
-        tags.add(lString16("avlst"));
-        tags.add(lString16("drawing"));
-        tags.add(lString16("wrapsquare"));
-        tags.add(lString16("spacing"));
-        tags.add(lString16("rfonts"));
-        tags.add(lString16("sz"));
-        tags.add(lString16("szcs"));
-        tags.add(lString16("vertalign"));
-        tags.add(lString16("rstyle"));
-        tags.add(lString16("noproof"));
-        tags.add(lString16("extlst"));
-        tags.add(lString16("uselocaldpi"));
-        tags.add(lString16("tab"));
-        tags.add(lString16("tcpr"));
-        tags.add(lString16("trpr"));
-        tags.add(lString16("tblpr"));
-        tags.add(lString16("tcw"));
-        tags.add(lString16("tcborders"));
-        tags.add(lString16("shd"));
-        tags.add(lString16("top"));
-        tags.add(lString16("left"));
-        tags.add(lString16("right"));
-        tags.add(lString16("bottom"));
-        tags.add(lString16("insideh"));
-        tags.add(lString16("insidev"));
-        tags.add(lString16("tblgrid"));
-        tags.add(lString16("gridcol"));
-        tags.add(lString16("tblw"));
-        tags.add(lString16("tblind"));
-        tags.add(lString16("tblborders"));
-        tags.add(lString16("tbllayout"));
-        tags.add(lString16("tbllook"));
-        tags.add(lString16("jc"));
-        tags.add(lString16("ind"));
-        tags.add(lString16("numpr"));
-        tags.add(lString16("tblcellmar"));
-        tags.add(lString16("prooferr"));
-        tags.add(lString16("separator"));
-        tags.add(lString16("continuationseparator"));
-        tags.add(lString16("autospacede"));
-        tags.add(lString16("autospacedn"));
-        tags.add(lString16("adjustrightind"));
-        tags.add(lString16("formulas"));
-        tags.add(lString16("f"));
-        tags.add(lString16("stroke"));
-        tags.add(lString16("shapetype"));
-        tags.add(lString16("object"));
-        tags.add(lString16("path"));
-        tags.add(lString16("lock"));
-        tags.add(lString16("shape"));
-        tags.add(lString16("oleobject"));
-        tags.add(lString16("bookmarkend"));
-        tags.add(lString16("contextualspacing"));
-        tags.add(lString16("color"));
-        tags.add(lString16("imagedata"));
-        tags.add(lString16("tabs"));
-        tags.add(lString16("keepnext"));
-        tags.add(lString16("keeplines"));
-        tags.add(lString16("widowcontrol"));
-        tags.add(lString16("snaptogrid"));
-        tags.add(lString16("nofill"));
-        tags.add(lString16("inline"));
-        tags.add(lString16("ln"));
-        tags.add(lString16("srcrect"));
-        tags.add(lString16("lastrenderedpagebreak"));
-        tags.add(lString16("vmerge"));
-        tags.add(lString16("style"));
-        tags.add(lString16("sdtpr"));
-        tags.add(lString16("docpartobj"));
-        tags.add(lString16("docpartgallery"));
-        tags.add(lString16("docpartunique"));
-        tags.add(lString16("sdtendpr"));
-        tags.add(lString16("fldchar"));
-        tags.add(lString16("sdtendpr"));
-        tags.add(lString16("sdt"));
-        tags.add(lString16("id"));
-        tags.add(lString16("caps"));
-        tags.add(lString16("strike"));
-        tags.add(lString16("pbdr"));
-        tags.add(lString16("bdr"));
-        tags.add(lString16("tblstyle"));
-        tags.add(lString16("tblppr"));
-        tags.add(lString16("tbloverlap"));
-        tags.add(lString16("cnfstyle"));
-        tags.add(lString16("nowrap"));
-        tags.add(lString16("wafter"));
-        tags.add(lString16("trheight"));
-        tags.add(lString16("gridspan"));
-        tags.add(lString16("tcmar"));
-        tags.add(lString16("valign"));
-        tags.add(lString16("framepr"));
-        tags.add(lString16("textalignment"));
-        tags.add(lString16("position"));
-        tags.add(lString16("sectpr"));
-        tags.add(lString16("pgsz"));
-        tags.add(lString16("pgmar"));
-        tags.add(lString16("cols"));
-        tags.add(lString16("docgrid"));
-        tags.add(lString16("outlinelvl"));
-        tags.add(lString16("suppressautohyphens"));
-        tags.add(lString16("sizerelh"));
-        tags.add(lString16("sizerelv"));
-        tags.add(lString16("pctheight"));
-        tags.add(lString16("pctwidth"));
-        tags.add(lString16("miter"));
-        tags.add(lString16("headend"));
-        tags.add(lString16("tailend"));
-        tags.add(lString16("formprot"));
-        tags.add(lString16("hidemark"));
-        tags.add(lString16("tblcellspacing"));
-
-        for (int i = 0; i < tags.length(); i++)
-        {
-            m_[tags.at(i).getHash()] = 1;
-        }
-        tags.clear();
-        tags_init_ = true;
-        CRLog::trace("DOCX tag filtering array initialized");
+    if(tags_init_){
+        return;
     }
+    lString16Collection tags;
+    tags.add(lString16("proofErr"));
+    tags.add(lString16("bcs"));
+    tags.add(lString16("ics"));
+    tags.add(lString16("lang"));
+    tags.add(lString16("highlight"));
+    tags.add(lString16("anchor"));
+    tags.add(lString16("simplepos"));
+    tags.add(lString16("positionh"));
+    tags.add(lString16("positionv"));
+    tags.add(lString16("extent"));
+    tags.add(lString16("effectextent"));
+    tags.add(lString16("wraptopandbottom"));
+    tags.add(lString16("docpr"));
+    tags.add(lString16("graphicframelocks"));
+    tags.add(lString16("cnv"));
+    tags.add(lString16("cnvpr"));
+    tags.add(lString16("cnvpicpr"));
+    tags.add(lString16("piclocks"));
+    tags.add(lString16("cnvgraphicframepr"));
+    tags.add(lString16("graphic"));
+    tags.add(lString16("graphicdata"));
+    tags.add(lString16("pic"));
+    tags.add(lString16("nvpicpr"));
+    tags.add(lString16("blipfill"));
+    tags.add(lString16("stretch"));
+    tags.add(lString16("fillrect"));
+    tags.add(lString16("sppr"));
+    tags.add(lString16("xfrm"));
+    tags.add(lString16("off"));
+    tags.add(lString16("ext"));
+    tags.add(lString16("prstgeom"));
+    tags.add(lString16("avlst"));
+    tags.add(lString16("drawing"));
+    tags.add(lString16("wrapsquare"));
+    tags.add(lString16("spacing"));
+    tags.add(lString16("rfonts"));
+    tags.add(lString16("sz"));
+    tags.add(lString16("szcs"));
+    tags.add(lString16("vertalign"));
+    tags.add(lString16("rstyle"));
+    tags.add(lString16("noproof"));
+    tags.add(lString16("extlst"));
+    tags.add(lString16("uselocaldpi"));
+    tags.add(lString16("tab"));
+    tags.add(lString16("tcpr"));
+    tags.add(lString16("trpr"));
+    tags.add(lString16("tblpr"));
+    tags.add(lString16("tcw"));
+    tags.add(lString16("tcborders"));
+    tags.add(lString16("shd"));
+    tags.add(lString16("top"));
+    tags.add(lString16("left"));
+    tags.add(lString16("right"));
+    tags.add(lString16("bottom"));
+    tags.add(lString16("insideh"));
+    tags.add(lString16("insidev"));
+    tags.add(lString16("tblgrid"));
+    tags.add(lString16("gridcol"));
+    tags.add(lString16("tblw"));
+    tags.add(lString16("tblind"));
+    tags.add(lString16("tblborders"));
+    tags.add(lString16("tbllayout"));
+    tags.add(lString16("tbllook"));
+    tags.add(lString16("jc"));
+    tags.add(lString16("ind"));
+    tags.add(lString16("numpr"));
+    tags.add(lString16("tblcellmar"));
+    tags.add(lString16("prooferr"));
+    tags.add(lString16("separator"));
+    tags.add(lString16("continuationseparator"));
+    tags.add(lString16("autospacede"));
+    tags.add(lString16("autospacedn"));
+    tags.add(lString16("adjustrightind"));
+    tags.add(lString16("formulas"));
+    tags.add(lString16("f"));
+    tags.add(lString16("stroke"));
+    tags.add(lString16("shapetype"));
+    tags.add(lString16("object"));
+    tags.add(lString16("path"));
+    tags.add(lString16("lock"));
+    tags.add(lString16("shape"));
+    tags.add(lString16("oleobject"));
+    tags.add(lString16("bookmarkend"));
+    tags.add(lString16("contextualspacing"));
+    tags.add(lString16("color"));
+    tags.add(lString16("imagedata"));
+    tags.add(lString16("tabs"));
+    tags.add(lString16("keepnext"));
+    tags.add(lString16("keeplines"));
+    tags.add(lString16("widowcontrol"));
+    tags.add(lString16("snaptogrid"));
+    tags.add(lString16("nofill"));
+    tags.add(lString16("inline"));
+    tags.add(lString16("ln"));
+    tags.add(lString16("srcrect"));
+    tags.add(lString16("lastrenderedpagebreak"));
+    tags.add(lString16("vmerge"));
+    tags.add(lString16("style"));
+    tags.add(lString16("sdtpr"));
+    tags.add(lString16("docpartobj"));
+    tags.add(lString16("docpartgallery"));
+    tags.add(lString16("docpartunique"));
+    tags.add(lString16("sdtendpr"));
+    tags.add(lString16("fldchar"));
+    tags.add(lString16("sdtendpr"));
+    tags.add(lString16("sdt"));
+    tags.add(lString16("id"));
+    tags.add(lString16("caps"));
+    tags.add(lString16("strike"));
+    tags.add(lString16("pbdr"));
+    tags.add(lString16("bdr"));
+    tags.add(lString16("tblstyle"));
+    tags.add(lString16("tblppr"));
+    tags.add(lString16("tbloverlap"));
+    tags.add(lString16("cnfstyle"));
+    tags.add(lString16("nowrap"));
+    tags.add(lString16("wafter"));
+    tags.add(lString16("trheight"));
+    tags.add(lString16("gridspan"));
+    tags.add(lString16("tcmar"));
+    tags.add(lString16("valign"));
+    tags.add(lString16("framepr"));
+    tags.add(lString16("textalignment"));
+    tags.add(lString16("position"));
+    tags.add(lString16("sectpr"));
+    tags.add(lString16("pgsz"));
+    tags.add(lString16("pgmar"));
+    tags.add(lString16("cols"));
+    tags.add(lString16("docgrid"));
+    tags.add(lString16("outlinelvl"));
+    tags.add(lString16("suppressautohyphens"));
+    tags.add(lString16("sizerelh"));
+    tags.add(lString16("sizerelv"));
+    tags.add(lString16("pctheight"));
+    tags.add(lString16("pctwidth"));
+    tags.add(lString16("miter"));
+    tags.add(lString16("headend"));
+    tags.add(lString16("tailend"));
+    tags.add(lString16("formprot"));
+    tags.add(lString16("hidemark"));
+    tags.add(lString16("tblcellspacing"));
+    for (int i = 0; i < tags.length(); i++)
+    {
+        m_[tags.at(i).getHash()] = 1;
+    }
+    tags.clear();
+    tags_init_ = true;
+    CRLog::trace("DOCX tag filtering array initialized");
     return;
 }
 
 bool LvXmlParser::docxTagAllowed(lString16 tagname){
-    if(tags_init_)
-    {
-        iter it;
-        it = m_.find(tagname.getHash());
-        if (it != m_.end())
-        {
-            return false;
-        }
+    if(!tags_init_){
+        initDocxTagsFilter();
     }
-    else if(!tags_init_warn_)
+    iter it;
+    it = m_.find(tagname.getHash());
+    if (it != m_.end())
     {
-        CRLog::error("DOCX tags filtering not initialized!");
-        tags_init_warn_ = true;
+        return false;
     }
     return true;
 }
@@ -3105,8 +3099,6 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
     bool nodraw = false;
 
     int pstyle_value= 0;
-
-    //initDocxTagsFilter();
 
     for (; !eof_ && !error && !firstpage_thumb_num_reached ;)
     {

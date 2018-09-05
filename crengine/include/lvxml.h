@@ -322,7 +322,6 @@ private:
     bool need_coverpage_;
     Tagmap m_;
     bool tags_init_ = false;
-    bool tags_init_warn_ = false;
 protected:
     bool possible_capitalized_tags_;
     bool m_allowHtml;
