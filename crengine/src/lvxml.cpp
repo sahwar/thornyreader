@@ -3296,22 +3296,16 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     if (tagname == "b")
                     {
                         rpr_b = true;
-                        rpr_i = false;
-                        rpr_u = false;
                         remove = true;
                     }
                     if (tagname == "u")
                     {
-                        rpr_b = false;
-                        rpr_i = false;
                         rpr_u = true;
                         remove = true;
                     }
                     if (tagname == "i")
                     {
-                        rpr_b = false;
                         rpr_i = true;
-                        rpr_u = false;
                         remove = true;
                     }
                     if (tagname == "vertalign")
@@ -3710,11 +3704,11 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     {
                         callback_->OnTagOpen(L"", lString16("b").c_str());
                     }
-                    else if (rpr_i)
+                    if (rpr_i)
                     {
                         callback_->OnTagOpen(L"", lString16("i").c_str());
                     }
-                    else if (rpr_u)
+                    if (rpr_u)
                     {
                         callback_->OnTagOpen(L"", lString16("u").c_str());
                     }
@@ -3731,20 +3725,20 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                 fragments_counter++;
                 if (in_t)
                 {
-                    if (rpr_b)
+                    if (rpr_u)
                     {
-                        callback_->OnTagClose(L"", lString16("b").c_str());
-                        rpr_b = false;
+                        callback_->OnTagClose(L"", lString16("u").c_str());
+                        rpr_u = false;
                     }
-                    else if (rpr_i)
+                    if (rpr_i)
                     {
                         callback_->OnTagClose(L"", lString16("i").c_str());
                         rpr_i = false;
                     }
-                    else if (rpr_u)
+                    if (rpr_b)
                     {
-                        callback_->OnTagClose(L"", lString16("u").c_str());
-                        rpr_u = false;
+                        callback_->OnTagClose(L"", lString16("b").c_str());
+                        rpr_b = false;
                     }
 
                     if (rpr_superscript)
