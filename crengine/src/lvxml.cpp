@@ -2923,7 +2923,7 @@ void LvXmlParser::initDocxTagsFilter(){
     tags.add(lString16("rfonts"));
     tags.add(lString16("sz"));
     tags.add(lString16("szcs"));
-    tags.add(lString16("vertalign"));
+    //tags.add(lString16("vertalign"));
     tags.add(lString16("rstyle"));
     tags.add(lString16("noproof"));
     tags.add(lString16("extlst"));
@@ -3094,6 +3094,9 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
     bool rpr_i=false;
     bool rpr_u=false;
     bool rpr_webhidden=false;
+    bool rpr_vertalign=false;
+    bool rpr_superscript = false;
+    bool rpr_subscript = false;
     bool ilvl=false;
     bool noattrib = false;
     bool nodraw = false;
@@ -3310,6 +3313,12 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                         rpr_i = true;
                         rpr_u = false;
                         remove = true;
+                    }
+                    if (tagname == "vertalign")
+                    {
+                        rpr_vertalign = true;
+                        m_state = ps_attr;
+                        break;
                     }
 
                     if(remove)
@@ -3624,12 +3633,26 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     }
                     in_sdt_a = false;
                 }
-
+                if(rpr_vertalign)
+                {
+                    if (attrname == "val" && attrvalue == "superscript")
+                    {
+                        rpr_superscript = true;
+                        rpr_subscript = false;
+                    }
+                    else if (attrname == "val" && attrvalue == "subscript")
+                    {
+                        rpr_subscript = true;
+                        rpr_superscript = false;
+                    }
+                    rpr_vertalign = false;
+                }
                 if ((flags & TXTFLG_CONVERT_8BIT_ENTITY_ENCODING) && m_conv_table) {
                     PreProcessXmlString(attrvalue, 0, m_conv_table);
                 }
                 if(!noattrib)
                 {
+                    //CRLog::error("OnAttrib [%s:%s = \"%s\"]",LCSTR(attrns), LCSTR(attrname), LCSTR(attrvalue));
                     callback_->OnAttribute(attrns.c_str(), attrname.c_str(), attrvalue.c_str());
                 }
                 if (in_xml_tag && attrname == "encoding")
@@ -3695,6 +3718,14 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     {
                         callback_->OnTagOpen(L"", lString16("u").c_str());
                     }
+                    if (rpr_superscript)
+                    {
+                        callback_->OnTagOpen(L"", lString16("sup").c_str());
+                    }
+                    else if (rpr_subscript)
+                    {
+                        callback_->OnTagOpen(L"", lString16("sub").c_str());
+                    }
                 }
                 ReadText();
                 fragments_counter++;
@@ -3714,6 +3745,17 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     {
                         callback_->OnTagClose(L"", lString16("u").c_str());
                         rpr_u = false;
+                    }
+
+                    if (rpr_superscript)
+                    {
+                        callback_->OnTagClose(L"", lString16("sup").c_str());
+                        rpr_superscript=false;
+                    }
+                    else if (rpr_subscript)
+                    {
+                        callback_->OnTagClose(L"", lString16("sub").c_str());
+                        rpr_subscript=false;
                     }
                     in_t = false;
                 }
