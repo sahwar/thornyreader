@@ -30,10 +30,6 @@ const char* CR_CSS_BASE = R"delimiter(
   height: 1em;
 }
 
-t , r {
-display: inline
-}
-
 hr {
   display: block;
   height: 2px;
