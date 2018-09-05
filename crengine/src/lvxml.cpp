@@ -3393,35 +3393,6 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     rpr_u = false;
                 }
 
-                if(tagname=="blockquote")
-                {
-                    if (!in_blockquote && !close_flag)
-                    {
-                        in_blockquote = true;
-                    }
-                    else if (in_blockquote && !close_flag)
-                    {
-                        if (SkipTillChar('>'))
-                        {
-                            m_state = ps_text;
-                            ReadCharFromBuffer();
-                        }
-                        break;
-                    }
-                    else if (in_blockquote && close_flag)
-                    {
-                        in_blockquote = false;
-                    }
-                    else if (!in_blockquote && close_flag)
-                    {
-                        if (SkipTillChar('>'))
-                        {
-                            m_state = ps_text;
-                            ReadCharFromBuffer();
-                        }
-                        break;
-                    }
-                }
                 if(tagname=="br")
                 {
                     callback_->OnTagOpen(L"",L"pagebreak");
@@ -3449,25 +3420,11 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     in_hyperlink = true;
                 }
 
-                //toc handling
-                //not sure if need sdtcontent tags
-/*                if(tagname== "sdtcontent" && !close_flag)
-                {
-                    in_sdtcontent = true;
-                }
-
-                if(tagname== "sdtcontent" && close_flag)
-                {
-                    in_sdtcontent = false;
-                }
-*/
-                //if(in_sdtcontent)
-                //{
                 if(tagname == "a")
                 {
                     in_sdt_a = true;
                 }
-                //}
+
                 if(tagname== "instrtext")
                 {
                     if (SkipTillChar('<'))
@@ -3573,13 +3530,9 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     attrns.lowercase();
                     attrname.lowercase();
                 }
+                attrns = "";
 
-                if (attrns == "w" || attrns == "r")
-                {
-                    attrns = "";
-                }
-
-                if (attrname== "rsidr" || attrname== "rsidrdefault" || attrname== "rsidp"|| attrname== "rsidrpr"|| attrname== "space" )
+                if (tagname == "document" || tagname == "body"|| tagname == "footnotes" || attrname== "rsidr" || attrname== "rsidrdefault" || attrname== "rsidp"|| attrname== "rsidrpr"|| attrname== "space" )
                 {
                     noattrib = true;
                 }
