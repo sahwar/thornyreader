@@ -16,6 +16,7 @@
 #define __LVXML_H_INCLUDED__
 
 #include <time.h>
+#include <map>
 #include "lvstring.h"
 #include "lvstream.h"
 #include "crtxtenc.h"
@@ -24,6 +25,9 @@
 
 #define XML_CHAR_BUFFER_SIZE 4096
 #define XML_FLAG_NO_SPACE_TEXT 1
+
+typedef std::map<lUInt32,int> Tagmap;
+typedef std::map<lUInt32,int>::iterator iter;
 
 //class LvXmlParser;
 class LVFileFormatParser;
@@ -316,6 +320,9 @@ private:
     bool ReadIdent( lString16 & ns, lString16 & str );
     bool ReadText();
     bool need_coverpage_;
+    Tagmap m_;
+    bool tags_init_ = false;
+    bool tags_init_warn_ = false;
 protected:
     bool possible_capitalized_tags_;
     bool m_allowHtml;
@@ -341,6 +348,9 @@ public:
     virtual ~LvXmlParser();
 
     void FullDom();
+
+    bool docxTagAllowed(lString16 tagname);
+    void initDocxTagsFilter();
 };
 
 extern const char * * HTML_AUTOCLOSE_TABLE[];
