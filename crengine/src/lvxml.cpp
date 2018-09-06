@@ -3203,6 +3203,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                         }
                         in_r = false;
                         nodraw = false;
+                        callback_->OnText(L" ",1,0);
                     }
                     if (SkipTillChar('>'))
                     {
