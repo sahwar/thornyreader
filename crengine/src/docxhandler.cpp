@@ -173,7 +173,6 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 
     if (content_stream.isNull())
     {
-        CRLog::error("4");
         return false;
     }
 
@@ -181,7 +180,6 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 
     if (content_stream2.isNull())
     {
-        CRLog::error("5");
         return false;
     }
 
@@ -198,10 +196,10 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 */
 
     DocxItems docxItems;
-
-    for (int i = 1; i < 50; i++)
+    int counter =0;
+    while (1)
     {
-        ldomNode *item = doc2->nodeFromXPath(lString16("Relationships/Relationship[") << fmt::decimal(i) << "]");
+        ldomNode *item = doc2->nodeFromXPath(lString16("Relationships/Relationship[") << fmt::decimal(counter) << "]");
         if (!item)
         {
             break;
@@ -218,6 +216,7 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
             docxItem->mediaType = mediaType;
             docxItems.add(docxItem);
         }
+        counter++;
     }
     CRPropRef m_doc_props = m_doc->getProps();
 
