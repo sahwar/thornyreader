@@ -231,7 +231,7 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
     };
 
     TrDocxWriter appender(&writer);
-    appender.setFlags(132);
+    writer.setFlags( TXTFLG_TRIM | TXTFLG_PRE_PARA_SPLITTING | TXTFLG_KEEP_SPACES);
     writer.OnStart(NULL);
     writer.OnTagOpenNoAttr(L"", L"body");
 

@@ -1963,7 +1963,8 @@ static bool IS_FIRST_BODY = false;
 ldomElementWriter::ldomElementWriter(CrDom* document,
         lUInt16 nsid,
         lUInt16 id,
-        ldomElementWriter* parent)
+        ldomElementWriter* parent,
+        lUInt32 flags)
         : _parent(parent),
           _document(document),
           _tocItem(NULL),
@@ -1974,7 +1975,7 @@ ldomElementWriter::ldomElementWriter(CrDom* document,
 {
     //logfile << "{c";
     _typeDef = _document->getElementTypePtr( id );
-    _flags = 0;
+    _flags = flags;
     if ( (_typeDef && _typeDef->white_space==css_ws_pre) || (_parent && _parent->getFlags()&TXTFLG_PRE) )
         _flags |= TXTFLG_PRE;
     _isSection = (id==el_section);
@@ -2466,13 +2467,11 @@ void ldomElementWriter::onText( const lChar16 * text, int len, lUInt32 )
     {
         // normal mode: store text copy
         // add text node, if not first empty space string of block node
-        if ( !_isBlock
-             || _element->getChildCount()!=0
-             || !IsEmptySpace( text, len ) || (_flags&TXTFLG_PRE) ) {
+        if ( !_isBlock || _element->getChildCount()!=0 || !IsEmptySpace( text, len ) || (_flags&TXTFLG_PRE) || (_flags&TXTFLG_KEEP_SPACES) ) {
             lString8 s8 = UnicodeToUtf8(text, len);
             _element->insertChildText(s8);
         } else {
-            //CRLog::trace("ldomElementWriter::onText: Ignoring first empty space of block item");
+            CRLog::trace("ldomElementWriter::onText: Ignoring first empty space of block item");
         }
     }
     //logfile << "}";
@@ -2584,7 +2583,7 @@ void LvDomWriter::OnStart(LVFileFormatParser * parser)
         //CRLog::trace( "LvDomWriter() : header only, tag id=%d", _stopTagId );
     }
     LvXMLParserCallback::OnStart( parser );
-    _currNode = new ldomElementWriter(doc_, 0, 0, NULL);
+    _currNode = new ldomElementWriter(doc_, 0, 0, NULL,_flags);
 }
 
 void LvDomWriter::OnStop()
@@ -2613,7 +2612,7 @@ ldomNode* LvDomWriter::OnTagOpen(const lChar16* nsname, const lChar16* tagname)
         //CRLog::trace("stop tag found, stopping...");
     //    _parser->Stop();
     //}
-    _currNode = new ldomElementWriter(doc_, nsid, id, _currNode);
+    _currNode = new ldomElementWriter(doc_, nsid, id, _currNode,_flags);
     _flags = _currNode->getFlags();
     //logfile << " !o!\n";
     //return _currNode->getElement();
@@ -6309,7 +6308,7 @@ ldomNode* LvDomAutocloseWriter::OnTagOpen(const lChar16* nsname, const lChar16* 
     lUInt16 id = doc_->getElementNameIndex(tagname);
     lUInt16 nsid = (nsname && nsname[0]) ? doc_->getNsNameIndex(nsname) : 0;
     AutoClose( id, true );
-    _currNode = new ldomElementWriter( doc_, nsid, id, _currNode );
+    _currNode = new ldomElementWriter( doc_, nsid, id, _currNode,_flags );
     _flags = _currNode->getFlags();
     if (_libRuDocumentDetected && (_flags & TXTFLG_PRE)) {
         // convert preformatted text into paragraphs

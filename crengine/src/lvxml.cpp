@@ -2923,7 +2923,6 @@ void LvXmlParser::initDocxTagsFilter(){
     tags.add(lString16("rfonts"));
     tags.add(lString16("sz"));
     tags.add(lString16("szcs"));
-    //tags.add(lString16("vertalign"));
     tags.add(lString16("rstyle"));
     tags.add(lString16("noproof"));
     tags.add(lString16("extlst"));
@@ -3026,6 +3025,17 @@ void LvXmlParser::initDocxTagsFilter(){
     tags.add(lString16("formprot"));
     tags.add(lString16("hidemark"));
     tags.add(lString16("tblcellspacing"));
+    tags.add(lString16("kern"));
+    tags.add(lString16("ssub"));
+    tags.add(lString16("ssubpr"));
+    tags.add(lString16("ctrlpr"));
+    tags.add(lString16("e"));
+    tags.add(lString16("sty"));
+    tags.add(lString16("fpr"));
+    tags.add(lString16("omath"));
+    tags.add(lString16("omathpara"));
+    tags.add(lString16("den"));
+    tags.add(lString16("num"));
     for (int i = 0; i < tags.length(); i++)
     {
         m_[tags.at(i).getHash()] = 1;
@@ -3203,7 +3213,6 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                         }
                         in_r = false;
                         nodraw = false;
-                        callback_->OnText(L" ",1,0);
                     }
                     if (SkipTillChar('>'))
                     {
