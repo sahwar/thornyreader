@@ -6,7 +6,7 @@
 #include "../include/lvstream.h"
 #include "../include/epubfmt.h"
 
-
+//extract main document path
 lString16 DocxGetMainFilePath(LVContainerRef m_arc)
 {
     LVStreamRef container_stream = m_arc->OpenStream(L"[Content_Types].xml", LVOM_READ);
@@ -34,7 +34,7 @@ lString16 DocxGetMainFilePath(LVContainerRef m_arc)
     }
     return lString16::empty_str;
 }
-
+//extract footnotes document path
 lString16 DocxGetFootnotesFilePath(LVContainerRef m_arc)
 {
     LVStreamRef container_stream = m_arc->OpenStream(L"[Content_Types].xml", LVOM_READ);
@@ -62,7 +62,7 @@ lString16 DocxGetFootnotesFilePath(LVContainerRef m_arc)
     }
     return lString16::empty_str;
 }
-
+//extract links from relationships
 DocxLinks DocxGetRelsLinks(LVContainerRef m_arc)
 {
     DocxLinks linkslist;
@@ -136,7 +136,7 @@ DocxItems DocxParseContentTypes(LVContainerRef m_arc)
     return docxItems_empty;
 }
 
-
+//main docx document importing routine
 bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 {
     LVContainerRef arc = LVOpenArchive(stream);
@@ -182,7 +182,7 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
     {
         return false;
     }
-
+    //parse relationships
     CrDom *doc2 = LVParseXMLStream(content_stream2);
     if (!doc2)
     {
@@ -194,7 +194,7 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
             doc2->saveToStream(out, NULL, true);
         }
 */
-
+    //images handling
     DocxItems docxItems;
     int counter =0;
     while (1)
@@ -236,7 +236,7 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
     writer.OnTagOpenNoAttr(L"", L"body");
 
     DocxLinks docxLinks = DocxGetRelsLinks(m_arc);
-
+    //parse main document
     LVStreamRef stream2 = m_arc->OpenStream(rootfilePath.c_str(), LVOM_READ);
     if (!stream2.isNull())
     {
@@ -250,6 +250,7 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
             CRLog::error("Unable to parse docx file at [%s]", LCSTR(rootfilePath));
         }
     }
+    //parse footnotes document if exists
     LVStreamRef stream3;
     if(!footnotesFilePath.empty())
     {

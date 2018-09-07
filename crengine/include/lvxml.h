@@ -332,7 +332,7 @@ public:
     virtual bool CheckFormat();
     //parse
     virtual bool Parse();
-
+    //highly modified xml parser for docx parsing
     virtual bool ParseDocx(DocxItems docxItems, DocxLinks docxLinks);
     /// sets charset by name
     virtual void SetCharset(const lChar16* name);
@@ -349,7 +349,9 @@ public:
 
     void FullDom();
 
+    //docx tag filterting
     bool docxTagAllowed(lString16 tagname);
+    //docx tags to filter initialization
     void initDocxTagsFilter();
 };
 

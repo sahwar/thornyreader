@@ -3098,35 +3098,51 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
     lString16 attrns;
     lString16 attrvalue;
 
+    //flag for image node
     bool in_blip_img = false;
+    //flag for run properties
     bool in_rpr = false;
+    //flag for run node
     bool in_r = false;
+    //flag for paragraph properties
     bool in_ppr = false;
+    //flag for paragrahh style
     bool in_pstyle = false;
+    //flag for text node
     bool in_t = false;
+    //flag for headers
     bool in_header= false;
+    //flags for tables
     bool in_table= false;
+    bool in_td = false;
+    //flag for footnotes
     bool in_footnoteref= false;
     bool in_footnote = false;
+    //flag for hyperlinks
     bool in_hyperlink = false;
+    //flags for table of contents
     bool in_tocref = false;
     bool in_toc = false;
-    //bool in_sdtcontent = false;
     bool in_sdt_a = false;
-    bool in_td = false;
+    //flags for pagebreaks
     bool allow_footnote_pbr= false;
     bool just_r= false;
 
+    //flags for bold italic underline
     bool rpr_b=false;
     bool rpr_i=false;
     bool rpr_u=false;
+    //flags for no element drawing
     bool rpr_webhidden=false;
+    bool nodraw = false;
+    //flags for superscript and subscript
     bool rpr_vertalign=false;
     bool rpr_superscript = false;
     bool rpr_subscript = false;
+    //flag for lists
     bool ilvl=false;
+    //flag for no attributes drawing
     bool noattrib = false;
-    bool nodraw = false;
 
     int pstyle_value= 0;
 
@@ -3213,7 +3229,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     }
                     break;
                 }
-
+                //<r> (runs) handling
                 if(tagname == "r")
                 {
                     if(!close_flag)
@@ -3238,7 +3254,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     }
                     break;
                 }
-
+                //removing bookmarkstart that appears right after run
                 if(just_r)
                 {
                     if(tagname == "bookmarkstart")
@@ -3255,7 +3271,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                         just_r = false;
                     }
                 }
-
+                //remove runs that contain webhidden tag
                 if (in_r && tagname == "webhidden")
                 {
                     nodraw = true;
@@ -3400,7 +3416,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     tagname = "img";
                     in_blip_img = true;
                 }
-
+                //different kind of filtering
                 if (tagname == "posoffset"|| tagname == "align" )
                 {
                     if (SkipTillChar('>'))
@@ -3411,7 +3427,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     break;
                 }
 
-                //li  //todo rewrite it for numbered lists
+                //unmarked lists handling
                 if (tagname == "ilvl")
                 {
                     ilvl = true;
@@ -3434,7 +3450,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     rpr_i = false;
                     rpr_u = false;
                 }
-
+                //pagebreaks handling
                 if(tagname=="pagebreak")
                 {
                     tagns = "";
@@ -3443,7 +3459,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                         callback_->OnText(L"\u200B", 1, flags);
                     }
                 }
-
+                //hyperlinks handling
                 if (tagname == "hyperlink")
                 {
                     tagname = "a";
@@ -3454,7 +3470,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                 {
                     in_sdt_a = true;
                 }
-
+                //another filtering
                 if(tagname== "instrtext")
                 {
                     if (SkipTillChar('<'))
@@ -3464,10 +3480,12 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     }
                     break;
                 }
+                //bookmarks handling
                 if(tagname== "bookmarkstart")
                 {
                     in_tocref = true;
                 }
+                //all other closing tags handling
                 if (close_flag)
                 {
                     callback_->OnTagClose(tagns.c_str(), tagname.c_str());
@@ -3561,7 +3579,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     attrname.lowercase();
                 }
                 attrns = "";
-
+                //attribute filtering
                 if (tagname == "document" || tagname == "body"|| tagname == "footnotes" || attrname== "rsidr" || attrname== "rsidrdefault" || attrname== "rsidp"|| attrname== "rsidrpr"|| attrname== "space" )
                 {
                     noattrib = true;
@@ -3570,7 +3588,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                 {
                     noattrib = false;
                 }
-
+                //header style handling
                 if(in_pstyle)
                 {
                     if(attrname == "val")
@@ -3642,6 +3660,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     }
                     in_sdt_a = false;
                 }
+                //superscript and subscript handling
                 if(rpr_vertalign)
                 {
                     if (attrname == "val" && attrvalue == "superscript")
@@ -3673,6 +3692,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                 break;
             case ps_text:
             {
+                //footnotes page-to-page separation handling
                 if (allow_footnote_pbr)
                 {
                     callback_->OnTagOpen(L"", L"pagebreak");
@@ -3738,6 +3758,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                 }
                 ReadText();
                 fragments_counter++;
+                //bold italic underline list tag insertion closing tags
                 if (in_t)
                 {
                     if (rpr_u)
