@@ -3037,7 +3037,6 @@ void LvXmlParser::initDocxTagsFilter(){
     tags.add(lString16("den"));
     tags.add(lString16("num"));
     tags.add(lString16("pict"));
-    tags.add(lString16("group"));
     tags.add(lString16("fill"));
     tags.add(lString16("rect"));
     tags.add(lString16("textbox"));
@@ -3135,6 +3134,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
     //flags for no element drawing
     bool rpr_webhidden=false;
     bool nodraw = false;
+    bool nodraw_group = false;
     //flags for superscript and subscript
     bool rpr_vertalign=false;
     bool rpr_superscript = false;
@@ -3485,6 +3485,11 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                 {
                     in_tocref = true;
                 }
+                if(tagname=="group")
+                {
+                    nodraw_group = true;
+                    tagname = "img";
+                }
                 //all other closing tags handling
                 if (close_flag)
                 {
@@ -3674,6 +3679,12 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                         rpr_superscript = false;
                     }
                     rpr_vertalign = false;
+                }
+                //<group> removing procedure
+                if(nodraw_group)
+                {
+                    callback_->OnAttribute(attrns.c_str(),lString16("src").c_str(), lString16("Intentional_error").c_str());
+                    nodraw_group = false;
                 }
                 if ((flags & TXTFLG_CONVERT_8BIT_ENTITY_ENCODING) && m_conv_table) {
                     PreProcessXmlString(attrvalue, 0, m_conv_table);
