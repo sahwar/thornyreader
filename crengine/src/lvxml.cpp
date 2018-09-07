@@ -3767,7 +3767,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                 if(need_coverpage_)
                 {
                     //CRLog::trace("LvXmlParser: text fragments read : %d", fragments_counter);
-                    if (fragments_counter >= FIRSTPAGE_BLOCKS_MAX)
+                    if (fragments_counter >= FIRSTPAGE_BLOCKS_MAX_DOCX)
                     {
                         firstpage_thumb_num_reached = true;
                     }
