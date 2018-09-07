@@ -2890,6 +2890,10 @@ float LVDocView::CalcRightSide(TextRect textrect)
     if (mainname == "epigraph") {
         result = right_line * 0.9;
     }
+    if (mainname == "td")
+    {
+        result = rect.right + hyphwidth;
+    }
     else if (align == css_ta_right)
     {
         result = right_line - page_margins.right + (hyphwidth / 2);
@@ -2939,10 +2943,6 @@ float LVDocView::CalcRightSide(TextRect textrect)
 	if (result > right_line) // plan C
 	{
 		result = right_line - (hyphwidth / 2);
-	}
-	if(node->getXPath().pos("td")!=-1)
-	{
-		result = rect.right+curwidth;
 	}
 	return result;
 }

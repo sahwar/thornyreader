@@ -5496,6 +5496,10 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
                 {
                     return true;
                 }
+                if(name == "autoBoxing" && index !=0)
+                {
+                    return false;
+                }
                 if(name == "body" || name == "section")
                 {
                     return false;
@@ -5586,7 +5590,8 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
                     break;
                 }
 
-                if (pos == len)// && node->getNodeIndex() == 0)
+                //if (pos == len )// && node->getNodeIndex() == 0)
+                if (pos == len && node->getNodeIndex() == 0)
                 {
                     css_style_rec_t *style = parent_node->getStyle().get();
                     if (style->display == css_d_block || parent_node->getNodeName() == "br")
@@ -8822,7 +8827,13 @@ lString16 ldomNode::getMainParentName()
     ldomNode* node = this;
     while(node != NULL && node->getParentNode()!=NULL)
     {
-        if(node->isNodeName("li") || node->isNodeName("poem") || node->isNodeName("stanza") || node->isNodeName("annotation")|| node->isNodeName("blockquote"))
+        if(node->isNodeName("li")
+           || node->isNodeName("poem")
+           || node->isNodeName("stanza")
+           || node->isNodeName("annotation")
+           || node->isNodeName("blockquote")
+           || node->isNodeName("td")
+           || node->isNodeName("epigraph"))
         {
             return node->getNodeName();
         }
