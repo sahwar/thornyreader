@@ -376,7 +376,7 @@ head, form, script {
   display: none;
 }
 
-pagebreak, br {
+pagebreak{
   page-break-after: always;
   height: 0;
 }

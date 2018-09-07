@@ -3036,6 +3036,23 @@ void LvXmlParser::initDocxTagsFilter(){
     tags.add(lString16("omathpara"));
     tags.add(lString16("den"));
     tags.add(lString16("num"));
+    tags.add(lString16("pict"));
+    tags.add(lString16("group"));
+    tags.add(lString16("fill"));
+    tags.add(lString16("rect"));
+    tags.add(lString16("textbox"));
+    tags.add(lString16("txbxcontent"));
+    tags.add(lString16("ssup"));
+    tags.add(lString16("ssuppr"));
+    tags.add(lString16("dpr"));
+    tags.add(lString16("m"));
+    tags.add(lString16("mpr"));
+    tags.add(lString16("mcs"));
+    tags.add(lString16("mc"));
+    tags.add(lString16("mcpr"));
+    tags.add(lString16("count"));
+    tags.add(lString16("mcjc"));
+    tags.add(lString16("mr"));
     for (int i = 0; i < tags.length(); i++)
     {
         m_[tags.at(i).getHash()] = 1;
@@ -3418,18 +3435,6 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     rpr_u = false;
                 }
 
-                if(tagname=="br")
-                {
-                    callback_->OnTagOpen(L"",L"pagebreak");
-                    callback_->OnText(L"\u200B", 1, flags);
-                    callback_->OnTagClose(L"",L"pagebreak");
-                    if (SkipTillChar('>'))
-                    {
-                        m_state = ps_text;
-                        ReadCharFromBuffer();
-                    }
-                    break;
-                }
                 if(tagname=="pagebreak")
                 {
                     tagns = "";
