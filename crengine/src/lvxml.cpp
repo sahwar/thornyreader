@@ -3033,7 +3033,7 @@ void LvXmlParser::initDocxTagsFilter(){
     tags.add(lString16("sty"));
     tags.add(lString16("fpr"));
     tags.add(lString16("omath"));
-    tags.add(lString16("omathpara"));
+    //tags.add(lString16("omathpara"));
     tags.add(lString16("den"));
     tags.add(lString16("num"));
     tags.add(lString16("pict"));
@@ -3485,7 +3485,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                 {
                     in_tocref = true;
                 }
-                if(tagname=="group")
+                if(tagname=="group" || tagname == "omathpara")
                 {
                     nodraw_group = true;
                     tagname = "img";
