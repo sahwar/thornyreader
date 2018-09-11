@@ -5538,18 +5538,6 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
             {
                 len = end;
             }
-            int TRFLAGS = 0;
-            TRFLAGS |= CH_PROP_ALPHA;
-            TRFLAGS |= CH_PROP_DIGIT;
-            TRFLAGS |= CH_PROP_PUNCT;
-            TRFLAGS |= CH_PROP_SPACE;
-            TRFLAGS |= CH_PROP_HYPHEN;
-            TRFLAGS |= CH_PROP_VOWEL;
-            TRFLAGS |= CH_PROP_CONSONANT;
-            TRFLAGS |= CH_PROP_SIGN;
-            TRFLAGS |= CH_PROP_ALPHA_SIGN;
-            TRFLAGS |= CH_PROP_DASH;
-            TRFLAGS |= CH_PROP_HIEROGLYPH;
 
             int leftshift = 0;
             int shift =0;
@@ -5640,7 +5628,21 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
     return forEach2(&collector);
 }
 
-/*ALPHACHECK
+/*ALPHACHECK*/
+/*
+int TRFLAGS = 0;
+TRFLAGS |= CH_PROP_ALPHA;
+TRFLAGS |= CH_PROP_DIGIT;
+TRFLAGS |= CH_PROP_PUNCT;
+TRFLAGS |= CH_PROP_SPACE;
+TRFLAGS |= CH_PROP_HYPHEN;
+TRFLAGS |= CH_PROP_VOWEL;
+TRFLAGS |= CH_PROP_CONSONANT;
+TRFLAGS |= CH_PROP_SIGN;
+TRFLAGS |= CH_PROP_ALPHA_SIGN;
+TRFLAGS |= CH_PROP_DASH;
+TRFLAGS |= CH_PROP_HIEROGLYPH;
+
 //int alpha = lGetCharProps(text[pos]) & TRFLAGS; //  words check here
 if (alpha)
 {
