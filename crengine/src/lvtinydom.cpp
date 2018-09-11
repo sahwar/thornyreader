@@ -3244,90 +3244,69 @@ lvPoint ldomXPointer::toPoint() const
 }
 
 /// returns caret rectangle for pointer inside formatted document
-bool ldomXPointer::getRect(lvRect & rect ,bool forlvpoint) const
+bool ldomXPointer::getRect(lvRect &rect, bool forlvpoint) const
 {
     //CRLog::trace("ldomXPointer::getRect()");
-    if (isNull()) {
+    if (isNull())
+    {
         return false;
     }
-    ldomNode * p = isElement() ? getNode() : getNode()->getParentNode();
-    ldomNode * p0 = p;
-    ldomNode * finalNode = NULL;
-    if ( !p ) {
+    ldomNode *p = isElement() ? getNode() : getNode()->getParentNode();
+    ldomNode *p0 = p;
+    ldomNode *finalNode = NULL;
+    if (!p)
+    {
         //CRLog::trace("ldomXPointer::getRect() - p==NULL");
     }
     //printf("getRect( p=%08X type=%d )\n", (unsigned)p, (int)p->getNodeType() );
-    if ( !p->getCrDom() ) {
+    if (!p->getCrDom())
+    {
         //CRLog::trace("ldomXPointer::getRect() - p->getCrDom()==NULL");
     }
-    ldomNode * mainNode = p->getCrDom()->getRootNode();
-    for ( ; p; p = p->getParentNode() ) {
+    ldomNode *mainNode = p->getCrDom()->getRootNode();
+    for (; p; p = p->getParentNode())
+    {
         int rm = p->getRendMethod();
-        if ( rm == erm_final || rm == erm_list_item ) {
+        if (rm == erm_final || rm == erm_list_item)
+        {
             finalNode = p; // found final block
-        } else if ( p->getRendMethod() == erm_invisible ) {
+        }
+        else if (p->getRendMethod() == erm_invisible)
+        {
             return false; // invisible !!!
         }
-        if ( p==mainNode )
+        if (p == mainNode)
+        {
             break;
+        }
     }
 
-    if (finalNode==NULL) {
+    if (finalNode == NULL)
+    {
         lvRect rc;
         p0->getAbsRect(rc);
         // Это очень сильно спамит в лог
         //CRLog::trace("node w/o final parent: %d..%d", rc.top, rc.bottom);
     }
 
-    if ( finalNode!=NULL ) {
+    if (finalNode != NULL)
+    {
         lvRect rc;
-        finalNode->getAbsRect( rc );
-        if (rc.height() == 0 && rc.width() > 0) {
+        finalNode->getAbsRect(rc);
+        if (rc.height() == 0 && rc.width() > 0)
+        {
             rect = rc;
             rect.bottom++;
             return true;
         }
-        RenderRectAccessor r( finalNode );
+        RenderRectAccessor r(finalNode);
         //if ( !r )
         //    return false;
         LFormattedTextRef txtform;
-        finalNode->renderFinalBlock( txtform, &r, r.getWidth() );
+        finalNode->renderFinalBlock(txtform, &r, r.getWidth());
 
-        ldomNode * node = getNode();
+        ldomNode *node = getNode();
         int offset = getOffset();
-////        ldomXPointerEx xp(node, offset);
-////        if ( !node->isText() ) {
-////            //ldomXPointerEx xp(node, offset);
-////            xp.nextVisibleText();
-////            node = xp.getNode();
-////            offset = xp.getOffset();
-////        }
-//        if ( node->isElement() ) {
-//            if ( offset>=0 ) {
-//                //
-//                if ( offset>= (int)node->getChildCount() ) {
-//                    node = node->getLastTextChild();
-//                    if ( node )
-//                        offset = node->getText().length();
-//                    else
-//                        return false;
-//                } else {
-//                    for ( int ci=offset; ci<(int)node->getChildCount(); ci++ ) {
-//                        ldomNode * child = node->getChildNode( offset );
-//                        ldomNode * txt = txt = child->getFirstTextChild( true );
-//                        if ( txt ) {
-//                            node = txt;
-////                            lString16 s = txt->getText();
-////                            CRLog::trace("text: [%d] '%s'", s.length(), LCSTR(s));
-//                            break;
-//                        }
-//                    }
-//                    if ( !node->isText() )
-//                        return false;
-//                    offset = 0;
-//                }
-//            }
-//        }
 
         // text node
         int srcIndex = -1;
@@ -3336,16 +3315,18 @@ bool ldomXPointer::getRect(lvRect & rect ,bool forlvpoint) const
         int lastLen = -1;
         int lastOffset = -1;
         ldomXPointerEx xp(node, offset);
-        for ( int i=0; i<txtform->GetSrcCount(); i++ ) {
-            const src_text_fragment_t * src = txtform->GetSrcInfo(i);
-            bool isObject = (src->flags&LTEXT_SRC_IS_OBJECT)!=0;
-            if ( src->object == node ) {
+        for (int i = 0; i < txtform->GetSrcCount(); i++)
+        {
+            const src_text_fragment_t *src = txtform->GetSrcInfo(i);
+            bool isObject = (src->flags & LTEXT_SRC_IS_OBJECT) != 0;
+            if (src->object == node)
+            {
                 srcIndex = i;
                 srcLen = isObject ? 0 : src->t.len;
                 break;
             }
             lastIndex = i;
-            lastLen =  isObject ? 0 : src->t.len;
+            lastLen = isObject ? 0 : src->t.len;
             lastOffset = isObject ? 0 : src->t.offset;
             ldomXPointerEx xp2((ldomNode *) src->object, lastOffset);
             // Проблемный участок, от которого одновременно зависит
@@ -3360,21 +3341,28 @@ bool ldomXPointer::getRect(lvRect & rect ,bool forlvpoint) const
             }
             //конец проблемного участка кода
         }
-        if ( srcIndex == -1 ) {
-            if ( lastIndex<0 )
+        if (srcIndex == -1)
+        {
+            if (lastIndex < 0)
+            {
                 return false;
+            }
             srcIndex = lastIndex;
             srcLen = lastLen;
             offset = lastOffset;
         }
-        for ( int l = 0; l<txtform->GetLineCount(); l++ ) {
-            const formatted_line_t * frmline = txtform->GetLineInfo(l);
-            for ( int w=0; w<(int)frmline->word_count; w++ ) {
-                const formatted_word_t * word = &frmline->words[w];
+        for (int l = 0; l < txtform->GetLineCount(); l++)
+        {
+            const formatted_line_t *frmline = txtform->GetLineInfo(l);
+            for (int w = 0; w < (int) frmline->word_count; w++)
+            {
+                const formatted_word_t *word = &frmline->words[w];
                 bool lastWord = (l == txtform->GetLineCount() - 1 && w == frmline->word_count - 1);
-                if ( word->src_text_index>=srcIndex || lastWord ) {
+                if (word->src_text_index >= srcIndex || lastWord)
+                {
                     // found word from same src line
-                    if ( word->src_text_index>srcIndex || offset<=word->t.start ) {
+                    if (word->src_text_index > srcIndex || offset <= word->t.start)
+                    {
                         // before this word
                         rect.left = word->x + rc.left + frmline->x;
                         //rect.top = word->y + rc.top + frmline->y + frmline->baseline;
@@ -3382,28 +3370,25 @@ bool ldomXPointer::getRect(lvRect & rect ,bool forlvpoint) const
                         rect.right = rect.left + 1;
                         rect.bottom = rect.top + frmline->height;
                         return true;
-                    } else if ( (offset<word->t.start+word->t.len)
-                                || (offset==srcLen && offset==word->t.start+word->t.len) ) {
+                    }
+                    else if ((offset < word->t.start + word->t.len) || (offset == srcLen && offset == word->t.start + word->t.len))
+                    {
                         // pointer inside this word
-                        LVFont * font = (LVFont *) txtform->GetSrcInfo(srcIndex)->t.font;
-                        lUInt16 w[512];
+                        LVFont *font = (LVFont *) txtform->GetSrcInfo(srcIndex)->t.font;
+                        lUInt16 widths[512];
                         lUInt8 flg[512];
                         lString16 str = node->getText();
-                        font->measureText(str.c_str() + word->t.start,
-                                          offset - word->t.start,
-                                          w,
-                                          flg,
-                                          word->width + 50,
-                                          '?',
-                                          txtform->GetSrcInfo(srcIndex)->letter_spacing);
-                        int chx = w[ offset - word->t.start - 1 ];
-                        rect.left = word->x + chx + rc.left + frmline->x;
+                        font->measureText(str.c_str() + word->t.start, offset - word->t.start, widths, flg, word->width + 50, '?', txtform->GetSrcInfo(srcIndex)->letter_spacing);
+                        int chx = widths[offset - word->t.start - 1];
+                        rect.left = word->x + rc.left + frmline->x + chx;
                         //rect.top = word->y + rc.top + frmline->y + frmline->baseline;
                         rect.top = rc.top + frmline->y;
                         rect.right = rect.left + 1;
                         rect.bottom = rect.top + frmline->height;
                         return true;
-                    } else if (lastWord) {
+                    }
+                    else if (lastWord)
+                    {
                         // after last word
                         rect.left = word->x + rc.left + frmline->x + word->width;
                         //rect.top = word->y + rc.top + frmline->y + frmline->baseline;
@@ -3416,22 +3401,26 @@ bool ldomXPointer::getRect(lvRect & rect ,bool forlvpoint) const
             }
         }
         return false;
-    } else {
+    }
+    else
+    {
         // no base final node, using blocks
         //lvRect rc;
-        ldomNode * node = getNode();
+        ldomNode *node = getNode();
         int offset = getOffset();
-        if ( offset<0 || node->getChildCount()==0 ) {
-            node->getAbsRect( rect );
+        if (offset < 0 || node->getChildCount() == 0)
+        {
+            node->getAbsRect(rect);
             return true;
             //return rc.topLeft();
         }
-        if ( offset < (int)node->getChildCount() ) {
-            node->getChildNode(offset)->getAbsRect( rect );
+        if (offset < (int) node->getChildCount())
+        {
+            node->getChildNode(offset)->getAbsRect(rect);
             return true;
             //return rc.topLeft();
         }
-        node->getChildNode(node->getChildCount()-1)->getAbsRect( rect );
+        node->getChildNode(node->getChildCount() - 1)->getAbsRect(rect);
         return true;
         //return rc.bottomRight();
     }
