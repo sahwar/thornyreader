@@ -8877,14 +8877,10 @@ void CrDomBase::dumpStatistics() {
 
 lvRect ldomWord::getRect()
 {
+    //CRLog::error("ldomWord getrect start");
     lvRect result;
-    ldomXPointer start = this->getStartXPointer();
-    ldomXPointer end =this->getEndXPointer();
-    ldomXPointerEx startex = start;
-    ldomXPointerEx endex = end;
-    ldomXRange range;
-    range.setStart(startex);
-    range.setEnd(endex);
+    ldomXRange range(this->getStartXPointer(),this->getEndXPointer());
     range.getRect(result);
+    //CRLog::error("ldomWord getrect end");
     return result;
 }
