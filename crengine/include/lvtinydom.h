@@ -1948,4 +1948,40 @@ lString16 ExtractDocLanguage(CrDom* dom);
 lString16 ExtractDocSeries(CrDom* dom, int* pSeriesNumber=NULL);
 lString16 ExtractDocThumbImageName(CrDom* dom);
 
+
+class RectHelper
+{
+    ldomNode *Node_;
+    ldomNode *finalNode_;
+    LFormattedTextRef txtform_;
+    lvRect absRect_;
+    bool invisible_;
+
+    int srcIndex_   = -1;
+    int srcLen_     = -1;
+    int lastIndex_  = -1;
+    int lastLen_    = -1;
+    int lastOffset_ = -1;
+
+    void Init(ldomXRange * range);
+
+    ldomNode* GetFinalNode(ldomNode *node);
+
+    void InitTxtForm();
+
+    lvRect FinalNodeAbsRect();
+
+    void Process();
+
+    bool processRect(ldomXPointerEx xpointer, lvRect &rect);
+
+    bool ifnull(ldomXPointerEx xpointer);
+
+public:
+    RectHelper(ldomXRange * range);
+
+    lvRect getRect(ldomWord word);
+
+};
+
 #endif
