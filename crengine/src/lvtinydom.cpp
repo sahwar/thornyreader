@@ -5463,7 +5463,7 @@ Init(range);
 void RectHelper::Init(ldomXRange * range)
 {
     Node_      = range->getStartNode();
-    finalNode_ = GetFinalNode(range->getStart().getNode());
+    finalNode_ = GetFinalNode(range->getStartNode());
     absRect_   = FinalNodeAbsRect();
     if(finalNode_!=NULL)
     {
