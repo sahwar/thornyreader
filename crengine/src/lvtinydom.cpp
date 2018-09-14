@@ -5462,6 +5462,7 @@ void RectHelper::Invalidate()
     finalNode_ = NULL;
     absRect_ = lvRect();
     NodeIndex_ = -1;
+    LineIndex_ = 0;
     //txtform clear
 }
 
@@ -5647,7 +5648,8 @@ bool RectHelper::processRect(ldomXPointerEx xpointer, lvRect &rect)
     {
         offset = lastOffset_;
     }
-    for (int l = 0; l < txtform_->GetLineCount(); l++)
+    //CRLog::error("LINEINDEX STARTFROM = %d",LineIndex_);
+    for (int l = LineIndex_; l < txtform_->GetLineCount(); l++)
     {
         const formatted_line_t *frmline = txtform_->GetLineInfo(l);
         for (int w = 0; w < (int) frmline->word_count; w++)
@@ -5671,6 +5673,9 @@ bool RectHelper::processRect(ldomXPointerEx xpointer, lvRect &rect)
                     rect.right = rect.left + 1;
                     rect.bottom = rect.top + frmline->height;
                     //CRLog::error("Rect = [%d:%d][%d:%d]",rect.left,rect.right,rect.top,rect.bottom);
+                    LineIndex_ = l;
+                    //CRLog::error("LINEINDEX END = %d",LineIndex_);
+
                     return true;
                 }
                 else if ((offset < word->t.start + word->t.len) || (offset == srcLen_ && offset == word->t.start + word->t.len))
@@ -5694,6 +5699,9 @@ bool RectHelper::processRect(ldomXPointerEx xpointer, lvRect &rect)
                     rect.right = rect.left + 1;
                     rect.bottom = rect.top + frmline->height;
                     //CRLog::error("Rect = [%d:%d][%d:%d]",rect.left,rect.right,rect.top,rect.bottom);
+                    LineIndex_ = l;
+                    //CRLog::error("LINEINDEX END = %d",LineIndex_);
+
                     return true;
                 }
                 else if (lastWord)
@@ -5705,6 +5713,9 @@ bool RectHelper::processRect(ldomXPointerEx xpointer, lvRect &rect)
                     rect.right = rect.left + 1;
                     rect.bottom = rect.top + frmline->height;
                     //CRLog::error("Rect = [%d:%d][%d:%d]",rect.left,rect.right,rect.top,rect.bottom);
+                    LineIndex_ = l;
+                    //CRLog::error("LINEINDEX END = %d",LineIndex_);
+
                     return true;
                 }
             }
