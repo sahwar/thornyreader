@@ -5549,22 +5549,15 @@ lvRect RectHelper::FinalNodeAbsRect()
 
 ldomNode *RectHelper::GetFinalNode()
 {
-    ldomNode *p = Node_->isText() ? Node_->getParentNode() : Node_;
-    if (!p)
-    {
-        //CRLog::trace("ldomXPointer::getRect() - p==NULL");
-    }
-    if (!p->getCrDom())
-    {
-        //CRLog::trace("ldomXPointer::getRect() - p->getCrDom()==NULL");
-    }
-    ldomNode *mainNode = p->getCrDom()->getRootNode();
+    ldomNode * p = Node_->isElement() ? Node_: Node_->getParentNode() ;
+    ldomNode * mainNode = p->getCrDom()->getRootNode();
+    ldomNode * finalNode = NULL;
     for (; p; p = p->getParentNode())
     {
         int rm = p->getRendMethod();
         if (rm == erm_final || rm == erm_list_item)
         {
-            return p; // found final block
+            finalNode = p; // found final block
         }
         else if (p->getRendMethod() == erm_invisible)
         {
@@ -5576,7 +5569,7 @@ ldomNode *RectHelper::GetFinalNode()
             break;
         }
     }
-    return NULL;
+    return finalNode;
 }
 
 lvRect RectHelper::getRect(ldomWord word)
@@ -9147,7 +9140,7 @@ lString16 ldomNode::getMainParentName()
     ldomNode* node = this;
     while(node != NULL && node->getParentNode()!=NULL)
     {
-        if(node->isNodeName("li") || node->isNodeName("poem") || node->isNodeName("stanza") || node->isNodeName("annotation")|| node->isNodeName("blockquote"))
+        if(node->isNodeName("li") || node->isNodeName("ul")|| node->isNodeName("poem") || node->isNodeName("stanza") || node->isNodeName("annotation")|| node->isNodeName("blockquote"))
         {
             return node->getNodeName();
         }
