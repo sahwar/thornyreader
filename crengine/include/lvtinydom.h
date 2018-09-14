@@ -1951,36 +1951,47 @@ lString16 ExtractDocThumbImageName(CrDom* dom);
 
 class RectHelper
 {
-    ldomNode *Node_;
-    ldomNode *finalNode_;
-    LFormattedTextRef txtform_;
-    lvRect absRect_;
-    bool invisible_;
+    ldomNode *Node_ = NULL;
+    ldomNode *finalNode_ = NULL;
+    LFormattedTextRef txtform_  = LFormattedTextRef();
+    lvRect absRect_= lvRect();
 
     int srcIndex_   = -1;
     int srcLen_     = -1;
     int lastIndex_  = -1;
     int lastLen_    = -1;
     int lastOffset_ = -1;
+    int NodeIndex_  = -1;
+    int LineIndex_  =  0;
+    
+    bool NodeIndexFound_ = false;
+    bool isInit          = false;
 
-    void Init(ldomXRange * range);
+    void InitFinalNode(ldomNode *finalNode);
 
-    ldomNode* GetFinalNode(ldomNode *node);
-
-    void InitTxtForm();
+    ldomNode* GetFinalNode();
 
     lvRect FinalNodeAbsRect();
 
-    void Process();
-
     bool processRect(ldomXPointerEx xpointer, lvRect &rect);
 
-    bool ifnull(ldomXPointerEx xpointer);
+    bool ifnull(ldomXPointerEx xpointer, lvRect &rect);
+
+    int FindNodeIndex(ldomNode *node);
+
+    void UpdateData(int index);
+
+    void UpdateNode(ldomNode * Node);
+
 
 public:
-    RectHelper(ldomXRange * range);
+    RectHelper() {};
 
     lvRect getRect(ldomWord word);
+
+    void Run(ldomXRange *range);
+
+    void Invalidate();
 
 };
 

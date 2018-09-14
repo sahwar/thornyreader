@@ -5455,30 +5455,67 @@ void ldomXRange::getRangeWords(LVArray<ldomWord>& words_list) {
     forEach2(&collector);
 }
 
-RectHelper::RectHelper(ldomXRange * range)
+
+void RectHelper::Invalidate()
 {
-Init(range);
+    //Node_ = NULL;
+    finalNode_ = NULL;
+    absRect_ = lvRect();
+    NodeIndex_ = -1;
+    //txtform clear
 }
 
-void RectHelper::Init(ldomXRange * range)
+
+void RectHelper::InitFinalNode(ldomNode *finalNode)
 {
-    Node_      = range->getStartNode();
-    finalNode_ = GetFinalNode(range->getStartNode());
-    absRect_   = FinalNodeAbsRect();
-    if(finalNode_!=NULL)
+    if (isInit)
     {
-        InitTxtForm();
-        Process();
+        Invalidate();
+    }
+    isInit = true;
+
+    finalNode_ = finalNode;
+    if (finalNode == NULL)
+    {
+        return;
+    }
+    finalNode_->getAbsRect(absRect_);
+    RenderRectAccessor r(finalNode_);
+    finalNode_->renderFinalBlock(txtform_, &r, r.getWidth());
+    CRLog::error("txtform_->GetLineCount() = %d", txtform_->GetLineCount());
+    CRLog::error("finalnode = [%s]", LCSTR(finalNode_->getXPath()));
+    CRLog::error("finalnode childcount = %d", finalNode_->getChildCount());
+}
+
+void RectHelper::Run(ldomXRange *range)
+{
+    Node_ = range->getStartNode();
+    ldomNode *finalNode = GetFinalNode();
+    if (finalNode != finalNode_)
+    {
+        CRLog::error("Update FinalNode");
+        InitFinalNode(finalNode);
+    }
+    CRLog::error("Update node");
+    UpdateNode(Node_);
+}
+
+void RectHelper::UpdateNode(ldomNode *Node)
+{
+    if (finalNode_ == NULL)
+    {
+        return;
     }
 
-    ldomNode* node = range->getStart().getNode();
+    int index = FindNodeIndex(Node);
+    UpdateData(index);
+    NodeIndex_ = index;
 }
 
-bool RectHelper::ifnull(ldomXPointerEx xpointer)
+bool RectHelper::ifnull(ldomXPointerEx xpointer, lvRect &rect)
 {
     // no base final node, using blocks
     //lvRect rc;
-    lvRect rect;
     ldomNode *node = Node_;
     int offset = xpointer.getOffset();
     if (offset < 0 || node->getChildCount() == 0)
@@ -5498,20 +5535,20 @@ bool RectHelper::ifnull(ldomXPointerEx xpointer)
     //return rc.bottomRight();
 }
 
-
-lvRect RectHelper::FinalNodeAbsRect(){
+lvRect RectHelper::FinalNodeAbsRect()
+{
     lvRect rect;
     finalNode_->getAbsRect(rect);
     if (rect.height() == 0 && rect.width() > 0)
     {
-       // rect.bottom++;
+        rect.bottom++;
     }
     return rect;
 }
 
-ldomNode * RectHelper::GetFinalNode(ldomNode *node)
+ldomNode *RectHelper::GetFinalNode()
 {
-    ldomNode *p = node->isText() ? node->getParentNode() : node;
+    ldomNode *p = Node_->isText() ? Node_->getParentNode() : Node_;
     if (!p)
     {
         //CRLog::trace("ldomXPointer::getRect() - p==NULL");
@@ -5541,15 +5578,11 @@ ldomNode * RectHelper::GetFinalNode(ldomNode *node)
     return NULL;
 }
 
-void RectHelper::InitTxtForm()
-{
-    RenderRectAccessor r(finalNode_);
-    finalNode_->renderFinalBlock(txtform_, &r, r.getWidth());
-}
 lvRect RectHelper::getRect(ldomWord word)
 {
     lvRect rect;
-    if (word.isNull()) {
+    if (word.isNull())
+    {
         return rect;
     }
     // get start and end rects
@@ -5558,10 +5591,12 @@ lvRect RectHelper::getRect(ldomWord word)
     ldomXPointerEx xp1 = word.getStartXPointer();
     ldomXPointerEx xp2 = word.getEndXPointer();
 
-    if (!this->processRect(xp1,rc1) || !this->processRect(xp2,rc2)) {
+    if (!this->processRect(xp1, rc1) || !this->processRect(xp2, rc2))
+    {
         return rect;
     }
-    if (rc1.top == rc2.top && rc1.bottom == rc2.bottom) {
+    if (rc1.top == rc2.top && rc1.bottom == rc2.bottom)
+    {
         // on same line
         rect.left = rc1.left;
         rect.top = rc1.top;
@@ -5570,9 +5605,10 @@ lvRect RectHelper::getRect(ldomWord word)
         return rect;
     }
     // on different lines
-    ldomXRange range(xp1,xp2);
-    ldomNode* parent = range.getNearestCommonParent();
-    if (!parent) {
+    ldomXRange range(xp1, xp2);
+    ldomNode *parent = range.getNearestCommonParent();
+    if (!parent)
+    {
         return rect;
     }
     parent->getAbsRect(rect);
@@ -5586,39 +5622,45 @@ lvRect RectHelper::getRect(ldomWord word)
 
 bool RectHelper::processRect(ldomXPointerEx xpointer, lvRect &rect)
 {
-    if(finalNode_ == NULL)
+    if (finalNode_ == NULL)
     {
-        return ifnull(xpointer);
+        bool res = ifnull(xpointer, rect);
+        //CRLog::error("Rect ifnull = [%d:%d][%d:%d]",rect.left,rect.right,rect.top,rect.bottom);
+        return res;
     }
     lvRect rc = absRect_;
+    //CRLog::error("absrect = [%d:%d][%d:%d]",rc.left,rc.right,rc.top,rc.bottom);
     if (rc.height() == 0 && rc.width() > 0)
     {
         rect = rc;
         rect.bottom++;
         return true;
     }
-
-    int offset = xpointer.getOffset();
-    if (srcIndex_ == -1)
+    if (NodeIndex_ < 0 && lastIndex_ < 0)
     {
-        if (lastIndex_ < 0)
-        {
-            return false;
-        }
-        srcIndex_ = lastIndex_;
-        srcLen_ = lastLen_;
-        offset = lastOffset_;
+        CRLog::error("LastIndex < 0");
+        return false;
     }
 
+    int offset = xpointer.getOffset();
+    if (NodeIndex_ < 0)
+    {
+        offset = lastOffset_;
+    }
     for (int l = 0; l < txtform_->GetLineCount(); l++)
     {
         const formatted_line_t *frmline = txtform_->GetLineInfo(l);
         for (int w = 0; w < (int) frmline->word_count; w++)
         {
             const formatted_word_t *word = &frmline->words[w];
+
             bool lastWord = (l == txtform_->GetLineCount() - 1 && w == frmline->word_count - 1);
             if (word->src_text_index >= srcIndex_ || lastWord)
             {
+                //CRLog::error("word.x = %d",word->x);
+                //CRLog::error("rc.left = %d",rc.left);
+                //CRLog::error("frmline.x = %d",frmline->x);
+                //CRLog::error("word.width = %d",word->width);
                 // found word from same src line
                 if (word->src_text_index > srcIndex_ || offset <= word->t.start)
                 {
@@ -5628,6 +5670,7 @@ bool RectHelper::processRect(ldomXPointerEx xpointer, lvRect &rect)
                     rect.top = rc.top + frmline->y;
                     rect.right = rect.left + 1;
                     rect.bottom = rect.top + frmline->height;
+                    //CRLog::error("Rect = [%d:%d][%d:%d]",rect.left,rect.right,rect.top,rect.bottom);
                     return true;
                 }
                 else if ((offset < word->t.start + word->t.len) || (offset == srcLen_ && offset == word->t.start + word->t.len))
@@ -5637,13 +5680,20 @@ bool RectHelper::processRect(ldomXPointerEx xpointer, lvRect &rect)
                     lUInt16 widths[512];
                     lUInt8 flg[512];
                     lString16 str = Node_->getText();
-                    font->measureText(str.c_str() + word->t.start, offset - word->t.start, widths, flg, word->width + 50, '?', txtform_->GetSrcInfo(srcIndex_)->letter_spacing);
+                    font->measureText(str.c_str() + word->t.start,
+                            offset - word->t.start,
+                            widths,
+                            flg,
+                            word->width + 50,
+                            '?',
+                            txtform_->GetSrcInfo(srcIndex_)->letter_spacing);
                     int chx = widths[offset - word->t.start - 1];
                     rect.left = word->x + rc.left + frmline->x + chx;
                     //rect.top = word->y + rc.top + frmline->y + frmline->baseline;
                     rect.top = rc.top + frmline->y;
                     rect.right = rect.left + 1;
                     rect.bottom = rect.top + frmline->height;
+                    //CRLog::error("Rect = [%d:%d][%d:%d]",rect.left,rect.right,rect.top,rect.bottom);
                     return true;
                 }
                 else if (lastWord)
@@ -5654,6 +5704,7 @@ bool RectHelper::processRect(ldomXPointerEx xpointer, lvRect &rect)
                     rect.top = rc.top + frmline->y;
                     rect.right = rect.left + 1;
                     rect.bottom = rect.top + frmline->height;
+                    //CRLog::error("Rect = [%d:%d][%d:%d]",rect.left,rect.right,rect.top,rect.bottom);
                     return true;
                 }
             }
@@ -5662,9 +5713,7 @@ bool RectHelper::processRect(ldomXPointerEx xpointer, lvRect &rect)
     return false;
 }
 
-
-
-void RectHelper::Process()
+/*void RectHelper::Process()
 {
     ldomNode *node = Node_;
     //int offset = getOffset();
@@ -5676,7 +5725,7 @@ void RectHelper::Process()
     lastLen_ = -1;
     lastOffset_ = -1;
     //ldomXPointerEx xp(node, offset);
-    for (int i = 0; i < txtform_->GetSrcCount(); i++)
+    for (int i = NodeIndex_; i < txtform_->GetSrcCount(); i++)
     {
         const src_text_fragment_t *src = txtform_->GetSrcInfo(i);
         bool isObject = (src->flags & LTEXT_SRC_IS_OBJECT) != 0;
@@ -5684,12 +5733,20 @@ void RectHelper::Process()
         {
             srcIndex_ = i;
             srcLen_ = isObject ? 0 : src->t.len;
+            NodeIndex_ = srcIndex_;
+            CRLog::trace("BREAK");
+            CRLog::trace("srcIndex_ = %d;",srcIndex_);
+            CRLog::trace("srcLen_ = %d;",srcLen_);
             break;
         }
         lastIndex_ = i;
         lastLen_ = isObject ? 0 : src->t.len;
         lastOffset_ = isObject ? 0 : src->t.offset;
-
+        //CRLog::error("srcIndex_ = %d;",srcIndex_);
+        //CRLog::error("srcLen_ = %d;",srcLen_);
+        CRLog::error("lastIndex_ = %d;",lastIndex_);
+        CRLog::error("lastLen_ = %d;",lastLen_);
+        CRLog::error(" lastOffset_ = %d;",lastOffset_);
         // Проблемный участок, от которого одновременно зависит
         // генерация оглавлений (Гаррисон), и генерация хитбоксов в некоторых случаях (Storia della mafia)
         // К функции GetRect добавлен параметр forlvpoint, который при вызове в генерации оглавлений, включает этот кусок.
@@ -5706,6 +5763,65 @@ void RectHelper::Process()
         //}
         //конец проблемного участка кода
     }
+}*/
+
+int RectHelper::FindNodeIndex(ldomNode *node)
+{
+    int count = txtform_->GetSrcCount();
+    //index not found = -1
+    //we add +1 to optimize search process
+     int start = NodeIndex_+1;
+    CRLog::trace("START NODEINDEX = %d", start);
+    for (int i = start; i < count; i++)
+    {
+        const src_text_fragment_t *src = txtform_->GetSrcInfo(i);
+        bool isObject = (src->flags & LTEXT_SRC_IS_OBJECT) != 0;
+        if (src->object == node)
+        {
+            CRLog::trace("GOT NODE INDEX %d",i);
+            return i;
+        }
+    }
+    return -1;
+}
+
+
+void RectHelper::UpdateData(int index)
+{
+    srcIndex_   = -1;
+    srcLen_     = -1;
+    lastIndex_  = -1;
+    lastLen_    = -1;
+    lastOffset_ = -1;
+    const src_text_fragment_t *src;
+
+    if (index >= 0)
+    {
+        src = txtform_->GetSrcInfo(index);
+        bool isObject = (src->flags & LTEXT_SRC_IS_OBJECT) != 0;
+
+        srcIndex_ = index;
+        srcLen_ = isObject ? 0 : src->t.len;
+
+        //CRLog::trace("srcIndex_ = %d;", srcIndex_);
+        //CRLog::trace("srcLen_ = %d;", srcLen_);
+    }
+    else
+    {
+        src = txtform_->GetSrcInfo(lastIndex_);
+        bool isObject = (src->flags & LTEXT_SRC_IS_OBJECT) != 0;
+
+        lastIndex_ = txtform_->GetSrcCount();
+        lastLen_ = isObject ? 0 : src->t.len;
+        lastOffset_ = isObject ? 0 : src->t.offset;
+
+        srcIndex_ = lastIndex_;
+        srcLen_   = lastLen_;
+
+        //CRLog::error("lastIndex_ = %d;", lastIndex_);
+        //CRLog::error("lastLen_ = %d;", lastLen_);
+        //CRLog::error("lastOffset_ = %d;", lastOffset_);
+    }
 }
 
 /// get all words from specified range
@@ -5714,6 +5830,7 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
         LVArray<TextRect>& list_;
     public:
         WordsCollector(LVArray<TextRect>& list) : list_(list) {}
+        RectHelper* rectHelper_ = new RectHelper();
 
         bool AllowTextNodeShift(ldomNode* node)
         {
@@ -5765,18 +5882,23 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
             }
             return false;
         };
-
         /// called for each found text fragment in range
         virtual void onText(ldomXRange* nodeRange) {
             ldomNode* node = nodeRange->getStart().getNode();
-            CRLog::error("ontext [%s]",LCSTR(node->getXPath()));
             ldomNode* parent_node = node->getParentNode();
-            RectHelper* rh = new RectHelper(nodeRange);
+
+            lString16 text = node->getText();
+            CRLog::error("node [%s]",LCSTR(node->getXPath()));
+            CRLog::error("Text[%s]",LCSTR(text));
+            CRLog::error("Textlen = %d",text.length());
+            rectHelper_->Run(nodeRange);
+            CRLog::debug("==========================================");
+
             if(parent_node == nullptr)
             {
                 return;
             }
-            lString16 text = node->getText();
+
             int pos = nodeRange->getStart().getOffset();
             int len = text.length();
             int end = nodeRange->getEnd().getOffset();
@@ -5791,7 +5913,7 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
             for (; pos < len; pos++)
             {
                 ldomWord word = ldomWord(node, pos, pos + 1);
-                lvRect rect = rh->getRect(word);
+                lvRect rect = rectHelper_->getRect(word);
                 lString16 string = word.getText();
                 if (text[pos] == ' ' || text[pos] == '\t' || string == L"\u200B" )
                 {
@@ -5811,7 +5933,7 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
                 for (; pos < len - 1; pos++)
                 {
                     ldomWord word = ldomWord(node, pos, pos + 1);
-                    lvRect rect = rh->getRect(word);
+                    lvRect rect = rectHelper_->getRect(word);
                     lString16 string = word.getText();
                     rect.left = rect.left - leftshift + gTextLeftShift;
                     rect.right = rect.right - leftshift + gTextLeftShift -1;
@@ -5819,7 +5941,7 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
                 }
                 //last char zero width fix
                 ldomWord word = ldomWord(node, len - 1, len);
-                lvRect rect = rh->getRect(word);
+                lvRect rect = rectHelper_->getRect(word);
                 lString16 string = word.getText();
                 rect.left = rect.left - leftshift + gTextLeftShift;
                 rect.right = rect.right + gTextLeftShift-1;
@@ -5831,7 +5953,7 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
                 for (; pos < len; pos++)
                 {
                     ldomWord word = ldomWord(node, pos, pos + 1);
-                    lvRect rect = rh->getRect(word);
+                    lvRect rect = rectHelper_->getRect(word);
                     lString16 string = word.getText();
                     if (text[pos] == ' ' || text[pos] == '\t' || string == L"\u200B" || string == L"\u00A0" )
                     {
@@ -5853,7 +5975,7 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
                 for (; pos < len ; pos++)
                 {
                     ldomWord word = ldomWord(node, pos, pos + 1);
-                    lvRect rect = rh->getRect(word);
+                    lvRect rect = rectHelper_->getRect(word);
                     lString16 string = word.getText();
                     rect.left = rect.left + gTextLeftShift;
                     rect.right = rect.right + gTextLeftShift-1;
