@@ -55,6 +55,7 @@ LOCAL_SRC_FILES := \
     src/txtselector.cpp \
     src/wordfmt.cpp \
     src/mobihandler.cpp \
+    src/RectHelper.cpp \
     src/crconfig.cpp
 
 LOCAL_SRC_FILES += \
