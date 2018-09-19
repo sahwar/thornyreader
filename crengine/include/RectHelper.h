@@ -8,6 +8,7 @@
 
 #include <crengine/include/lvtinydom.h>
 #include <crengine/include/lvtypes.h>
+extern bool templogs;
 
 class RectHelper
 {
@@ -23,32 +24,40 @@ class RectHelper
     int lastOffset_ = -1;
     int NodeIndex_  = -1;
     int LineIndex_  =  0;
-
-    bool NodeIndexFound_ = false;
-    bool isInit          = false;
-
-    void InitFinalNode(ldomNode *finalNode);
+    bool NodeIsInvisible_ = false;
+    bool isInit           = false;
 
     ldomNode* GetFinalNode();
 
-    //lvRect FinalNodeAbsRect();
-
-    bool processRect(ldomXPointerEx xpointer, lvRect &rect);
+    void InitFinalNode(ldomNode *finalNode);
 
     bool ifnull(ldomXPointerEx xpointer, lvRect &rect);
 
-    int FindNodeIndex(ldomNode *node);
-
     void UpdateNode(ldomNode * Node);
 
+    int FindNodeIndex(ldomNode *node, int start);
+
+    int FindLineIndex(ldomNode *node , int start);
+
+    int FindLastIndex(ldomNode *node);
+
+    void Invalidate();
+
+    bool NodeIsInvisible(ldomNode *node);
+
 public:
+
     RectHelper() {};
 
-    lvRect getRect(ldomWord word);
+    void Run(ldomNode *Node);
 
     void Run(ldomXRange *range);
 
-    void Invalidate();
+    lvRect getRect(ldomWord word);
+
+    bool processRect(ldomXPointerEx xpointer, lvRect &rect);
+
+    bool FindLastIndexEnable_ = false;
 
 };
 
