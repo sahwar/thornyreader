@@ -2691,10 +2691,12 @@ bool LvXmlParser::Parse()
                     //}}
                 }*/
 
-                if (tagname=="br" && close_flag)
+                if (tagname=="br")
                 {
+                    callback_->OnTagOpen(L"",L"br");
                     callback_->OnText(L"\u200B", 1, flags);
-                    //callback_->OnText(L"&", 1, flags);
+                    callback_->OnTagClose(L"",L"br");
+                    break;
                 }
                 if(tagname=="blockquote")
                 {
