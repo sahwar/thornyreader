@@ -2104,7 +2104,7 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas()
 				{
 					paraend = ProcessFinalNode_GetNodeEnd(child);
                   //  CRLog::error("Final node processed");
-                  //  CRLog::error("final node = %s",LCSTR(node->getNodeName()));
+                  //  CRLog::error("final node = %s",LCSTR(child->getNodeName()));
                   //  CRLog::error("final text = %s",LCSTR(child->getText()));
 				}
 				else
@@ -2117,6 +2117,11 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas()
                 {
                     //CRLog::error("endnode found for processnodeparaends");
                     endnode_found_ = true;
+                    break;
+                }
+                if (endnode_found_)
+                {
+                    break;
                 }
 			}
             if(NodeIsAllowed(node))
@@ -2160,7 +2165,6 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas()
 		}
 
 	public:
-		bool text_is_first_ = true;
 
 		ParaKeeper(int &unused) : unused_(unused)	{	}
 
@@ -2168,17 +2172,18 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas()
         void processText(ldomNode *node1, ldomXRange *range)
         {
             ldomXRange node_range = ldomXRange(node1);
-
-            if (!text_is_first_)
-            {
-                return;
-            }
-            text_is_first_ = false;
             ldomNode *node = node_range.getStart().getNode();
+            ldomNode *txtnode = node_range.getStart().getNode();
             if (node->isNull())
             {
                 return;
             }
+           int index = node->getNodeIndex();
+           int lastindex = node->getParentNode()->getChildCount()-1;
+           if (index < lastindex)
+           {
+               return;
+           }
             while (node != NULL && node->getParentNode() != NULL)
             {
                 node = node->getParentNode();
@@ -2186,12 +2191,19 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas()
                 {
                     break;
                 }
+                int index = node->getNodeIndex();
+                int lastindex = node->getParentNode()->getChildCount()-1;
+                if (index < lastindex)
+                {
+                    return;
+                }
             }
             if (node->getParentNode() == NULL)
             {
                 return;
             }
-            ProcessNodeParaends(node, range);
+	        para_rect_array.add(ProcessFinalNode_GetNodeEnd(txtnode));
+	        //ProcessNodeParaends(node, range);
         }
 
         virtual bool processElement(ldomNode *node, ldomXRange *range)
@@ -2218,7 +2230,6 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas()
 		page_range = GetPageDocRange(page_index + 1);
 		if (!page_range.isNull())
 		{
-			callback.text_is_first_ = true;
             page_range->forEach2(&callback);
 			result.add(callback.GetParaArray());
 		}
@@ -2885,6 +2896,10 @@ float LVDocView::CalcRightSide(TextRect textrect)
     {
         result = right_line - hyphwidth;
     }
+	else if (mainname == "ul")
+	{
+        result = right_line - leftshift + (hyphwidth * 2);
+	}
 	else //css_ta_justify AND margins ON
 	{
         result = right_line - leftshift + hyphwidth;
