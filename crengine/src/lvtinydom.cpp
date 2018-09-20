@@ -3250,7 +3250,7 @@ lvPoint ldomXPointer::toPoint() const
     ldomXPointerEx xp = ldomXPointerEx(node,offset);
     RectHelper rh;
     rh.FindLastIndexEnable_ = true;
-    rh.Run(node);
+    rh.Init(node);
     if(!rh.processRect(xp,rc))
         return lvPoint(-1, -1);
     return rc.topLeft();
@@ -5603,7 +5603,7 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
             //CRLog::error("node [%s]",LCSTR(node->getXPath()));
             //CRLog::error("Text[%s]",LCSTR(text));
             //CRLog::error("Textlen = %d",text.length());
-            rectHelper_->Run(nodeRange);
+            rectHelper_->Init(nodeRange);
             //CRLog::debug("==========================================");
 
             if(parent_node == nullptr)
@@ -5634,6 +5634,7 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
                 }
                 break;
             }
+            rectHelper_->ResetLineIndex(); // offsetting lineIndex back to the beginning of node
             if (leftshift > 0 && AllowTextNodeShift(node))
             {
                 // alone_space_in_node shift prohibition
@@ -5673,7 +5674,6 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
                     }
                     break;
                 }
-
                 if (pos == len)// && node->getNodeIndex() == 0)
                 {
                     css_style_rec_t *style = parent_node->getStyle().get();
@@ -5684,6 +5684,7 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
                 }
 
                 pos = nodeRange->getStart().getOffset();
+                rectHelper_->ResetLineIndex();
                 for (; pos < len ; pos++)
                 {
                     ldomWord word = ldomWord(node, pos, pos + 1);

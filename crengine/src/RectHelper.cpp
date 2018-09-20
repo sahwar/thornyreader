@@ -5,18 +5,19 @@ void RectHelper::Invalidate()
 {
     finalNode_ = NULL;
     absRect_ = lvRect();
-    NodeIndex_ = -1;
-    LineIndex_ = 0;
+    NodeIndex_     = -1;
+    LineIndex_     =  0;
+    NodeLineIndex_ =  0;
     NodeIsInvisible_ = false;
 }
 
-void RectHelper::Run(ldomXRange *range)
+void RectHelper::Init(ldomXRange *range)
 {
     ldomNode *  Node = range->getStartNode();
-    Run(Node);
+    Init(Node);
 }
 
-void RectHelper::Run(ldomNode *Node)
+void RectHelper::Init(ldomNode *Node)
 {
     if(Node == Node_)
     {
@@ -36,7 +37,7 @@ void RectHelper::Run(ldomNode *Node)
     #if DEBUG_GETRECT_LOGS
     CRLog::warn("Update node");
     #endif
-    UpdateNode(Node_);
+    InitNode(Node_);
     #if DEBUG_GETRECT_LOGS
     //CRLog::error("NEW FINALNODE = [%s]",LCSTR(finalNode_->getXPath()));
     //CRLog::error("Node_ Text = %s",LCSTR(Node_->getText()));
@@ -112,7 +113,7 @@ void RectHelper::InitFinalNode(ldomNode *finalNode)
     #endif
 }
 
-void RectHelper::UpdateNode(ldomNode *Node)
+void RectHelper::InitNode(ldomNode *Node)
 {
     // text node
     srcIndex_   = -1;
@@ -167,6 +168,7 @@ void RectHelper::UpdateNode(ldomNode *Node)
         #endif
     }
     LineIndex_ = FindLineIndex(Node, LineIndex_);
+    NodeLineIndex_ = LineIndex_ ;
 }
 
 bool RectHelper::ifnull(ldomXPointerEx xpointer, lvRect &rect)
@@ -321,6 +323,10 @@ int RectHelper::FindLastIndex(ldomNode *node)
     #endif
 
     return count - 1;
+}
+void RectHelper::ResetLineIndex()
+{
+    LineIndex_ = NodeLineIndex_;
 }
 
 lvRect RectHelper::getRect(ldomWord word)

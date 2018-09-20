@@ -17,13 +17,14 @@ class RectHelper
     LFormattedTextRef txtform_  = LFormattedTextRef();
     lvRect absRect_= lvRect();
 
-    int srcIndex_   = -1;
-    int srcLen_     = -1;
-    int lastIndex_  = -1;
-    int lastLen_    = -1;
-    int lastOffset_ = -1;
-    int NodeIndex_  = -1;
-    int LineIndex_  =  0;
+    int srcIndex_      = -1;
+    int srcLen_        = -1;
+    int lastIndex_     = -1;
+    int lastLen_       = -1;
+    int lastOffset_    = -1;
+    int NodeIndex_     = -1;
+    int LineIndex_     =  0;
+    int NodeLineIndex_ =  0;
     bool NodeIsInvisible_ = false;
     bool isInit           = false;
 
@@ -31,15 +32,15 @@ class RectHelper
 
     void InitFinalNode(ldomNode *finalNode);
 
-    bool ifnull(ldomXPointerEx xpointer, lvRect &rect);
-
-    void UpdateNode(ldomNode * Node);
+    void InitNode(ldomNode *Node);
 
     int FindNodeIndex(ldomNode *node, int start);
 
     int FindLineIndex(ldomNode *node , int start);
 
     int FindLastIndex(ldomNode *node);
+
+    bool ifnull(ldomXPointerEx xpointer, lvRect &rect);
 
     void Invalidate();
 
@@ -49,16 +50,24 @@ public:
 
     RectHelper() {};
 
-    void Run(ldomNode *Node);
+    ~RectHelper() {
+      free(Node_);
+      free(finalNode_);
+      free(txtform_.get());
+      free(&absRect_);
+    };
 
-    void Run(ldomXRange *range);
+    void Init(ldomNode *Node);
+
+    void Init(ldomXRange *range);
 
     lvRect getRect(ldomWord word);
 
     bool processRect(ldomXPointerEx xpointer, lvRect &rect);
-
+    //FOR TOC
     bool FindLastIndexEnable_ = false;
 
+    void ResetLineIndex();
 };
 
 
