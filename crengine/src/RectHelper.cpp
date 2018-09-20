@@ -1,4 +1,5 @@
 #include "crengine/include/RectHelper.h"
+#include "crengine/include/crconfig.h"
 
 void RectHelper::Invalidate()
 {
@@ -24,28 +25,36 @@ void RectHelper::Run(ldomNode *Node)
     Node_ = Node;
     ldomNode * finalNode = GetFinalNode();
 
-    //CRLog::error("NEW FINALNODE = [%s]",LCSTR(finalNode_->getXPath()));
 
     if (finalNode != finalNode_)
     {
-        //CRLog::error("Init FinalNode");
+        #if DEBUG_GETRECT_LOGS
+        CRLog::warn("Init FinalNode");
+        #endif
         InitFinalNode(finalNode);
     }
-    //CRLog::error("Update node");
+    #if DEBUG_GETRECT_LOGS
+    CRLog::warn("Update node");
+    #endif
     UpdateNode(Node_);
+    #if DEBUG_GETRECT_LOGS
+    //CRLog::error("NEW FINALNODE = [%s]",LCSTR(finalNode_->getXPath()));
     //CRLog::error("Node_ Text = %s",LCSTR(Node_->getText()));
+    #endif
 }
 
-bool RectHelper::NodeIsInvisible(ldomNode* node)
+bool RectHelper::NodeIsInvisible(ldomNode *node)
 {
-    if(node==NULL)
+    if (node == NULL)
     {
         return false;
     }
     if (node->getRendMethod() == erm_invisible)
     {
+        #if DEBUG_GETRECT_LOGS
         CRLog::error("INVISIBLE NODE FOUND");
-        CRLog::error("node = [%s]",LCSTR(node->getXPath()));
+        CRLog::error("node = [%s]", LCSTR(node->getXPath()));
+        #endif
         return true;
     }
     return false;
@@ -88,15 +97,19 @@ void RectHelper::InitFinalNode(ldomNode *finalNode)
     finalNode_ = finalNode;
     if (finalNode == NULL)
     {
+       #if DEBUG_GETRECT_LOGS
         CRLog::error("INITFINALNODE NULL");
+       #endif
         return;
     }
     finalNode_->getAbsRect(absRect_);
     RenderRectAccessor r(finalNode_);
     finalNode_->renderFinalBlock(txtform_, &r, r.getWidth());
+    #if DEBUG_GETRECT_LOGS
     //CRLog::error("txtform_->GetLineCount() = %d", txtform_->GetLineCount());
     //CRLog::error("finalnode = [%s]", LCSTR(finalNode_->getXPath()));
     //CRLog::error("finalnode childcount = %d", finalNode_->getChildCount());
+    #endif
 }
 
 void RectHelper::UpdateNode(ldomNode *Node)
@@ -108,12 +121,12 @@ void RectHelper::UpdateNode(ldomNode *Node)
     lastLen_    = -1;
     lastOffset_ = -1;
 
-    if (finalNode_ == NULL || NodeIsInvisible_ )
+    if (finalNode_ == NULL || NodeIsInvisible_)
     {
         return;
     }
 
-    int index = FindNodeIndex(Node,NodeIndex_);
+    int index = FindNodeIndex(Node, NodeIndex_);
     NodeIndex_ = index;
 
     int count = txtform_->GetSrcCount();
@@ -137,7 +150,7 @@ void RectHelper::UpdateNode(ldomNode *Node)
         bool isObject = (src->flags & LTEXT_SRC_IS_OBJECT) != 0;
         srcLen_ = isObject ? 0 : src->t.len;
     }
-    else if ( count > 0 ) // srcindex < 0
+    else if (count > 0) // srcindex < 0
     {
         lastIndex_ = (FindLastIndexEnable_) ? FindLastIndex(Node) : count - 1;
         const src_text_fragment_t *src = txtform_->GetSrcInfo(lastIndex_);
@@ -149,9 +162,11 @@ void RectHelper::UpdateNode(ldomNode *Node)
     }
     else
     {
+        #if DEBUG_GETRECT_LOGS
         CRLog::error("GetSrcCount: Final node contains no text nodes!");
+        #endif
     }
-    LineIndex_  = FindLineIndex(Node,LineIndex_);
+    LineIndex_ = FindLineIndex(Node, LineIndex_);
 }
 
 bool RectHelper::ifnull(ldomXPointerEx xpointer, lvRect &rect)
@@ -185,28 +200,69 @@ bool RectHelper::ifnull(ldomXPointerEx xpointer, lvRect &rect)
 
 int RectHelper::FindLineIndex(ldomNode *node, int start)
 {
-    CRLog::error("srcindex = %d");
-    for (int l = start; l < txtform_->GetLineCount(); l++)
+   #if DEBUG_GETRECT_LOGS
+    CRLog::error("start = %d, linecount = %d", start, txtform_->GetLineCount());
+   #endif
+    int l = 0;
+    int w = 0;
+    bool found = false;
+    for (l = start; l < txtform_->GetLineCount(); l++)
     {
         const formatted_line_t *frmline = txtform_->GetLineInfo(l);
-        for (int w = 0; w < (int) frmline->word_count; w++)
+        for (w = 0; w < (int) frmline->word_count; w++)
         {
             const formatted_word_t *word = &frmline->words[w];
             if (word->src_text_index == srcIndex_)
             {
-                CRLog::error("Found Line Index = %d",l);
-                return (l <= 0) ? 0 : l - 1;
+                #if DEBUG_GETRECT_LOGS
+                CRLog::error("Found Line Index1 = %d", l);
+                #endif
+                found = true;
+                break;
+            }
+        }
+        if (found)
+        {
+            break;
+        }
+    }
+    if (found == false)
+    {
+        #if DEBUG_GETRECT_LOGS
+        CRLog::error("NOT Found Line Index = 0");
+        #endif
+        return 0;
+    }
+    if (start > 0 && l == start)
+    {
+        for (int l = start; l >= 0; l--)
+        {
+            const formatted_line_t *frmline = txtform_->GetLineInfo(l);
+            int w = (l == start) ? w - 1 : (int) frmline->word_count;
+            for (; w >= 0; w--)
+            {
+                const formatted_word_t *word = &frmline->words[w];
+                if (word->src_text_index != srcIndex_)
+                {
+                    #if DEBUG_GETRECT_LOGS
+                    CRLog::error("Found Line Index2 = %d", l);
+                    #endif
+                    return l;
+                }
             }
         }
     }
-    CRLog::error("NOT Found Line Index = 0");
-    return 0;
+    else
+    {
+        return l;
+    }
+
 }
 
 int RectHelper::FindNodeIndex(ldomNode *node, int start)
 {
 
-    start = ( start < 0 ) ? 0 : start;
+    start = (start < 0) ? 0 : start;
     int count = txtform_->GetSrcCount();
     for (int i = start; i < count; i++)
     {
@@ -217,13 +273,17 @@ int RectHelper::FindNodeIndex(ldomNode *node, int start)
         }
     }
     //RLog::error("start = %d, count = %d",start,count);
+    #if DEBUG_GETRECT_LOGS
     CRLog::error("NOT FOUND NODE INDEX RETRYING");
+    #endif
     //nodes in txtform appear to be able not to be in order,
     // so we retry search cycle from zero, to find node index again
-    if(start > 0)
+    if (start > 0)
     {
+        #if DEBUG_GETRECT_LOGS
         CRLog::error("start = %d, count = %d", start, count);
-        return FindNodeIndex(node,0);
+        #endif
+        return FindNodeIndex(node, 0);
     }
     return -1;
 }
@@ -238,7 +298,7 @@ int RectHelper::FindLastIndex(ldomNode *node)
     // К функции GetRect добавлен параметр forlvpoint, который при вызове в генерации оглавлений, включает этот кусок.
 
     int count = txtform_->GetSrcCount();
-    if(count <= 0)
+    if (count <= 0)
     {
         return -1;
     }
@@ -256,17 +316,24 @@ int RectHelper::FindLastIndex(ldomNode *node)
             return i;
         }
     }
-    CRLog::error("FindLastIndex Not found = %d",count-1);
+    #if DEBUG_GETRECT_LOGS
+    CRLog::error("FindLastIndex Not found = %d", count - 1);
+    #endif
 
-    return count-1;
+    return count - 1;
 }
 
 lvRect RectHelper::getRect(ldomWord word)
 {
+    #if DEBUG_GETRECT_LOGS
     CRLog::trace("GetRect START");
+    #endif
     lvRect rect;
     if (word.isNull())
     {
+        #if DEBUG_GETRECT_LOGS
+        CRLog::error("word is null STOP");
+        #endif
         return rect;
     }
     // get start and end rects
@@ -276,13 +343,20 @@ lvRect RectHelper::getRect(ldomWord word)
     lvRect rc2old;
     ldomXPointerEx xp1 = word.getStartXPointer();
     ldomXPointerEx xp2 = word.getEndXPointer();
-    bool a1 = this->processRect(xp1, rc1);
-    bool a2 = this->processRect(xp2, rc2);
-    //bool a1old = xp1.getRect(rc1old,false);
-    //bool a2old = xp2.getRect(rc2old,false);
-    //bool a2 = false;
-    CRLog::error("Nodetext = [%s] , LETTER = [%s]",LCSTR(word.getNode()->getText()),LCSTR(word.getText()));
+    #if DEBUG_GETRECT_LOGS
+    CRLog::error("Nodetext = [%s] , LETTER = [%s]", LCSTR(word.getNode()->getText()), LCSTR(word.getText()));
+    #endif
 
+    //bool a1 = false;
+    //bool a2 = false;
+    //a1 = this->processRect(xp1, rc1);
+    //a2 = this->processRect(xp2, rc2);
+    //xp1.getRect(rc1old,false);
+    //xp2.getRect(rc2old,false);
+
+    #if DEBUG_GETRECT_LOGS
+    CRLog::trace("GetRect STOP1");
+    #endif
     //if(rc1 != rc1old)
     //{
     //    CRLog::warn("RC1 New rect != old rect! ^ [%d:%d][%d:%d] != [%d:%d][%d:%d]",rc1.left,rc1.right,rc1.top,rc1.bottom,rc1old.left,rc1old.right,rc1old.top,rc1old.bottom);
@@ -294,11 +368,9 @@ lvRect RectHelper::getRect(ldomWord word)
 
     //if (!xp1.getRect(rc1,false) || !xp2.getRect(rc2,false)) //OLD OLD
     //if (!xp1.getRect(rc1,false) || !this->processRect(xp2, rc2)) //OLD NEW
-    //if (!this->processRect(xp1, rc1) || !this->processRect(xp2, rc2)) //NEW NEW
-    if (!a1 || !a2)
+    if (!this->processRect(xp1, rc1) || !this->processRect(xp2, rc2)) //NEW NEW
+    //if (!a1 || !a2)
     {
-        CRLog::trace("GetRect STOP1");
-
         return rect;
     }
     if (rc1.top == rc2.top && rc1.bottom == rc2.bottom)
@@ -308,7 +380,9 @@ lvRect RectHelper::getRect(ldomWord word)
         rect.top = rc1.top;
         rect.right = rc2.right;
         rect.bottom = rc2.bottom;
+        #if DEBUG_GETRECT_LOGS
         CRLog::trace("GetRect STOP2");
+        #endif
         return rect;
     }
     // on different lines
@@ -316,7 +390,9 @@ lvRect RectHelper::getRect(ldomWord word)
     ldomNode *parent = range.getNearestCommonParent();
     if (!parent)
     {
+        #if DEBUG_GETRECT_LOGS
         CRLog::trace("GetRect STOP3");
+        #endif
         return rect;
     }
     parent->getAbsRect(rect);
@@ -331,7 +407,7 @@ lvRect RectHelper::getRect(ldomWord word)
 bool RectHelper::processRect(ldomXPointerEx xpointer, lvRect &rect)
 {
 
-    if(NodeIsInvisible_)
+    if (NodeIsInvisible_)
     {
         return false;
     }
@@ -340,7 +416,9 @@ bool RectHelper::processRect(ldomXPointerEx xpointer, lvRect &rect)
     if (finalNode_ == NULL)
     {
         bool res = ifnull(xpointer, rect);
-        CRLog::error("Rect ifnull = [%d:%d][%d:%d]",rect.left,rect.right,rect.top,rect.bottom);
+        #if DEBUG_GETRECT_LOGS
+        CRLog::error("Rect ifnull = [%d:%d][%d:%d]", rect.left, rect.right, rect.top, rect.bottom);
+        #endif
         return res;
     }
 
@@ -360,20 +438,25 @@ bool RectHelper::processRect(ldomXPointerEx xpointer, lvRect &rect)
         return false;
     }
     ldomNode *node = xpointer.getNode();
-    CRLog::error("NEW FINAL NODE = [%s]",LCSTR(finalNode_->getXPath()));
+    #if DEBUG_GETRECT_LOGS
+    CRLog::error("NEW FINAL NODE = [%s]", LCSTR(finalNode_->getXPath()));
     // CRLog::error("FINAL NODE TEXT = [%s]",LCSTR(finalNode_->getText()));
     // CRLog::error("NODE      = [%s]",LCSTR(Node_->getXPath()));
     // CRLog::error("NODE TEXT = [%s]",LCSTR(Node_->getText()));
-
+    #endif
     int offset = xpointer.getOffset();
     //CRLog::error("NEW offset = %d",offset);
     //CRLog::error("NEW lastoffset = %d",lastOffset_);
     if (NodeIndex_ < 0)
     {
+        #if DEBUG_GETRECT_LOGS
         CRLog::error("NEW replacing offset with last offset");
+        #endif
         offset = lastOffset_;
     }
-    CRLog::error("srcIndex = %d srcLen = %d lastIndex = %d lastLen = %d lastOffset = %d nodeIndex =%d ",srcIndex_,srcLen_,lastIndex_,lastLen_,lastOffset_,NodeIndex_);
+    #if DEBUG_GETRECT_LOGS
+    CRLog::error("srcIndex = %d srcLen = %d lastIndex = %d lastLen = %d lastOffset = %d nodeIndex =%d ", srcIndex_, srcLen_, lastIndex_, lastLen_, lastOffset_, NodeIndex_);
+    #endif
     int count = txtform_->GetLineCount();
     int start = LineIndex_;
     for (int l = start; l < count; l++)
@@ -385,12 +468,13 @@ bool RectHelper::processRect(ldomXPointerEx xpointer, lvRect &rect)
             bool lastWord = (l == txtform_->GetLineCount() - 1 && w == frmline->word_count - 1);
             if (word->src_text_index >= srcIndex_ || lastWord)
             {
-                CRLog::error("l = %d, w = %d lastword = %d line_index = %d",l,w,(lastWord)?1:0,LineIndex_);
+                #if DEBUG_GETRECT_LOGS
+                CRLog::error("l = %d, w = %d lastword = %d line_index = %d", l, w, (lastWord) ? 1 : 0, LineIndex_);
                 //CRLog::error("word->src_text_index > srcIndex || offset <= word->t.start");
                 //CRLog::error("%d>%d || %d <= %d",word->src_text_index,srcIndex_,offset,word->t.start);
                 //CRLog::error("(offset < word->t.start + word->t.len) || (offset == srcLen && offset == word->t.start + word->t.len)");
                 //CRLog::error("(%d < %d + %d) || (%d == %d && %d == %d + %d)",offset, word->t.start , word->t.len,offset , srcLen_ ,offset , word->t.start , word->t.len);
-
+                #endif
                 // found word from same src line
                 if (word->src_text_index > srcIndex_ || offset <= word->t.start)
                 {
@@ -401,36 +485,34 @@ bool RectHelper::processRect(ldomXPointerEx xpointer, lvRect &rect)
                     rect.top = rc.top + frmline->y;
                     rect.right = rect.left + 1;
                     rect.bottom = rect.top + frmline->height;
-                    CRLog::error("word->x = %d, rc.left = %d, frmline->x = %d",word->x,rc.left,frmline->x);
-                    CRLog::error("Rect1 = [%d:%d][%d:%d]",rect.left,rect.right,rect.top,rect.bottom);
                     LineIndex_ = l;
+                    #if DEBUG_GETRECT_LOGS
+                    CRLog::error("word->x = %d, rc.left = %d, frmline->x = %d", word->x, rc.left, frmline->x);
+                    CRLog::error("Rect1 = [%d:%d][%d:%d]", rect.left, rect.right, rect.top, rect.bottom);
                     //CRLog::error("LINEINDEX END = %d",LineIndex_);
-
+                    #endif
                     return true;
                 }
                 else if ((offset < word->t.start + word->t.len) || (offset == srcLen_ && offset == word->t.start + word->t.len))
                 {
-                     // pointer inside this word
+                    // pointer inside this word
                     LVFont *font = (LVFont *) txtform_->GetSrcInfo(srcIndex_)->t.font;
                     lUInt16 widths[512];
                     lUInt8 flg[512];
                     lString16 str = node->getText();
-                    font->measureText(str.c_str() + word->t.start,
-                            offset - word->t.start,
-                            widths,
-                            flg,
-                            word->width + 50,
-                            '?',
-                            txtform_->GetSrcInfo(srcIndex_)->letter_spacing);
+                    font->measureText(str.c_str() + word->t.start, offset - word->t.start, widths, flg, word->width + 50, '?', txtform_->GetSrcInfo(srcIndex_)->letter_spacing);
                     int chx = widths[offset - word->t.start - 1];
                     rect.left = word->x + rc.left + frmline->x + chx;
                     //rect.top = word->y + rc.top + frmline->y + frmline->baseline;
                     rect.top = rc.top + frmline->y;
                     rect.right = rect.left + 1;
                     rect.bottom = rect.top + frmline->height;
-                    CRLog::error("Rect2 = [%d:%d][%d:%d]",rect.left,rect.right,rect.top,rect.bottom);
                     LineIndex_ = l;
+                    #if DEBUG_GETRECT_LOGS
+                    CRLog::error("Rect2 = [%d:%d][%d:%d]", rect.left, rect.right, rect.top, rect.bottom);
                     //CRLog::error("LINEINDEX END = %d",LineIndex_);
+                    #endif
+
 
                     return true;
                 }
@@ -442,15 +524,18 @@ bool RectHelper::processRect(ldomXPointerEx xpointer, lvRect &rect)
                     rect.top = rc.top + frmline->y;
                     rect.right = rect.left + 1;
                     rect.bottom = rect.top + frmline->height;
-                    CRLog::error("Rect3 = [%d:%d][%d:%d]",rect.left,rect.right,rect.top,rect.bottom);
                     LineIndex_ = l;
+                    #if DEBUG_GETRECT_LOGS
+                    CRLog::error("Rect3 = [%d:%d][%d:%d]", rect.left, rect.right, rect.top, rect.bottom);
                     //CRLog::error("LINEINDEX END = %d",LineIndex_);
-
+                    #endif
                     return true;
                 }
             }
         }
     }
-    //CRLog::error("2");
+    #if DEBUG_GETRECT_LOGS
+    //CRLog::error("new getrect return false");
+    #endif
     return false;
 }

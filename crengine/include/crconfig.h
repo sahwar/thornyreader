@@ -25,10 +25,13 @@ extern int gTextLeftShift;
 #define DEBUG_TREE_DRAW 0 // define to non-zero (1..5) to see block bounds
 #define DEBUG_CRE_PARA_END_BLOCKS 0
 #define DEBUG_DRAW_IMAGE_HITBOXES 0
+#define DEBUG_GETRECT_LOGS 0
 #else
 #define DUMP_DOMTREE 0
 #define DEBUG_TREE_DRAW 0
 #define DEBUG_CRE_PARA_END_BLOCKS 0
+#define DEBUG_DRAW_IMAGE_HITBOXES 0
+#define DEBUG_GETRECT_LOGS 0
 #endif // TRDEBUG
 
 #endif //CRCONFIG_H
