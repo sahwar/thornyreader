@@ -2039,7 +2039,7 @@ static bool isInlineNode( ldomNode * node )
 
 static lString16 getSectionHeader( ldomNode * section )
 {
-    lString16 header;
+    lString16 header = lString16("-");
     if ( !section || section->getChildCount() == 0 )
         return header;
     ldomNode * child = section->getChildElementNode(0, L"title");
