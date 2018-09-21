@@ -1860,6 +1860,7 @@ void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
 	{
 	    LVDocView * doc_view_;
         LVArray<TextRect> &list_;
+        RectHelper rectHelper_;
 		void ProcessFinalNode(ldomNode *node)
         {
             ldomXRange nodeRange = ldomXRange(node);
@@ -1868,6 +1869,7 @@ void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
             {
                 return;
             }
+            rectHelper_.Init(node);
             lString16 text = node->getText();
             int pos = nodeRange.getStart().getOffset();
             int len = text.length();
@@ -1881,9 +1883,12 @@ void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
             LVArray<TextRect> pre;
             for (; pos < len; pos++)
             {
-                ldomWord word = ldomWord(node, pos, pos + 1);
-                lvRect rect = word.getRect();
-                lString16 string = word.getText();
+                ldomWord domword = ldomWord(node, pos, pos + 1);
+                //old implementation
+                //lvRect rect = domword.getRect();
+	            //new implementation
+	            lvRect rect = rectHelper_.getRect(domword);
+	            lString16 string = domword.getText();
                 pre.add(TextRect(node, rect, string));
             }
             if(pre.empty())
@@ -1892,6 +1897,7 @@ void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
             }
             TextRect word = pre.get(0);
             lvRect rect = word.getRect();
+
 
             lvRect last = rect;
             for (int i = 0; i < pre.length(); i++)
