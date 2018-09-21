@@ -2103,9 +2103,36 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas()
 
 		lvRect ProcessNodeParaends(ldomNode *node, ldomXRange* range)
 		{
-            //CRLog::error("in node = %s",LCSTR(node->getNodeName()));
+            CRLog::error("in node = %s",LCSTR(node->getXPath()));
             lvRect paraend;
-			for (lUInt32 i = 0; i < node->getChildCount(); i++)
+            int childcount = node->getChildCount();
+            if (childcount == 0 && node->isNodeName("br"))
+            {
+                //CRLog::error("BR IN");
+            	//int index = (node->getNodeIndex() > 0) ? node->getNodeIndex() - 1 : 0;
+                int index = node->getNodeIndex();
+                if (index <= 0)
+                {
+                    //CRLog::error("BR1");
+	                return paraend;
+                }
+                ldomNode *prevNode = node->getParentNode()->getChildNode(index-1);
+                if (prevNode == NULL)
+                {
+                    //CRLog::error("BR2");
+                    return paraend;
+                }
+                ldomNode *TxtNode = (prevNode->isText()) ? prevNode : NULL ; //prevNode->getLastTextChild();
+                if (TxtNode == NULL)
+                {
+                    //CRLog::error("prevnode = [%s]",LCSTR(prevNode->getXPath()));
+                    //CRLog::error("BR3");
+                    return paraend;
+                }
+                //CRLog::error("BR OK");
+                paraend = ProcessFinalNode_GetNodeEnd(TxtNode);
+            }
+			for (lUInt32 i = 0; i < childcount; i++)
 			{
 				ldomNode *child = node->getChildNode(i);
 				if (child->isText())
