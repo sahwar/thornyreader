@@ -435,7 +435,9 @@ bool RectHelper::processRect(ldomXPointerEx xpointer, lvRect &rect)
     {
         rect = rc;
         rect.bottom++;
+        #if DEBUG_GETRECT_LOGS
         CRLog::error("1");
+        #endif
         return true;
     }
     if (NodeIndex_ < 0 && lastIndex_ < 0)

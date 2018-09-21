@@ -50,12 +50,12 @@ public:
 
     RectHelper() {};
 
-    ~RectHelper() {
+    /*~RectHelper() {
       free(Node_);
       free(finalNode_);
       free(txtform_.get());
       free(&absRect_);
-    };
+    };*/
 
     void Init(ldomNode *Node);
 

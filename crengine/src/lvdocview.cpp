@@ -12,6 +12,7 @@
  *******************************************************/
 
 #include <map>
+#include "include/RectHelper.h"
 #include "thornyreader/include/thornyreader.h"
 #include "include/lvdocview.h"
 #include "include/CreBridge.h"
@@ -2049,6 +2050,7 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas()
 		LVArray<lvRect> para_rect_array;
 		bool endnode_found_ = false;
 		int unused_;
+		RectHelper rectHelper_;
 
 		bool NodeIsAllowed(ldomNode * node)
         {
@@ -2147,8 +2149,27 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas()
 				return empty_rect;
 			}
 
-			lvRect end_rect;
-			if (!end.getRect(end_rect))
+            lvRect end_rect;
+
+            rectHelper_.Init(node);
+#if 0
+            //debug test: New getrect vs old getrect
+            {
+                lvRect oldrect;
+                lvRect newrect;
+                end.getRect(oldrect);
+                rectHelper_.processRect(end,newrect);
+                if(oldrect!=newrect)
+                {
+                    CRLog::warn("new rect != old rect [%d:%d][%d:%d] != [%d:%d][%d:%d]",newrect.left,newrect.right,newrect.top,newrect.bottom,oldrect.left,oldrect.right,oldrect.top,oldrect.bottom);
+                }
+            }
+#endif
+			//old implementation
+			//if (!end.getRect(end_rect))
+
+            //new implementation
+			if(!rectHelper_.processRect(end,end_rect))
 			{
 				CRLog::warn("Unable to get node end coordinates. Ignoring");
 				//para_rect_array.add(empty_rect);
