@@ -54,7 +54,9 @@ LOCAL_SRC_FILES := \
     src/rtfimp.cpp \
     src/txtselector.cpp \
     src/wordfmt.cpp \
+    src/docxhandler.cpp \
     src/mobihandler.cpp \
+    src/RectHelper.cpp \
     src/crconfig.cpp
 
 LOCAL_SRC_FILES += \

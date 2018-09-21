@@ -12,6 +12,7 @@
  *******************************************************/
 
 #include <map>
+#include "include/RectHelper.h"
 #include "thornyreader/include/thornyreader.h"
 #include "include/lvdocview.h"
 #include "include/CreBridge.h"
@@ -378,6 +379,14 @@ static LVStreamRef ThResolveStream(int doc_format, const char *absolute_path_cha
 				found_count++;
 			}
 		}
+        else if (doc_format == DOC_FORMAT_DOCX)
+        {
+            if (name_lowercase.endsWith(".docx"))
+            {
+                entry_name = name;
+                found_count++;
+            }
+        }
 	}
 	if (found_count == 1)
 	{
@@ -434,6 +443,17 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 		LvDomWriter writer(cr_dom_);
 		parser = new LvXmlParser(stream_, &writer, false, true, cfg_firstpage_thumb_);
 	}
+    else if (doc_format == DOC_FORMAT_DOCX)
+    {
+        cr_dom_->setProps(doc_props_);
+        CRLog::error("IMPORTING DOCX");
+        if (!ImportDocxDocument(stream_, cr_dom_, cfg_firstpage_thumb_))
+        {
+            CRLog::error("IMPORTING DOCX FAILED");
+            return false;
+        }
+        doc_props_ = cr_dom_->getProps();
+    }
 	else if (doc_format == DOC_FORMAT_EPUB)
 	{
 		if (!DetectEpubFormat(stream_))
@@ -550,14 +570,14 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 #ifdef TRDEBUG
 if (DUMP_DOMTREE == 1)
 {
-	CRLog::error("dumping domtree");
-	LVStreamRef out = LVOpenFileStream("/sdcard/download/temp.xml", LVOM_WRITE);
-	//LVStreamRef out = LVOpenFileStream("/mnt/shell/emulated/10/Android/data/org.readera.trdevel/files/temp.xml", LVOM_WRITE);
-	//LVStreamRef out = LVOpenFileStream("/data/data/org.readera.trdevel/files/temp.xml", LVOM_WRITE);
-	if(cr_dom_->saveToStream(out, NULL, true))
-	{
-		CRLog::error("dumped successfully");
-	}
+    CRLog::error("dumping domtree");
+    LVStreamRef out = LVOpenFileStream("/sdcard/download/temp.xml", LVOM_WRITE);
+    //LVStreamRef out = LVOpenFileStream("/mnt/shell/emulated/10/Android/data/org.readera.trdevel/files/temp.xml", LVOM_WRITE);
+    //LVStreamRef out = LVOpenFileStream("/data/data/org.readera.trdevel/files/temp.xml", LVOM_WRITE);
+    if(cr_dom_->saveToStream(out, NULL, true))
+    {
+    	CRLog::error("dumped successfully");
+    }
 }
 #if 0
     lString16 stylesheet = cr_dom_->createXPointer(L"/FictionBook/stylesheet").getText();
@@ -1859,6 +1879,7 @@ void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
 	{
 	    LVDocView * doc_view_;
         LVArray<TextRect> &list_;
+        RectHelper rectHelper_;
 		void ProcessFinalNode(ldomNode *node)
         {
             ldomXRange nodeRange = ldomXRange(node);
@@ -1867,6 +1888,7 @@ void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
             {
                 return;
             }
+            rectHelper_.Init(node);
             lString16 text = node->getText();
             int pos = nodeRange.getStart().getOffset();
             int len = text.length();
@@ -1880,9 +1902,12 @@ void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
             LVArray<TextRect> pre;
             for (; pos < len; pos++)
             {
-                ldomWord word = ldomWord(node, pos, pos + 1);
-                lvRect rect = word.getRect();
-                lString16 string = word.getText();
+                ldomWord domword = ldomWord(node, pos, pos + 1);
+                //old implementation
+                //lvRect rect = domword.getRect();
+	            //new implementation
+	            lvRect rect = rectHelper_.getRect(domword);
+	            lString16 string = domword.getText();
                 pre.add(TextRect(node, rect, string));
             }
             if(pre.empty())
@@ -1891,6 +1916,7 @@ void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
             }
             TextRect word = pre.get(0);
             lvRect rect = word.getRect();
+
 
             lvRect last = rect;
             for (int i = 0; i < pre.length(); i++)
@@ -2049,6 +2075,7 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas()
 		LVArray<lvRect> para_rect_array;
 		bool endnode_found_ = false;
 		int unused_;
+		RectHelper rectHelper_;
 
 		bool NodeIsAllowed(ldomNode * node)
         {
@@ -2095,16 +2122,43 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas()
 
 		lvRect ProcessNodeParaends(ldomNode *node, ldomXRange* range)
 		{
-            //CRLog::error("in node = %s",LCSTR(node->getNodeName()));
+            CRLog::error("in node = %s",LCSTR(node->getXPath()));
             lvRect paraend;
-			for (lUInt32 i = 0; i < node->getChildCount(); i++)
+            int childcount = node->getChildCount();
+            if (childcount == 0 && node->isNodeName("br"))
+            {
+                //CRLog::error("BR IN");
+            	//int index = (node->getNodeIndex() > 0) ? node->getNodeIndex() - 1 : 0;
+                int index = node->getNodeIndex();
+                if (index <= 0)
+                {
+                    //CRLog::error("BR1");
+	                return paraend;
+                }
+                ldomNode *prevNode = node->getParentNode()->getChildNode(index-1);
+                if (prevNode == NULL)
+                {
+                    //CRLog::error("BR2");
+                    return paraend;
+                }
+                ldomNode *TxtNode = (prevNode->isText()) ? prevNode : NULL ; //prevNode->getLastTextChild();
+                if (TxtNode == NULL)
+                {
+                    //CRLog::error("prevnode = [%s]",LCSTR(prevNode->getXPath()));
+                    //CRLog::error("BR3");
+                    return paraend;
+                }
+                //CRLog::error("BR OK");
+                paraend = ProcessFinalNode_GetNodeEnd(TxtNode);
+            }
+			for (lUInt32 i = 0; i < childcount; i++)
 			{
 				ldomNode *child = node->getChildNode(i);
 				if (child->isText())
 				{
 					paraend = ProcessFinalNode_GetNodeEnd(child);
                   //  CRLog::error("Final node processed");
-                  //  CRLog::error("final node = %s",LCSTR(node->getNodeName()));
+                  //  CRLog::error("final node = %s",LCSTR(child->getNodeName()));
                   //  CRLog::error("final text = %s",LCSTR(child->getText()));
 				}
 				else
@@ -2117,6 +2171,11 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas()
                 {
                     //CRLog::error("endnode found for processnodeparaends");
                     endnode_found_ = true;
+                    break;
+                }
+                if (endnode_found_)
+                {
+                    break;
                 }
 			}
             if(NodeIsAllowed(node))
@@ -2142,8 +2201,27 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas()
 				return empty_rect;
 			}
 
-			lvRect end_rect;
-			if (!end.getRect(end_rect))
+            lvRect end_rect;
+
+            rectHelper_.Init(node);
+#if 0
+            //debug test: New getrect vs old getrect
+            {
+                lvRect oldrect;
+                lvRect newrect;
+                end.getRect(oldrect);
+                rectHelper_.processRect(end,newrect);
+                if(oldrect!=newrect)
+                {
+                    CRLog::warn("new rect != old rect [%d:%d][%d:%d] != [%d:%d][%d:%d]",newrect.left,newrect.right,newrect.top,newrect.bottom,oldrect.left,oldrect.right,oldrect.top,oldrect.bottom);
+                }
+            }
+#endif
+			//old implementation
+			//if (!end.getRect(end_rect))
+
+            //new implementation
+			if(!rectHelper_.processRect(end,end_rect))
 			{
 				CRLog::warn("Unable to get node end coordinates. Ignoring");
 				//para_rect_array.add(empty_rect);
@@ -2160,7 +2238,6 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas()
 		}
 
 	public:
-		bool text_is_first_ = true;
 
 		ParaKeeper(int &unused) : unused_(unused)	{	}
 
@@ -2168,17 +2245,18 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas()
         void processText(ldomNode *node1, ldomXRange *range)
         {
             ldomXRange node_range = ldomXRange(node1);
-
-            if (!text_is_first_)
-            {
-                return;
-            }
-            text_is_first_ = false;
             ldomNode *node = node_range.getStart().getNode();
+            ldomNode *txtnode = node_range.getStart().getNode();
             if (node->isNull())
             {
                 return;
             }
+           int index = node->getNodeIndex();
+           int lastindex = node->getParentNode()->getChildCount()-1;
+           if (index < lastindex)
+           {
+               return;
+           }
             while (node != NULL && node->getParentNode() != NULL)
             {
                 node = node->getParentNode();
@@ -2186,12 +2264,19 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas()
                 {
                     break;
                 }
+                int index = node->getNodeIndex();
+                int lastindex = node->getParentNode()->getChildCount()-1;
+                if (index < lastindex)
+                {
+                    return;
+                }
             }
             if (node->getParentNode() == NULL)
             {
                 return;
             }
-            ProcessNodeParaends(node, range);
+	        para_rect_array.add(ProcessFinalNode_GetNodeEnd(txtnode));
+	        //ProcessNodeParaends(node, range);
         }
 
         virtual bool processElement(ldomNode *node, ldomXRange *range)
@@ -2218,7 +2303,6 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas()
 		page_range = GetPageDocRange(page_index + 1);
 		if (!page_range.isNull())
 		{
-			callback.text_is_first_ = true;
             page_range->forEach2(&callback);
 			result.add(callback.GetParaArray());
 		}
@@ -2239,6 +2323,7 @@ LVArray<ImgRect> LVDocView::GetCurrentPageImages()
 	{
 		LVArray<ImgRect> img_rect_array;
 		LVDocView* doc_view_;
+		RectHelper rectHelper_;
 	public:
 
 		ImageKeeper(LVDocView* doc_view) : doc_view_(doc_view) {	}
@@ -2262,7 +2347,25 @@ LVArray<ImgRect> LVDocView::GetCurrentPageImages()
             css_style_rec_t *style = node->getStyle().get();
             css_style_rec_t *parent_style = node->getParentNode()->getStyle().get();
             lvRect imgrect;
-            if (!xp.getRect(imgrect))
+            rectHelper_.Init(node);
+	        #if 1
+	        //debug test: New getrect vs old getrect
+            {
+                lvRect oldrect;
+                lvRect newrect;
+                xp.getRect(oldrect);
+                rectHelper_.processRect(xp,newrect);
+                if(oldrect!=newrect)
+                {
+                    CRLog::warn("new rect != old rect [%d:%d][%d:%d] != [%d:%d][%d:%d]",newrect.left,newrect.right,newrect.top,newrect.bottom,oldrect.left,oldrect.right,oldrect.top,oldrect.bottom);
+                }
+            }
+            #endif
+
+            //old implementation
+            //if (!xp.getRect(imgrect))
+	        //new implementation
+            if (!rectHelper_.processRect(xp,imgrect))
             {
                 CRLog::error("Unable to get imagerect!");
             }
@@ -2860,6 +2963,10 @@ float LVDocView::CalcRightSide(TextRect textrect)
     if (mainname == "epigraph") {
         result = right_line * 0.9;
     }
+    if (mainname == "td")
+    {
+        result = rect.right + hyphwidth;
+    }
     else if (align == css_ta_right)
     {
         result = right_line - page_margins.right + (hyphwidth / 2);
@@ -2885,6 +2992,10 @@ float LVDocView::CalcRightSide(TextRect textrect)
     {
         result = right_line - hyphwidth;
     }
+	else if (mainname == "ul")
+	{
+        result = right_line - leftshift + (hyphwidth * 2);
+	}
 	else //css_ta_justify AND margins ON
 	{
         result = right_line - leftshift + hyphwidth;
