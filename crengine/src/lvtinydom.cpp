@@ -5597,6 +5597,10 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
         /// called for each found text fragment in range
         virtual void onText(ldomXRange* nodeRange) {
             ldomNode* node = nodeRange->getStart().getNode();
+            if(!CheckNode(node))
+            {
+                return;
+            }
             ldomNode* parent_node = node->getParentNode();
 
             lString16 text = node->getText();
@@ -5701,6 +5705,20 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
             ldomNode* elem = ptr->getNode();
             if (elem->getRendMethod() == erm_invisible) {
                 return false;
+            }
+            return true;
+        }
+
+        bool CheckNode(ldomNode * node)
+        {
+            ldomNode * p = node;
+            while (p->getParentNode()!=NULL)
+            {
+                p = p->getParentNode();
+                if (p->getRendMethod() == erm_invisible)
+                {
+                    return false;
+                }
             }
             return true;
         }
