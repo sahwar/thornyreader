@@ -2271,6 +2271,7 @@ LVArray<ImgRect> LVDocView::GetCurrentPageImages()
 	{
 		LVArray<ImgRect> img_rect_array;
 		LVDocView* doc_view_;
+		RectHelper rectHelper_;
 	public:
 
 		ImageKeeper(LVDocView* doc_view) : doc_view_(doc_view) {	}
@@ -2294,7 +2295,25 @@ LVArray<ImgRect> LVDocView::GetCurrentPageImages()
             css_style_rec_t *style = node->getStyle().get();
             css_style_rec_t *parent_style = node->getParentNode()->getStyle().get();
             lvRect imgrect;
-            if (!xp.getRect(imgrect))
+            rectHelper_.Init(node);
+	        #if 1
+	        //debug test: New getrect vs old getrect
+            {
+                lvRect oldrect;
+                lvRect newrect;
+                xp.getRect(oldrect);
+                rectHelper_.processRect(xp,newrect);
+                if(oldrect!=newrect)
+                {
+                    CRLog::warn("new rect != old rect [%d:%d][%d:%d] != [%d:%d][%d:%d]",newrect.left,newrect.right,newrect.top,newrect.bottom,oldrect.left,oldrect.right,oldrect.top,oldrect.bottom);
+                }
+            }
+            #endif
+
+            //old implementation
+            //if (!xp.getRect(imgrect))
+	        //new implementation
+            if (!rectHelper_.processRect(xp,imgrect))
             {
                 CRLog::error("Unable to get imagerect!");
             }
