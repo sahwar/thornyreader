@@ -1724,7 +1724,7 @@ class ldomElementWriter
     friend class LvDomWriter;
     friend class LvDomAutocloseWriter;
     //friend ldomElementWriter * pop( ldomElementWriter * obj, lUInt16 id );
-    ldomElementWriter(CrDom * document, lUInt16 nsid, lUInt16 id, ldomElementWriter * parent);
+    ldomElementWriter(CrDom * document, lUInt16 nsid, lUInt16 id, ldomElementWriter * parent, lUInt32 flags);
     ~ldomElementWriter();
 };
 

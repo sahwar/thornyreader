@@ -1965,7 +1965,8 @@ static bool IS_FIRST_BODY = false;
 ldomElementWriter::ldomElementWriter(CrDom* document,
         lUInt16 nsid,
         lUInt16 id,
-        ldomElementWriter* parent)
+        ldomElementWriter* parent,
+        lUInt32 flags)
         : _parent(parent),
           _document(document),
           _tocItem(NULL),
@@ -1976,7 +1977,7 @@ ldomElementWriter::ldomElementWriter(CrDom* document,
 {
     //logfile << "{c";
     _typeDef = _document->getElementTypePtr( id );
-    _flags = 0;
+    _flags = flags;
     if ( (_typeDef && _typeDef->white_space==css_ws_pre) || (_parent && _parent->getFlags()&TXTFLG_PRE) )
         _flags |= TXTFLG_PRE;
     _isSection = (id==el_section);
@@ -2312,7 +2313,7 @@ bool hasInvisibleParent( ldomNode * node )
 
 void ldomNode::initNodeRendMethod()
 {
-    if ( !isElement() )
+    if (!isElement())
         return;
     if ( isRoot() ) {
         setRendMethod(erm_block);
@@ -2330,10 +2331,14 @@ void ldomNode::initNodeRendMethod()
 */
     int d = getStyle()->display;
 
-    if ( hasInvisibleParent(this) ) {
-        // invisible
-        //recurseElements( resetRendMethodToInvisible );
+    if (d == css_d_none)
+    {
         setRendMethod(erm_invisible);
+        recurseElements( resetRendMethodToInvisible );
+    //} else if (hasInvisibleParent(this)) {
+    //    // invisible
+    //    //recurseElements( resetRendMethodToInvisible );
+    //    setRendMethod(erm_invisible);
     } else if ( d==css_d_inline ) {
         // inline
         //CRLog::trace("switch all children elements of <%s> to inline", LCSTR(getNodeName()));
@@ -2464,13 +2469,11 @@ void ldomElementWriter::onText( const lChar16 * text, int len, lUInt32 )
     {
         // normal mode: store text copy
         // add text node, if not first empty space string of block node
-        if ( !_isBlock
-             || _element->getChildCount()!=0
-             || !IsEmptySpace( text, len ) || (_flags&TXTFLG_PRE) ) {
+        if ( !_isBlock || _element->getChildCount()!=0 || !IsEmptySpace( text, len ) || (_flags&TXTFLG_PRE) || (_flags&TXTFLG_KEEP_SPACES) ) {
             lString8 s8 = UnicodeToUtf8(text, len);
             _element->insertChildText(s8);
         } else {
-            //CRLog::trace("ldomElementWriter::onText: Ignoring first empty space of block item");
+            CRLog::trace("ldomElementWriter::onText: Ignoring first empty space of block item");
         }
     }
     //logfile << "}";
@@ -2582,7 +2585,7 @@ void LvDomWriter::OnStart(LVFileFormatParser * parser)
         //CRLog::trace( "LvDomWriter() : header only, tag id=%d", _stopTagId );
     }
     LvXMLParserCallback::OnStart( parser );
-    _currNode = new ldomElementWriter(doc_, 0, 0, NULL);
+    _currNode = new ldomElementWriter(doc_, 0, 0, NULL,_flags);
 }
 
 void LvDomWriter::OnStop()
@@ -2611,7 +2614,7 @@ ldomNode* LvDomWriter::OnTagOpen(const lChar16* nsname, const lChar16* tagname)
         //CRLog::trace("stop tag found, stopping...");
     //    _parser->Stop();
     //}
-    _currNode = new ldomElementWriter(doc_, nsid, id, _currNode);
+    _currNode = new ldomElementWriter(doc_, nsid, id, _currNode,_flags);
     _flags = _currNode->getFlags();
     //logfile << " !o!\n";
     //return _currNode->getElement();
@@ -6242,7 +6245,10 @@ ldomNode * LvDocFragmentWriter::OnTagOpen( const lChar16 * nsname, const lChar16
         if ( !lStr_cmp(tagname, "style") )
             headStyleState = 1;
     }
-    if ( !insideTag && baseTag==tagname ) {
+    /* These changes are made for docx footnotes to be parsed successfully. Needs tests.
+     * Revert if these changes break something else.*/
+    //todo : Test other document formats when docx scan will be available.
+    if ( !insideTag /*&& baseTag==tagname*/ ) {
         insideTag = true;
         if ( !baseTagReplacement.empty() ) {
             baseElement = parent->OnTagOpen(L"", baseTagReplacement.c_str());
@@ -6413,7 +6419,7 @@ ldomNode* LvDomAutocloseWriter::OnTagOpen(const lChar16* nsname, const lChar16* 
     lUInt16 id = doc_->getElementNameIndex(tagname);
     lUInt16 nsid = (nsname && nsname[0]) ? doc_->getNsNameIndex(nsname) : 0;
     AutoClose( id, true );
-    _currNode = new ldomElementWriter( doc_, nsid, id, _currNode );
+    _currNode = new ldomElementWriter( doc_, nsid, id, _currNode,_flags );
     _flags = _currNode->getFlags();
     if (_libRuDocumentDetected && (_flags & TXTFLG_PRE)) {
         // convert preformatted text into paragraphs
@@ -8067,6 +8073,12 @@ void ldomNode::initNodeStyle()
 #endif
         css_style_ref_t style = parent->getStyle();
         LVFontRef font = parent->getFont();
+        int counter = 0;
+        while (style.isNull() && parent->getParentNode()!=NULL && counter < MAX_DOM_LEVEL)
+        {
+            parent = parent->getParentNode();
+            style = parent->getStyle();
+        }
         setNodeStyleRend(this, style, font);
     }
 }
@@ -8921,7 +8933,13 @@ lString16 ldomNode::getMainParentName()
     ldomNode* node = this;
     while(node != NULL && node->getParentNode()!=NULL)
     {
-        if(node->isNodeName("li") || node->isNodeName("ul")|| node->isNodeName("poem") || node->isNodeName("stanza") || node->isNodeName("annotation")|| node->isNodeName("blockquote"))
+        if(node->isNodeName("li")
+           || node->isNodeName("poem")
+           || node->isNodeName("stanza")
+           || node->isNodeName("annotation")
+           || node->isNodeName("blockquote")
+           || node->isNodeName("td")
+           || node->isNodeName("epigraph"))
         {
             return node->getNodeName();
         }

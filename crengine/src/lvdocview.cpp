@@ -379,6 +379,14 @@ static LVStreamRef ThResolveStream(int doc_format, const char *absolute_path_cha
 				found_count++;
 			}
 		}
+        else if (doc_format == DOC_FORMAT_DOCX)
+        {
+            if (name_lowercase.endsWith(".docx"))
+            {
+                entry_name = name;
+                found_count++;
+            }
+        }
 	}
 	if (found_count == 1)
 	{
@@ -435,6 +443,17 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 		LvDomWriter writer(cr_dom_);
 		parser = new LvXmlParser(stream_, &writer, false, true, cfg_firstpage_thumb_);
 	}
+    else if (doc_format == DOC_FORMAT_DOCX)
+    {
+        cr_dom_->setProps(doc_props_);
+        CRLog::error("IMPORTING DOCX");
+        if (!ImportDocxDocument(stream_, cr_dom_, cfg_firstpage_thumb_))
+        {
+            CRLog::error("IMPORTING DOCX FAILED");
+            return false;
+        }
+        doc_props_ = cr_dom_->getProps();
+    }
 	else if (doc_format == DOC_FORMAT_EPUB)
 	{
 		if (!DetectEpubFormat(stream_))
@@ -551,14 +570,14 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 #ifdef TRDEBUG
 if (DUMP_DOMTREE == 1)
 {
-	CRLog::error("dumping domtree");
-	LVStreamRef out = LVOpenFileStream("/sdcard/download/temp.xml", LVOM_WRITE);
-	//LVStreamRef out = LVOpenFileStream("/mnt/shell/emulated/10/Android/data/org.readera.trdevel/files/temp.xml", LVOM_WRITE);
-	//LVStreamRef out = LVOpenFileStream("/data/data/org.readera.trdevel/files/temp.xml", LVOM_WRITE);
-	if(cr_dom_->saveToStream(out, NULL, true))
-	{
-		CRLog::error("dumped successfully");
-	}
+    CRLog::error("dumping domtree");
+    LVStreamRef out = LVOpenFileStream("/sdcard/download/temp.xml", LVOM_WRITE);
+    //LVStreamRef out = LVOpenFileStream("/mnt/shell/emulated/10/Android/data/org.readera.trdevel/files/temp.xml", LVOM_WRITE);
+    //LVStreamRef out = LVOpenFileStream("/data/data/org.readera.trdevel/files/temp.xml", LVOM_WRITE);
+    if(cr_dom_->saveToStream(out, NULL, true))
+    {
+    	CRLog::error("dumped successfully");
+    }
 }
 #if 0
     lString16 stylesheet = cr_dom_->createXPointer(L"/FictionBook/stylesheet").getText();
@@ -2943,6 +2962,10 @@ float LVDocView::CalcRightSide(TextRect textrect)
     // variants of right lines
     if (mainname == "epigraph") {
         result = right_line * 0.9;
+    }
+    if (mainname == "td")
+    {
+        result = rect.right + hyphwidth;
     }
     else if (align == css_ta_right)
     {

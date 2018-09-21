@@ -1,4 +1,5 @@
 #include "include/epubfmt.h"
+#include "include/docxhandler.h"
 
 class EpubItem
 {
@@ -40,7 +41,6 @@ public:
 		return NULL;
 	}
 };
-
 bool DetectEpubFormat(LVStreamRef stream)
 {
 	LVContainerRef m_arc = LVOpenArchive(stream);
@@ -1028,3 +1028,4 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 #endif
 	return true;
 }
+
