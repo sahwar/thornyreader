@@ -1413,6 +1413,7 @@ static void writeNode( LVStream * stream, ldomNode * node, bool treeLayout )
     if ( node->isText() )
     {
         lString8 txt = node->getText8();
+        txt = lString8("[") + txt + lString8("]");
         *stream << txt;
         if ( treeLayout )
             *stream << "\n";
