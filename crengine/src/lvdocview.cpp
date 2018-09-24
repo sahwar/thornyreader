@@ -2122,7 +2122,7 @@ LVArray<lvRect> LVDocView::GetCurrentPageParas()
 
 		lvRect ProcessNodeParaends(ldomNode *node, ldomXRange* range)
 		{
-            CRLog::error("in node = %s",LCSTR(node->getXPath()));
+            //CRLog::error("in node = %s",LCSTR(node->getXPath()));
             lvRect paraend;
             int childcount = node->getChildCount();
             if (childcount == 0 && node->isNodeName("br"))
@@ -2348,7 +2348,7 @@ LVArray<ImgRect> LVDocView::GetCurrentPageImages()
             css_style_rec_t *parent_style = node->getParentNode()->getStyle().get();
             lvRect imgrect;
             rectHelper_.Init(node);
-	        #if 1
+	        #if 0
 	        //debug test: New getrect vs old getrect
             {
                 lvRect oldrect;

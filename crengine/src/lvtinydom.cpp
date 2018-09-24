@@ -6025,16 +6025,19 @@ lString16 ldomXPointer::getHRef()
 lString16 ldomXPointer::getImgHRef()
 {
     if (isNull())
-    {   CRLog::error("emptystr");
+    {
+        //CRLog::error("emptystr");
         return lString16::empty_str;
     }
     ldomNode *node = getNode();
     while (node && !node->isElement())
-    {   CRLog::error("node is not element");
+    {
+        //CRLog::error("node is not element");
         node = node->getParentNode();
     }
     if (!node)
-    {CRLog::error("!node");
+    {
+        //CRLog::error("!node");
         return lString16::empty_str;}
 
     lString16 ref = node->getAttributeValue(LXML_NS_ANY, attr_href);
