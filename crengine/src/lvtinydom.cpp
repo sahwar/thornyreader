@@ -2473,7 +2473,7 @@ void ldomElementWriter::onText( const lChar16 * text, int len, lUInt32 )
             lString8 s8 = UnicodeToUtf8(text, len);
             _element->insertChildText(s8);
         } else {
-            CRLog::trace("ldomElementWriter::onText: Ignoring first empty space of block item");
+            //CRLog::trace("ldomElementWriter::onText: Ignoring first empty space of block item");
         }
     }
     //logfile << "}";
@@ -2713,7 +2713,7 @@ LvDomWriter::LvDomWriter(CrDom* document, bool headerOnly)
     IS_FIRST_BODY = true;
     if (doc_->isDefStyleSet()) {
 #ifdef TRDEBUG
-        CRLog::trace("LvDomWriter::LvDomWriter()");
+        //CRLog::trace("LvDomWriter::LvDomWriter()");
 #endif
         doc_->getRootNode()->initNodeStyle();
         doc_->getRootNode()->setRendMethod(erm_block);

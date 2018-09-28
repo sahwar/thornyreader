@@ -3017,8 +3017,8 @@ void LvXmlParser::initDocxTagsFilter(){
     tags.add(lString16("suppressautohyphens"));
     tags.add(lString16("sizerelh"));
     tags.add(lString16("sizerelv"));
-    tags.add(lString16("pctheight"));
-    tags.add(lString16("pctwidth"));
+    //tags.add(lString16("pctheight"));
+    //tags.add(lString16("pctwidth"));
     tags.add(lString16("miter"));
     tags.add(lString16("headend"));
     tags.add(lString16("tailend"));
@@ -3052,6 +3052,38 @@ void LvXmlParser::initDocxTagsFilter(){
     tags.add(lString16("count"));
     tags.add(lString16("mcjc"));
     tags.add(lString16("mr"));
+    //tags.add(lString16("alternatecontent"));
+    tags.add(lString16("choice"));
+    tags.add(lString16("wrapnone"));
+    tags.add(lString16("wsp"));
+    tags.add(lString16("cnvsppr"));
+    tags.add(lString16("splocks"));
+    tags.add(lString16("solidfill"));
+    tags.add(lString16("srgbclr"));
+    tags.add(lString16("hiddenline"));
+    tags.add(lString16("bodypr"));
+    tags.add(lString16("noautofit"));
+    tags.add(lString16("choice"));
+    tags.add(lString16("fallback"));
+    tags.add(lString16("shadowobscured"));
+    tags.add(lString16("cnvgrpsppr"));
+    tags.add(lString16("grpsppr"));
+    tags.add(lString16("choff"));
+    tags.add(lString16("chext"));
+    tags.add(lString16("cnvcnpr"));
+    tags.add(lString16("schemeclr"));
+    tags.add(lString16("lnref"));
+    tags.add(lString16("fillref"));
+    tags.add(lString16("effectref"));
+    tags.add(lString16("fontref"));
+    tags.add(lString16("txbx"));
+    tags.add(lString16("grpsp"));
+    tags.add(lString16("line"));
+    tags.add(lString16("wgp"));
+    tags.add(lString16("anchorlock"));
+    tags.add(lString16("document"));
+    tags.add(lString16("xml"));
+    tags.add(lString16("footnotes"));
     for (int i = 0; i < tags.length(); i++)
     {
         m_[tags.at(i).getHash()] = 1;
@@ -3075,7 +3107,7 @@ bool LvXmlParser::docxTagAllowed(lString16 tagname){
     return true;
 }
 
-bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
+bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles docxStyles)
 {
     Reset();
     callback_->OnStart(this);
@@ -3145,6 +3177,22 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
     bool noattrib = false;
 
     int pstyle_value= 0;
+
+    bool in_p = false;
+    bool been_in_t = false;
+
+    bool first_bilp_in_p = false;
+    bool separate_img = false;
+
+    int empty_p_counter = 0;
+
+    int default_size = docxStyles.default_size_;
+    int h1min = docxStyles.h1min_;
+    int h2min = docxStyles.h2min_;
+    int h3min = docxStyles.h3min_;
+    int h4min = docxStyles.h4min_;
+    int h5min = docxStyles.h5min_;
+    int h6min = docxStyles.h6min_;
 
     for (; !eof_ && !error && !firstpage_thumb_num_reached ;)
     {
@@ -3232,6 +3280,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                 //<r> (runs) handling
                 if(tagname == "r")
                 {
+                    first_bilp_in_p = false;
                     if(!close_flag)
                     {
                         in_r = true;
@@ -3255,7 +3304,8 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     break;
                 }
                 //removing bookmarkstart that appears right after run
-                if(just_r)
+                //seems no need in this filtering
+                /*if(just_r)
                 {
                     if(tagname == "bookmarkstart")
                     {
@@ -3270,14 +3320,26 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     {
                         just_r = false;
                     }
-                }
+                }*/
                 //remove runs that contain webhidden tag
                 if (in_r && tagname == "webhidden")
                 {
                     nodraw = true;
                     callback_->OnTagClose(L"", lString16("a").c_str());
                     callback_->OnTagOpen(L"", lString16("span").c_str());
-                    callback_->OnAttribute(L"", lString16("class").c_str(),L"hidden");
+                    callback_->OnAttribute(L"", lString16("class").c_str(), L"hidden");
+                    break;
+                }
+
+                if ((tagname == "pctwidth" || tagname == "pctheight") && !close_flag)
+                {
+                    callback_->OnTagOpen(L"", lString16("span").c_str());
+                    callback_->OnAttribute(L"", lString16("class").c_str(), L"hidden");
+                    break;
+                }
+                if ((tagname == "pctwidth" || tagname == "pctheight") && close_flag)
+                {
+                    callback_->OnTagClose(L"", lString16("span").c_str());
                     break;
                 }
 
@@ -3323,12 +3385,14 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
 
                 if (tagname == "footnote" && !close_flag)
                 {
+                    tagname = "section";
                     in_footnote = true;
                     m_state = ps_attr;
                     //break;
                 }
                 if (tagname == "footnote" && close_flag && in_footnote)
                 {
+                    tagname = "section";
                     allow_footnote_pbr = true;
                 }
 
@@ -3338,6 +3402,8 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     bool remove = false;
                     if (tagname == "b")
                     {
+                        //CRLog::error(" b closeflag = %d",close_flag?1:0);
+                        //callback_->OnTagOpen(L"",L"span");
                         rpr_b = true;
                         remove = true;
                     }
@@ -3358,15 +3424,15 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                         break;
                     }
 
-                    if(remove)
-                    {
-                        if (SkipTillChar('>'))
-                        {
-                            m_state = ps_text;
-                            ch = ReadCharFromBuffer();
-                        }
-                        break;
-                    }
+                    //if(remove)
+                    //{
+                    //    if (SkipTillChar('>'))
+                    //    {
+                    //        m_state = ps_text;
+                    //        ch = ReadCharFromBuffer();
+                    //    }
+                    //    break;
+                    //}
                 }
 
                     //header styles handling
@@ -3415,6 +3481,14 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                 {
                     tagname = "img";
                     in_blip_img = true;
+                    if (in_r && in_p)
+                    {
+                        if (!first_bilp_in_p)
+                        {
+                           separate_img = true;
+                        }
+                        first_bilp_in_p = true;
+                    }
                 }
                 //different kind of filtering
                 if (tagname == "posoffset"|| tagname == "align" )
@@ -3433,6 +3507,28 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     ilvl = true;
                 }
 
+                if(tagname == "p" && !close_flag)
+                {
+                    in_p = true;
+                }
+                //empty paragraphs handling
+                if(tagname == "p" && close_flag)
+                {
+                    if (!been_in_t && empty_p_counter < 3)
+                    {
+                        callback_->OnText(L"\u200B", 1, flags);
+                        //callback_->OnText(L"+",1,flags);
+                        empty_p_counter++;
+                    }
+                    been_in_t = false;
+                    in_p = false;
+                    first_bilp_in_p = false;
+                    rpr_b =false;
+                    rpr_i =false;
+                    rpr_u =false;
+
+                }
+
                 if(tagname == "t")
                 {
                     m_state = ps_attr;
@@ -3441,6 +3537,8 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                         callback_->OnTagOpen(L"", lString16("li").c_str());
                         ilvl = false;
                     }
+                    empty_p_counter =0;
+                    been_in_t = true;
                     in_t = true;
                     break;
                 }
@@ -3449,6 +3547,8 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     rpr_b = false;
                     rpr_i = false;
                     rpr_u = false;
+                    rpr_subscript = false;
+                    rpr_superscript = false;
                 }
                 //pagebreaks handling
                 if(tagname=="pagebreak")
@@ -3485,7 +3585,9 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                 {
                     in_tocref = true;
                 }
-                if(tagname=="group" || tagname == "omathpara")
+                if (tagname == "group"
+                    || tagname == "omathpara"
+                    || tagname == "alternatecontent")
                 {
                     nodraw_group = true;
                     tagname = "img";
@@ -3509,7 +3611,10 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                 } else {
                     in_xml_tag = false;
                 }
-                callback_->OnTagOpen(tagns.c_str(), tagname.c_str());
+                if(!(rpr_b || rpr_i || rpr_u ))
+                {
+                    callback_->OnTagOpen(tagns.c_str(), tagname.c_str());
+                }
                 //CRLog::trace("<%s:%s>", LCSTR(tagns),LCSTR(tagname));
 
                 m_state = ps_attr;
@@ -3585,7 +3690,15 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                 }
                 attrns = "";
                 //attribute filtering
-                if (tagname == "document" || tagname == "body"|| tagname == "footnotes" || attrname== "rsidr" || attrname== "rsidrdefault" || attrname== "rsidp"|| attrname== "rsidrpr"|| attrname== "space" )
+                if (tagname == "document"
+                    || tagname == "body"
+                    || tagname == "footnotes"
+                    || attrname == "rsidr"
+                    || attrname == "rsidrdefault"
+                    || attrname == "rsidp"
+                    || attrname == "rsidrpr"
+                    || attrname == "space"
+                    || attrname == "gfxdata")
                 {
                     noattrib = true;
                 }
@@ -3599,7 +3712,20 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     if(attrname == "val")
                     {
                         in_header = true;
-                        pstyle_value = atoi(LCSTR(attrvalue));
+                        int currfontsize = docxStyles.getSizeById(attrvalue);
+                        if(currfontsize > default_size)
+                        {
+                            if ( currfontsize >  h6min )  pstyle_value = 6;
+                            if ( currfontsize >= h5min )  pstyle_value = 5;
+                            if ( currfontsize >= h4min )  pstyle_value = 4;
+                            if ( currfontsize >= h3min )  pstyle_value = 3;
+                            if ( currfontsize >= h2min )  pstyle_value = 2;
+                            if ( currfontsize >= h1min )  pstyle_value = 1;
+                        }
+                        else if(currfontsize <= default_size)
+                        {
+                            pstyle_value = -1;
+                        }
                         // can be val="Normal"
                     }
                     in_pstyle = false;
@@ -3615,10 +3741,20 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     in_footnoteref = false;
                 }
                 if(in_footnote){
+                    if(attrname == "id")
+                    {
+                        callback_->OnTagOpen(L"", L"title");
+                        callback_->OnTagOpen(L"", L"p");
+                        callback_->OnText(attrvalue.c_str(),attrvalue.length(),flags);
+                        callback_->OnTagClose(L"", L"p");
+                        callback_->OnTagClose(L"", L"title");
+                    }
                     if(attrname == "type" && (attrvalue == "separator" || attrvalue =="continuationSeparator"))
                     {
+                        callback_->OnTagClose(L"",L"section");
                         in_footnote = false;
                         allow_footnote_pbr = false;
+                        break;
                     }
                 }
                 //embedded image handling
@@ -3680,6 +3816,18 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     }
                     rpr_vertalign = false;
                 }
+                if (rpr_b && tagname == "b" && attrname == "val" && (attrvalue == "0" || attrvalue == "none"))
+                {
+                    rpr_b = false;
+                }
+                if (rpr_i && tagname == "i" && attrname == "val" && (attrvalue == "0" || attrvalue == "none"))
+                {
+                    rpr_i = false;
+                }
+                if (rpr_u && tagname == "u" && attrname == "val" && (attrvalue == "0" || attrvalue == "none"))
+                {
+                    rpr_u = false;
+                }
                 //<group> removing procedure
                 if(nodraw_group)
                 {
@@ -3694,6 +3842,13 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                     //CRLog::error("OnAttrib [%s:%s = \"%s\"]",LCSTR(attrns), LCSTR(attrname), LCSTR(attrvalue));
                     callback_->OnAttribute(attrns.c_str(), attrname.c_str(), attrvalue.c_str());
                 }
+                if(separate_img)
+                {
+                    callback_->OnAttribute(L"",L"class",L"section_image");
+                    callback_->OnTagClose(L"",L"p");
+                    callback_->OnTagOpen(L"",L"p");
+                    separate_img = false;
+                }
                 if (in_xml_tag && attrname == "encoding")
                 {
                     SetCharset(attrvalue.c_str());
@@ -3706,9 +3861,9 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
                 //footnotes page-to-page separation handling
                 if (allow_footnote_pbr)
                 {
-                    callback_->OnTagOpen(L"", L"pagebreak");
-                    callback_->OnText(L"\u200B", 1, flags);
-                    callback_->OnTagClose(L"", L"pagebreak");
+                    //callback_->OnTagOpen(L"", L"pagebreak");
+                    //callback_->OnText(L"\u200B", 1, flags);
+                    //callback_->OnTagClose(L"", L"pagebreak");
 
                     in_footnote = false;
                     allow_footnote_pbr = false;
@@ -4566,9 +4721,9 @@ bool LvHtmlParser::Parse()
     return LvXmlParser::Parse();
 }
 
-bool LvHtmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks)
+bool LvHtmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks,DocxStyles docxStyles)
 {
-    return LvXmlParser::ParseDocx(docxItems, docxLinks);
+    return LvXmlParser::ParseDocx(docxItems, docxLinks, docxStyles);
 }
 
 /// read file contents to string

@@ -136,6 +136,82 @@ DocxItems DocxParseContentTypes(LVContainerRef m_arc)
     return docxItems_empty;
 }
 
+int DocxGetStyleNodeFontSize(ldomNode * node)
+{
+    if(node->isNodeName("sz"))
+    {
+        lString16 val = node->getAttributeValue("val");
+        if(val!=lString16::empty_str)
+        {
+            return atoi(LCSTR(val));
+        }
+    }
+
+    for (int i = 0; i < node->getChildCount(); i++)
+    {
+        ldomNode * child = node->getChildNode(i);
+        int val = DocxGetStyleNodeFontSize(child);
+        if(val!=-1)
+        {
+            return val;
+        }
+    }
+    return -1;
+}
+
+DocxStyles DocxParseStyles(LVContainerRef m_arc)
+{
+    LVStreamRef container_stream = m_arc->OpenStream(L"word/styles.xml", LVOM_READ);
+    DocxStyles DocxStyles_empty;
+    if (!container_stream.isNull())
+    {
+        CrDom *doc = LVParseXMLStream(container_stream);
+        if (doc)
+        {
+            DocxStyles DocxStyles;
+            int i = 0;
+            while (i<500)
+            {
+                ldomNode *item = doc->nodeFromXPath(lString16("styles/style[") << fmt::decimal(i) << "]");
+                if (!item)
+                {
+                    break;
+                }
+                lString16 type = item->getAttributeValue("type");
+
+                if (type == "paragraph")
+                {
+                    lString16 styleId   = item->getAttributeValue("styleId");
+                    lString16 isDefault = item->getAttributeValue("default");
+
+                    int size = DocxGetStyleNodeFontSize(item);
+                    if (size != -1)
+                    {
+                        if (isDefault == "1" && DocxStyles.default_size_ == -1)
+                        {
+                            DocxStyle *style = new DocxStyle(type, size, styleId, true);
+                            DocxStyles.default_size_ = size;
+                            DocxStyles.add(style);
+                        }
+                        else if (isDefault != "1")
+                        {
+                            DocxStyle *style = new DocxStyle(type, size, styleId, false);
+                            DocxStyles.add(style);
+                        }
+                    }
+                }
+                i++;
+            }
+            if (DocxStyles.generateHeaderFontSizes())
+            {
+                return DocxStyles;
+            }
+        }
+        delete doc;
+    }
+    return DocxStyles_empty;
+}
+
 //main docx document importing routine
 bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 {
@@ -225,23 +301,37 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
     class TrDocxWriter: public LvDocFragmentWriter {
     public:
         TrDocxWriter(LvXMLParserCallback *parentWriter)
-                : LvDocFragmentWriter(parentWriter, cs16("body"), cs16("DocFragment"), lString16::empty_str)
+                //: LvDocFragmentWriter(parentWriter, cs16("body"), cs16("DocFragment"), lString16::empty_str)
+                : LvDocFragmentWriter(parentWriter, cs16("body"), lString16::empty_str, lString16::empty_str)
         {
         }
     };
 
     TrDocxWriter appender(&writer);
-    writer.setFlags( TXTFLG_TRIM | TXTFLG_PRE_PARA_SPLITTING | TXTFLG_KEEP_SPACES);
+    writer.setFlags( TXTFLG_TRIM | TXTFLG_PRE_PARA_SPLITTING | TXTFLG_KEEP_SPACES | TXTFLG_TRIM_ALLOW_END_SPACE | TXTFLG_TRIM_ALLOW_START_SPACE );
     writer.OnStart(NULL);
     writer.OnTagOpenNoAttr(L"", L"body");
+    writer.OnTagOpenNoAttr(L"", L"body");
 
+    DocxStyles docxStyles = DocxParseStyles(m_arc);
+ /*
+ CRLog::error("styles.legnth = %d",docxStyles.length());
+    CRLog::error("min = %d",docxStyles.min_);
+    CRLog::error("def = %d",docxStyles.default_size_);
+    CRLog::error("max = %d",docxStyles.max_);
+    for (int i = 0; i < docxStyles.length(); i++)
+    {
+        DocxStyle* style = docxStyles.get(i);
+        CRLog::error("style = [%s] [%s] [%d] [%d]",LCSTR(style->type_),LCSTR(style->styleId_),style->fontSize_,style->isDefault_?1:0);
+    }
+*/
     DocxLinks docxLinks = DocxGetRelsLinks(m_arc);
     //parse main document
     LVStreamRef stream2 = m_arc->OpenStream(rootfilePath.c_str(), LVOM_READ);
     if (!stream2.isNull())
     {
         LvHtmlParser parser(stream2, &appender, firstpage_thumb);
-        if (parser.ParseDocx(docxItems,docxLinks))
+        if (parser.ParseDocx(docxItems,docxLinks,docxStyles))
         {
             // valid
         }
@@ -250,6 +340,9 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
             CRLog::error("Unable to parse docx file at [%s]", LCSTR(rootfilePath));
         }
     }
+    writer.OnTagClose(L"", L"body");
+    writer.OnTagOpen(L"", L"body");
+    writer.OnAttribute(L"", L"name", L"notes");
     //parse footnotes document if exists
     LVStreamRef stream3;
     if(!footnotesFilePath.empty())
@@ -258,7 +351,7 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
         if (!stream3.isNull())
         {
             LvHtmlParser parser(stream3, &appender, firstpage_thumb);
-            if (parser.ParseDocx(docxItems,docxLinks))
+            if (parser.ParseDocx(docxItems,docxLinks,docxStyles))
             {
                 // valid
             }
@@ -276,6 +369,7 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
     {
         CRLog::trace("No footnotes found in docx package.");
     }
+    writer.OnTagClose(L"", L"body");
     writer.OnTagClose(L"", L"body");
     writer.OnStop();
 
