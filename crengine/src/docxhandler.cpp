@@ -301,14 +301,16 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
     class TrDocxWriter: public LvDocFragmentWriter {
     public:
         TrDocxWriter(LvXMLParserCallback *parentWriter)
-                : LvDocFragmentWriter(parentWriter, cs16("body"), cs16("DocFragment"), lString16::empty_str)
+                //: LvDocFragmentWriter(parentWriter, cs16("body"), cs16("DocFragment"), lString16::empty_str)
+                : LvDocFragmentWriter(parentWriter, cs16("body"), lString16::empty_str, lString16::empty_str)
         {
         }
     };
 
     TrDocxWriter appender(&writer);
-    writer.setFlags( TXTFLG_TRIM | TXTFLG_PRE_PARA_SPLITTING | TXTFLG_KEEP_SPACES | TXTFLG_TRIM_ALLOW_END_SPACE | TXTFLG_TRIM_ALLOW_START_SPACE);
+    writer.setFlags( TXTFLG_TRIM | TXTFLG_PRE_PARA_SPLITTING | TXTFLG_KEEP_SPACES | TXTFLG_TRIM_ALLOW_END_SPACE | TXTFLG_TRIM_ALLOW_START_SPACE );
     writer.OnStart(NULL);
+    writer.OnTagOpenNoAttr(L"", L"body");
     writer.OnTagOpenNoAttr(L"", L"body");
 
     DocxStyles docxStyles = DocxParseStyles(m_arc);
@@ -338,6 +340,9 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
             CRLog::error("Unable to parse docx file at [%s]", LCSTR(rootfilePath));
         }
     }
+    writer.OnTagClose(L"", L"body");
+    writer.OnTagOpen(L"", L"body");
+    writer.OnAttribute(L"", L"name", L"notes");
     //parse footnotes document if exists
     LVStreamRef stream3;
     if(!footnotesFilePath.empty())
@@ -364,6 +369,7 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
     {
         CRLog::trace("No footnotes found in docx package.");
     }
+    writer.OnTagClose(L"", L"body");
     writer.OnTagClose(L"", L"body");
     writer.OnStop();
 

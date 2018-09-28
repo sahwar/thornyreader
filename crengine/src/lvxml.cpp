@@ -3081,8 +3081,9 @@ void LvXmlParser::initDocxTagsFilter(){
     tags.add(lString16("line"));
     tags.add(lString16("wgp"));
     tags.add(lString16("anchorlock"));
-    tags.add(lString16("grpsppr"));
-    tags.add(lString16("grpsppr"));
+    tags.add(lString16("document"));
+    tags.add(lString16("xml"));
+    tags.add(lString16("footnotes"));
     for (int i = 0; i < tags.length(); i++)
     {
         m_[tags.at(i).getHash()] = 1;
@@ -3384,12 +3385,14 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
 
                 if (tagname == "footnote" && !close_flag)
                 {
+                    tagname = "section";
                     in_footnote = true;
                     m_state = ps_attr;
                     //break;
                 }
                 if (tagname == "footnote" && close_flag && in_footnote)
                 {
+                    tagname = "section";
                     allow_footnote_pbr = true;
                 }
 
@@ -3399,6 +3402,8 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
                     bool remove = false;
                     if (tagname == "b")
                     {
+                        //CRLog::error(" b closeflag = %d",close_flag?1:0);
+                        //callback_->OnTagOpen(L"",L"span");
                         rpr_b = true;
                         remove = true;
                     }
@@ -3606,7 +3611,10 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
                 } else {
                     in_xml_tag = false;
                 }
-                callback_->OnTagOpen(tagns.c_str(), tagname.c_str());
+                if(!(rpr_b || rpr_i || rpr_u ))
+                {
+                    callback_->OnTagOpen(tagns.c_str(), tagname.c_str());
+                }
                 //CRLog::trace("<%s:%s>", LCSTR(tagns),LCSTR(tagname));
 
                 m_state = ps_attr;
@@ -3733,10 +3741,20 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
                     in_footnoteref = false;
                 }
                 if(in_footnote){
+                    if(attrname == "id")
+                    {
+                        callback_->OnTagOpen(L"", L"title");
+                        callback_->OnTagOpen(L"", L"p");
+                        callback_->OnText(attrvalue.c_str(),attrvalue.length(),flags);
+                        callback_->OnTagClose(L"", L"p");
+                        callback_->OnTagClose(L"", L"title");
+                    }
                     if(attrname == "type" && (attrvalue == "separator" || attrvalue =="continuationSeparator"))
                     {
+                        callback_->OnTagClose(L"",L"section");
                         in_footnote = false;
                         allow_footnote_pbr = false;
+                        break;
                     }
                 }
                 //embedded image handling
@@ -3826,10 +3844,9 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
                 }
                 if(separate_img)
                 {
-                    callback_->OnTagClose(L"",L"r");
+                    callback_->OnAttribute(L"",L"class",L"section_image");
                     callback_->OnTagClose(L"",L"p");
                     callback_->OnTagOpen(L"",L"p");
-                    callback_->OnTagOpen(L"",L"r");
                     separate_img = false;
                 }
                 if (in_xml_tag && attrname == "encoding")
@@ -3844,9 +3861,9 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
                 //footnotes page-to-page separation handling
                 if (allow_footnote_pbr)
                 {
-                    callback_->OnTagOpen(L"", L"pagebreak");
-                    callback_->OnText(L"\u200B", 1, flags);
-                    callback_->OnTagClose(L"", L"pagebreak");
+                    //callback_->OnTagOpen(L"", L"pagebreak");
+                    //callback_->OnText(L"\u200B", 1, flags);
+                    //callback_->OnTagClose(L"", L"pagebreak");
 
                     in_footnote = false;
                     allow_footnote_pbr = false;
