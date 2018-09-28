@@ -16,13 +16,18 @@
 #define __LVXML_H_INCLUDED__
 
 #include <time.h>
+#include <map>
 #include "lvstring.h"
 #include "lvstream.h"
 #include "crtxtenc.h"
 #include "dtddef.h"
+#include "docxhandler.h"
 
 #define XML_CHAR_BUFFER_SIZE 4096
 #define XML_FLAG_NO_SPACE_TEXT 1
+
+typedef std::map<lUInt32,int> Tagmap;
+typedef std::map<lUInt32,int>::iterator iter;
 
 //class LvXmlParser;
 class LVFileFormatParser;
@@ -86,6 +91,7 @@ public:
 #define TXTFLG_TRIM_REMOVE_EOL_HYPHENS      32
 #define TXTFLG_RTF                          64
 #define TXTFLG_PRE_PARA_SPLITTING           128
+#define TXTFLG_KEEP_SPACES                  256
 #define TXTFLG_ENCODING_MASK                0xFF00
 #define TXTFLG_ENCODING_SHIFT               8
 #define TXTFLG_CONVERT_8BIT_ENTITY_ENCODING 0x10000
@@ -105,6 +111,8 @@ public:
     virtual bool CheckFormat() = 0;
     /// parses input stream
     virtual bool Parse() = 0;
+    /// parses input stream
+    virtual bool ParseDocx(DocxItems docxItems,DocxLinks docxLinks,DocxStyles docxStyles) = 0;
     /// resets parsing, moves to beginning of stream
     virtual void Reset() = 0;
     /// stops parsing in the middle of file, to read header only
@@ -296,6 +304,8 @@ public:
     /// parses input stream
     virtual bool Parse();
 
+    virtual bool ParseDocx(DocxItems docxItems,DocxLinks docxLinks, DocxStyles docxStyles) { return false; };
+
     virtual void FullDom();
 };
 
@@ -311,6 +321,8 @@ private:
     bool ReadIdent( lString16 & ns, lString16 & str );
     bool ReadText();
     bool need_coverpage_;
+    Tagmap m_;
+    bool tags_init_ = false;
 protected:
     bool possible_capitalized_tags_;
     bool m_allowHtml;
@@ -320,6 +332,8 @@ public:
     virtual bool CheckFormat();
     //parse
     virtual bool Parse();
+    //highly modified xml parser for docx parsing
+    virtual bool ParseDocx(DocxItems docxItems, DocxLinks docxLinks,DocxStyles docxStyles);
     /// sets charset by name
     virtual void SetCharset(const lChar16* name);
     /// resets parsing, moves to beginning of stream
@@ -334,6 +348,11 @@ public:
     virtual ~LvXmlParser();
 
     void FullDom();
+
+    //docx tag filterting
+    bool docxTagAllowed(lString16 tagname);
+    //docx tags to filter initialization
+    void initDocxTagsFilter();
 };
 
 extern const char * * HTML_AUTOCLOSE_TABLE[];
@@ -344,6 +363,8 @@ public:
     /// Returns true if format is recognized by parser
     virtual bool CheckFormat();
     virtual bool Parse();
+    virtual bool ParseDocx(DocxItems docxItems, DocxLinks docxLinks,DocxStyles docxStyles);
+    //virtual bool ParseDocx(DocxItems docxItems);
     LvHtmlParser(LVStreamRef stream, LvXMLParserCallback * callback);
     LvHtmlParser(LVStreamRef stream, LvXMLParserCallback * callback, bool need_coverpage);
     bool need_coverpage_;

@@ -2,15 +2,15 @@
 
 ## About
 
-ThornyReader is a program for rendering EPUB without DRM,
-PDF without DRM, DOC, RTF, TXT, DJVU, FB2 and MOBI docs.
+ThornyReader is a program for rendering EPUB without DRM, FB2, PDF without DRM,
+MOBI, DJVU, DOC, DOCX, RTF, CHM and TXT
 
 ## Usage
 
 ThornyReader operates via CLI. Basic principle:
 - create two FIFO files
 - choose desired binary:
-  - crengine for EPUB, DOC, RTF, TXT, MOBI and CHM
+  - crengine for EPUB, DOC, DOCX, RTF, TXT, MOBI and CHM
   - mupdf for PDF, XPS and OXPS
   - djvu for DJVU
 - start chosen binary and pass two created FIFO files as arguments

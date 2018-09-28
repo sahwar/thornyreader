@@ -2693,8 +2693,10 @@ bool LvXmlParser::Parse()
 
                 if (tagname=="br" && close_flag)
                 {
+                    //  callback_->OnTagOpen(L"",L"br");
                     callback_->OnText(L"\u200B", 1, flags);
-                    //callback_->OnText(L"&", 1, flags);
+                    //  callback_->OnTagClose(L"",L"br");
+                    // break;
                 }
                 if(tagname=="blockquote")
                 {
@@ -2877,6 +2879,1103 @@ bool LvXmlParser::Parse()
     callback_->OnStop();
     return !error;
 }
+
+void LvXmlParser::initDocxTagsFilter(){
+    if(tags_init_){
+        return;
+    }
+    lString16Collection tags;
+    tags.add(lString16("proofErr"));
+    tags.add(lString16("bcs"));
+    tags.add(lString16("ics"));
+    tags.add(lString16("lang"));
+    tags.add(lString16("highlight"));
+    tags.add(lString16("anchor"));
+    tags.add(lString16("simplepos"));
+    tags.add(lString16("positionh"));
+    tags.add(lString16("positionv"));
+    tags.add(lString16("extent"));
+    tags.add(lString16("effectextent"));
+    tags.add(lString16("wraptopandbottom"));
+    tags.add(lString16("docpr"));
+    tags.add(lString16("graphicframelocks"));
+    tags.add(lString16("cnv"));
+    tags.add(lString16("cnvpr"));
+    tags.add(lString16("cnvpicpr"));
+    tags.add(lString16("piclocks"));
+    tags.add(lString16("cnvgraphicframepr"));
+    tags.add(lString16("graphic"));
+    tags.add(lString16("graphicdata"));
+    tags.add(lString16("pic"));
+    tags.add(lString16("nvpicpr"));
+    tags.add(lString16("blipfill"));
+    tags.add(lString16("stretch"));
+    tags.add(lString16("fillrect"));
+    tags.add(lString16("sppr"));
+    tags.add(lString16("xfrm"));
+    tags.add(lString16("off"));
+    tags.add(lString16("ext"));
+    tags.add(lString16("prstgeom"));
+    tags.add(lString16("avlst"));
+    tags.add(lString16("drawing"));
+    tags.add(lString16("wrapsquare"));
+    tags.add(lString16("spacing"));
+    tags.add(lString16("rfonts"));
+    tags.add(lString16("sz"));
+    tags.add(lString16("szcs"));
+    tags.add(lString16("rstyle"));
+    tags.add(lString16("noproof"));
+    tags.add(lString16("extlst"));
+    tags.add(lString16("uselocaldpi"));
+    tags.add(lString16("tab"));
+    tags.add(lString16("tcpr"));
+    tags.add(lString16("trpr"));
+    tags.add(lString16("tblpr"));
+    tags.add(lString16("tcw"));
+    tags.add(lString16("tcborders"));
+    tags.add(lString16("shd"));
+    tags.add(lString16("top"));
+    tags.add(lString16("left"));
+    tags.add(lString16("right"));
+    tags.add(lString16("bottom"));
+    tags.add(lString16("insideh"));
+    tags.add(lString16("insidev"));
+    tags.add(lString16("tblgrid"));
+    tags.add(lString16("gridcol"));
+    tags.add(lString16("tblw"));
+    tags.add(lString16("tblind"));
+    tags.add(lString16("tblborders"));
+    tags.add(lString16("tbllayout"));
+    tags.add(lString16("tbllook"));
+    tags.add(lString16("jc"));
+    tags.add(lString16("ind"));
+    tags.add(lString16("numpr"));
+    tags.add(lString16("tblcellmar"));
+    tags.add(lString16("prooferr"));
+    tags.add(lString16("separator"));
+    tags.add(lString16("continuationseparator"));
+    tags.add(lString16("autospacede"));
+    tags.add(lString16("autospacedn"));
+    tags.add(lString16("adjustrightind"));
+    tags.add(lString16("formulas"));
+    tags.add(lString16("f"));
+    tags.add(lString16("stroke"));
+    tags.add(lString16("shapetype"));
+    tags.add(lString16("object"));
+    tags.add(lString16("path"));
+    tags.add(lString16("lock"));
+    tags.add(lString16("shape"));
+    tags.add(lString16("oleobject"));
+    tags.add(lString16("bookmarkend"));
+    tags.add(lString16("contextualspacing"));
+    tags.add(lString16("color"));
+    tags.add(lString16("imagedata"));
+    tags.add(lString16("tabs"));
+    tags.add(lString16("keepnext"));
+    tags.add(lString16("keeplines"));
+    tags.add(lString16("widowcontrol"));
+    tags.add(lString16("snaptogrid"));
+    tags.add(lString16("nofill"));
+    tags.add(lString16("inline"));
+    tags.add(lString16("ln"));
+    tags.add(lString16("srcrect"));
+    tags.add(lString16("lastrenderedpagebreak"));
+    tags.add(lString16("vmerge"));
+    tags.add(lString16("style"));
+    tags.add(lString16("sdtpr"));
+    tags.add(lString16("docpartobj"));
+    tags.add(lString16("docpartgallery"));
+    tags.add(lString16("docpartunique"));
+    tags.add(lString16("sdtendpr"));
+    tags.add(lString16("fldchar"));
+    tags.add(lString16("sdtendpr"));
+    tags.add(lString16("sdt"));
+    tags.add(lString16("id"));
+    tags.add(lString16("caps"));
+    tags.add(lString16("strike"));
+    tags.add(lString16("pbdr"));
+    tags.add(lString16("bdr"));
+    tags.add(lString16("tblstyle"));
+    tags.add(lString16("tblppr"));
+    tags.add(lString16("tbloverlap"));
+    tags.add(lString16("cnfstyle"));
+    tags.add(lString16("nowrap"));
+    tags.add(lString16("wafter"));
+    tags.add(lString16("trheight"));
+    tags.add(lString16("gridspan"));
+    tags.add(lString16("tcmar"));
+    tags.add(lString16("valign"));
+    tags.add(lString16("framepr"));
+    tags.add(lString16("textalignment"));
+    tags.add(lString16("position"));
+    tags.add(lString16("sectpr"));
+    tags.add(lString16("pgsz"));
+    tags.add(lString16("pgmar"));
+    tags.add(lString16("cols"));
+    tags.add(lString16("docgrid"));
+    tags.add(lString16("outlinelvl"));
+    tags.add(lString16("suppressautohyphens"));
+    tags.add(lString16("sizerelh"));
+    tags.add(lString16("sizerelv"));
+    //tags.add(lString16("pctheight"));
+    //tags.add(lString16("pctwidth"));
+    tags.add(lString16("miter"));
+    tags.add(lString16("headend"));
+    tags.add(lString16("tailend"));
+    tags.add(lString16("formprot"));
+    tags.add(lString16("hidemark"));
+    tags.add(lString16("tblcellspacing"));
+    tags.add(lString16("kern"));
+    tags.add(lString16("ssub"));
+    tags.add(lString16("ssubpr"));
+    tags.add(lString16("ctrlpr"));
+    tags.add(lString16("e"));
+    tags.add(lString16("sty"));
+    tags.add(lString16("fpr"));
+    tags.add(lString16("omath"));
+    //tags.add(lString16("omathpara"));
+    tags.add(lString16("den"));
+    tags.add(lString16("num"));
+    tags.add(lString16("pict"));
+    tags.add(lString16("fill"));
+    tags.add(lString16("rect"));
+    tags.add(lString16("textbox"));
+    tags.add(lString16("txbxcontent"));
+    tags.add(lString16("ssup"));
+    tags.add(lString16("ssuppr"));
+    tags.add(lString16("dpr"));
+    tags.add(lString16("m"));
+    tags.add(lString16("mpr"));
+    tags.add(lString16("mcs"));
+    tags.add(lString16("mc"));
+    tags.add(lString16("mcpr"));
+    tags.add(lString16("count"));
+    tags.add(lString16("mcjc"));
+    tags.add(lString16("mr"));
+    //tags.add(lString16("alternatecontent"));
+    tags.add(lString16("choice"));
+    tags.add(lString16("wrapnone"));
+    tags.add(lString16("wsp"));
+    tags.add(lString16("cnvsppr"));
+    tags.add(lString16("splocks"));
+    tags.add(lString16("solidfill"));
+    tags.add(lString16("srgbclr"));
+    tags.add(lString16("hiddenline"));
+    tags.add(lString16("bodypr"));
+    tags.add(lString16("noautofit"));
+    tags.add(lString16("choice"));
+    tags.add(lString16("fallback"));
+    tags.add(lString16("shadowobscured"));
+    tags.add(lString16("cnvgrpsppr"));
+    tags.add(lString16("grpsppr"));
+    tags.add(lString16("choff"));
+    tags.add(lString16("chext"));
+    tags.add(lString16("cnvcnpr"));
+    tags.add(lString16("schemeclr"));
+    tags.add(lString16("lnref"));
+    tags.add(lString16("fillref"));
+    tags.add(lString16("effectref"));
+    tags.add(lString16("fontref"));
+    tags.add(lString16("txbx"));
+    tags.add(lString16("grpsp"));
+    tags.add(lString16("line"));
+    tags.add(lString16("wgp"));
+    tags.add(lString16("anchorlock"));
+    tags.add(lString16("document"));
+    tags.add(lString16("xml"));
+    tags.add(lString16("footnotes"));
+    for (int i = 0; i < tags.length(); i++)
+    {
+        m_[tags.at(i).getHash()] = 1;
+    }
+    tags.clear();
+    tags_init_ = true;
+    CRLog::trace("DOCX tag filtering array initialized");
+    return;
+}
+
+bool LvXmlParser::docxTagAllowed(lString16 tagname){
+    if(!tags_init_){
+        initDocxTagsFilter();
+    }
+    iter it;
+    it = m_.find(tagname.getHash());
+    if (it != m_.end())
+    {
+        return false;
+    }
+    return true;
+}
+
+bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles docxStyles)
+{
+    Reset();
+    callback_->OnStart(this);
+    //int txt_count = 0;
+    int flags = callback_->getFlags();
+    bool error = false;
+    bool in_xml_tag = false;
+    bool close_flag = false;
+    bool q_flag = false;
+    bool body_started = false;
+    bool in_blockquote = false;
+    bool firstpage_thumb_num_reached = false;
+    bool last_tag_was_t = false;
+
+    int fragments_counter = 0;
+    lString16 tagname;
+    lString16 tagns;
+    lString16 attrname;
+    lString16 attrns;
+    lString16 attrvalue;
+
+    //flag for image node
+    bool in_blip_img = false;
+    //flag for run properties
+    bool in_rpr = false;
+    //flag for run node
+    bool in_r = false;
+    //flag for paragraph properties
+    bool in_ppr = false;
+    //flag for paragrahh style
+    bool in_pstyle = false;
+    //flag for text node
+    bool in_t = false;
+    //flag for headers
+    bool in_header= false;
+    //flags for tables
+    bool in_table= false;
+    bool in_td = false;
+    //flag for footnotes
+    bool in_footnoteref= false;
+    bool in_footnote = false;
+    //flag for hyperlinks
+    bool in_hyperlink = false;
+    //flags for table of contents
+    bool in_tocref = false;
+    bool in_toc = false;
+    bool in_sdt_a = false;
+    //flags for pagebreaks
+    bool allow_footnote_pbr= false;
+    bool just_r= false;
+
+    //flags for bold italic underline
+    bool rpr_b=false;
+    bool rpr_i=false;
+    bool rpr_u=false;
+    //flags for no element drawing
+    bool rpr_webhidden=false;
+    bool nodraw = false;
+    bool nodraw_group = false;
+    //flags for superscript and subscript
+    bool rpr_vertalign=false;
+    bool rpr_superscript = false;
+    bool rpr_subscript = false;
+    //flag for lists
+    bool ilvl=false;
+    //flag for no attributes drawing
+    bool noattrib = false;
+
+    int pstyle_value= 0;
+
+    bool in_p = false;
+    bool been_in_t = false;
+
+    bool first_bilp_in_p = false;
+    bool separate_img = false;
+
+    int empty_p_counter = 0;
+
+    int default_size = docxStyles.default_size_;
+    int h1min = docxStyles.h1min_;
+    int h2min = docxStyles.h2min_;
+    int h3min = docxStyles.h3min_;
+    int h4min = docxStyles.h4min_;
+    int h5min = docxStyles.h5min_;
+    int h6min = docxStyles.h6min_;
+
+    for (; !eof_ && !error && !firstpage_thumb_num_reached ;)
+    {
+        if (m_stopped)
+            break;
+        // Load next portion of data if necessary
+        lChar16 ch = PeekCharFromBuffer();
+        switch (m_state)
+        {
+            case ps_bof:
+            {
+                //CRLog::trace("LvXmlParser::Parse() ps_bof");
+                // Skip file beginning until '<'
+                for ( ; !eof_ && ch!='<'; ch = PeekNextCharFromBuffer())
+                    ;
+                if (!eof_)
+                {
+                    m_state = ps_lt;
+                    ReadCharFromBuffer();
+                }
+                //CRLog::trace("LvXmlParser::Parse() ps_bof ret");
+            }
+                break;
+            case ps_lt:  //look for tags
+            {
+                //CRLog::trace("LvXmlParser::Parse() ps_lt");
+                if (!SkipSpaces())
+                    break;
+                close_flag = false;
+                q_flag = false;
+                if (ch=='/')
+                {
+                    ch = ReadCharFromBuffer();
+                    close_flag = true;
+                }
+                else if (ch=='?')
+                {
+                    // <?xml?>
+                    ch = ReadCharFromBuffer();
+                    q_flag = true;
+                }
+                else if (ch=='!')
+                {
+                    // comments etc...
+                    if (PeekCharFromBuffer(1) == '-' && PeekCharFromBuffer(2) == '-') {
+                        // skip comments
+                        ch = PeekNextCharFromBuffer(2);
+                        while (!eof_ && (ch != '-' || PeekCharFromBuffer(1) != '-'
+                                         || PeekCharFromBuffer(2) != '>') ) {
+                            ch = PeekNextCharFromBuffer();
+                        }
+                        if (ch=='-' && PeekCharFromBuffer(1)=='-'
+                            && PeekCharFromBuffer(2)=='>' )
+                            ch = PeekNextCharFromBuffer(2);
+                        m_state = ps_text;
+                        break;
+                    }
+                }
+                if (!ReadIdent(tagns, tagname) || PeekCharFromBuffer()=='=')
+                {
+                    // Error
+                    if (SkipTillChar('>'))
+                    {
+                        m_state = ps_text;
+                        ch = ReadCharFromBuffer();
+                    }
+                    break;
+                }
+                tagns.lowercase();
+                tagname.lowercase();
+                //CRLog::error("%s:%s",LCSTR(tagns),LCSTR(tagname));
+
+                tagns = "";
+
+                //removing OpenXML tags from tree
+                if(!docxTagAllowed(tagname))
+                {
+                    if (SkipTillChar('>'))
+                    {
+                        m_state = ps_text;
+                        ch = ReadCharFromBuffer();
+                    }
+                    break;
+                }
+                //<r> (runs) handling
+                if(tagname == "r")
+                {
+                    first_bilp_in_p = false;
+                    if(!close_flag)
+                    {
+                        in_r = true;
+                        just_r = false;
+                    }
+                    if(close_flag)
+                    {
+                        just_r = true;
+                        if(nodraw)
+                        {
+                            callback_->OnTagClose(L"", lString16("span").c_str());
+                        }
+                        in_r = false;
+                        nodraw = false;
+                    }
+                    if (SkipTillChar('>'))
+                    {
+                        m_state = ps_text;
+                        ch = ReadCharFromBuffer();
+                    }
+                    break;
+                }
+                //removing bookmarkstart that appears right after run
+                //seems no need in this filtering
+                /*if(just_r)
+                {
+                    if(tagname == "bookmarkstart")
+                    {
+                        if (SkipTillChar('>'))
+                        {
+                            m_state = ps_text;
+                            ch = ReadCharFromBuffer();
+                        }
+                        break;
+                    }
+                    else
+                    {
+                        just_r = false;
+                    }
+                }*/
+                //remove runs that contain webhidden tag
+                if (in_r && tagname == "webhidden")
+                {
+                    nodraw = true;
+                    callback_->OnTagClose(L"", lString16("a").c_str());
+                    callback_->OnTagOpen(L"", lString16("span").c_str());
+                    callback_->OnAttribute(L"", lString16("class").c_str(), L"hidden");
+                    break;
+                }
+
+                if ((tagname == "pctwidth" || tagname == "pctheight") && !close_flag)
+                {
+                    callback_->OnTagOpen(L"", lString16("span").c_str());
+                    callback_->OnAttribute(L"", lString16("class").c_str(), L"hidden");
+                    break;
+                }
+                if ((tagname == "pctwidth" || tagname == "pctheight") && close_flag)
+                {
+                    callback_->OnTagClose(L"", lString16("span").c_str());
+                    break;
+                }
+
+                //table handling
+                if (tagname == "tbl" && !close_flag)
+                {
+                    tagname = "table";
+                    in_table = true;
+                }
+
+                if (tagname == "tbl" && close_flag)
+                {
+                    tagname = "table";
+                    in_table = false;
+                }
+
+                if (in_table)
+                {
+                    if (tagname == "pstyle" || tagname == "p")
+                    {
+                        if (SkipTillChar('>'))
+                        {
+                            m_state = ps_text;
+                            ch = ReadCharFromBuffer();
+                        }
+                        break;
+                    }
+                }
+
+                if (tagname == "tc")
+                {
+                    tagname = "td";
+                }
+
+                //footnotes handling
+
+                if (tagname == "footnotereference")
+                {
+                    in_footnoteref = true;
+                    tagname = "a";
+                    m_state = ps_attr;
+                }
+
+                if (tagname == "footnote" && !close_flag)
+                {
+                    tagname = "section";
+                    in_footnote = true;
+                    m_state = ps_attr;
+                    //break;
+                }
+                if (tagname == "footnote" && close_flag && in_footnote)
+                {
+                    tagname = "section";
+                    allow_footnote_pbr = true;
+                }
+
+                //bold italic underlined text handling
+                if (in_rpr)
+                {
+                    bool remove = false;
+                    if (tagname == "b")
+                    {
+                        //CRLog::error(" b closeflag = %d",close_flag?1:0);
+                        //callback_->OnTagOpen(L"",L"span");
+                        rpr_b = true;
+                        remove = true;
+                    }
+                    if (tagname == "u")
+                    {
+                        rpr_u = true;
+                        remove = true;
+                    }
+                    if (tagname == "i")
+                    {
+                        rpr_i = true;
+                        remove = true;
+                    }
+                    if (tagname == "vertalign")
+                    {
+                        rpr_vertalign = true;
+                        m_state = ps_attr;
+                        break;
+                    }
+
+                    //if(remove)
+                    //{
+                    //    if (SkipTillChar('>'))
+                    //    {
+                    //        m_state = ps_text;
+                    //        ch = ReadCharFromBuffer();
+                    //    }
+                    //    break;
+                    //}
+                }
+
+                    //header styles handling
+                if (tagname == "ppr" && !close_flag)
+                {
+                    if (SkipTillChar('>'))
+                    {
+                        m_state = ps_text;
+                        ch = ReadCharFromBuffer();
+                    }
+                    in_ppr = true;
+                    break;
+                }
+                if (tagname == "ppr" && close_flag)
+                {
+                    in_ppr = false;
+                }
+
+                if( in_ppr)
+                {
+                    if (tagname == "pstyle")
+                    {
+                        in_pstyle = true;
+                        m_state = ps_attr;
+                        break;
+                    }
+                }
+
+                if (tagname == "rpr" && !close_flag)
+                {
+                    if (SkipTillChar('>'))
+                    {
+                        m_state = ps_text;
+                        ch = ReadCharFromBuffer();
+                    }
+                    in_rpr = true;
+                    break;
+                }
+                if (tagname == "rpr" && close_flag)
+                {
+                    in_rpr = false;
+                }
+
+                //image embedding handling
+                if (tagname == "blip")
+                {
+                    tagname = "img";
+                    in_blip_img = true;
+                    if (in_r && in_p)
+                    {
+                        if (!first_bilp_in_p)
+                        {
+                           separate_img = true;
+                        }
+                        first_bilp_in_p = true;
+                    }
+                }
+                //different kind of filtering
+                if (tagname == "posoffset"|| tagname == "align" )
+                {
+                    if (SkipTillChar('>'))
+                    {
+                        m_state = ps_lt;
+                        ch = ReadCharFromBuffer();
+                    }
+                    break;
+                }
+
+                //unmarked lists handling
+                if (tagname == "ilvl")
+                {
+                    ilvl = true;
+                }
+
+                if(tagname == "p" && !close_flag)
+                {
+                    in_p = true;
+                }
+                //empty paragraphs handling
+                if(tagname == "p" && close_flag)
+                {
+                    if (!been_in_t && empty_p_counter < 3)
+                    {
+                        callback_->OnText(L"\u200B", 1, flags);
+                        //callback_->OnText(L"+",1,flags);
+                        empty_p_counter++;
+                    }
+                    been_in_t = false;
+                    in_p = false;
+                    first_bilp_in_p = false;
+                    rpr_b =false;
+                    rpr_i =false;
+                    rpr_u =false;
+
+                }
+
+                if(tagname == "t")
+                {
+                    m_state = ps_attr;
+                    if(ilvl)
+                    {
+                        callback_->OnTagOpen(L"", lString16("li").c_str());
+                        ilvl = false;
+                    }
+                    empty_p_counter =0;
+                    been_in_t = true;
+                    in_t = true;
+                    break;
+                }
+                if(tagname == "t" && close_flag)
+                {
+                    rpr_b = false;
+                    rpr_i = false;
+                    rpr_u = false;
+                    rpr_subscript = false;
+                    rpr_superscript = false;
+                }
+                //pagebreaks handling
+                if(tagname=="pagebreak")
+                {
+                    tagns = "";
+                    if (close_flag)
+                    {
+                        callback_->OnText(L"\u200B", 1, flags);
+                    }
+                }
+                //hyperlinks handling
+                if (tagname == "hyperlink")
+                {
+                    tagname = "a";
+                    in_hyperlink = true;
+                }
+
+                if(tagname == "a")
+                {
+                    in_sdt_a = true;
+                }
+                //another filtering
+                if(tagname== "instrtext")
+                {
+                    if (SkipTillChar('<'))
+                    {
+                        m_state = ps_text;
+                        //ch = ReadCharFromBuffer();
+                    }
+                    break;
+                }
+                //bookmarks handling
+                if(tagname== "bookmarkstart")
+                {
+                    in_tocref = true;
+                }
+                if (tagname == "group"
+                    || tagname == "omathpara"
+                    || tagname == "alternatecontent")
+                {
+                    nodraw_group = true;
+                    tagname = "img";
+                }
+                //all other closing tags handling
+                if (close_flag)
+                {
+                    callback_->OnTagClose(tagns.c_str(), tagname.c_str());
+                    //CRLog::trace("</%s:%s>", LCSTR(tagns),LCSTR(tagname));
+                    if (SkipTillChar('>'))
+                    {
+                        m_state = ps_text;
+                        ch = ReadCharFromBuffer();
+                    }
+                    break;
+                }
+
+                if (q_flag) {
+                    tagname.insert(0, 1, '?');
+                    in_xml_tag = (tagname == "?xml");
+                } else {
+                    in_xml_tag = false;
+                }
+                if(!(rpr_b || rpr_i || rpr_u ))
+                {
+                    callback_->OnTagOpen(tagns.c_str(), tagname.c_str());
+                }
+                //CRLog::trace("<%s:%s>", LCSTR(tagns),LCSTR(tagname));
+
+                m_state = ps_attr;
+                //CRLog::trace("LvXmlParser::Parse() ps_lt ret");
+            }
+                break;
+            case ps_attr: //read tags
+            {
+                //CRLog::trace("LvXmlParser::Parse() ps_attr");
+                if (!SkipSpaces())
+                    break;
+                ch = PeekCharFromBuffer();
+                lChar16 nch = PeekCharFromBuffer(1);
+                if (ch == '>' || ((ch == '/' || ch == '?') && nch == '>'))
+                {
+                    callback_->OnTagBody();
+                    // end of tag
+                    if (ch != '>')
+                        callback_->OnTagClose(tagns.c_str(), tagname.c_str());
+                    if (ch == '>')
+                        ch = PeekNextCharFromBuffer();
+                    else
+                        ch = PeekNextCharFromBuffer(1);
+                    m_state = ps_text;
+                    break;
+                }
+                if (!ReadIdent(attrns, attrname))
+                {
+                    // error: skip rest of tag
+                    SkipTillChar('<');
+                    ch = PeekNextCharFromBuffer(1);
+                    callback_->OnTagBody();
+                    m_state = ps_lt;
+                    break;
+                }
+                SkipSpaces();
+                attrvalue.reset(16);
+                ch = PeekCharFromBuffer();
+                // Read attribute value
+                if (ch == '=')
+                {
+                    // Skip '='
+                    ReadCharFromBuffer();
+                    SkipSpaces();
+                    lChar16 qChar = 0;
+                    ch = PeekCharFromBuffer();
+                    if (ch == '\"' || ch == '\'')
+                    {
+                        qChar = ReadCharFromBuffer();
+                    }
+                    for (; !eof_;)
+                    {
+                        ch = PeekCharFromBuffer();
+                        if (ch == '>')
+                            break;
+                        if (!qChar && IsSpaceChar(ch))
+                            break;
+                        if (qChar && ch == qChar)
+                        {
+                            ch = PeekNextCharFromBuffer();
+                            break;
+                        }
+                        ch = ReadCharFromBuffer();
+                        if (ch)
+                            attrvalue += ch;
+                        else
+                            break;
+                    }
+                }
+                if (possible_capitalized_tags_) {
+                    attrns.lowercase();
+                    attrname.lowercase();
+                }
+                attrns = "";
+                //attribute filtering
+                if (tagname == "document"
+                    || tagname == "body"
+                    || tagname == "footnotes"
+                    || attrname == "rsidr"
+                    || attrname == "rsidrdefault"
+                    || attrname == "rsidp"
+                    || attrname == "rsidrpr"
+                    || attrname == "space"
+                    || attrname == "gfxdata")
+                {
+                    noattrib = true;
+                }
+                else
+                {
+                    noattrib = false;
+                }
+                //header style handling
+                if(in_pstyle)
+                {
+                    if(attrname == "val")
+                    {
+                        in_header = true;
+                        int currfontsize = docxStyles.getSizeById(attrvalue);
+                        if(currfontsize > default_size)
+                        {
+                            if ( currfontsize >  h6min )  pstyle_value = 6;
+                            if ( currfontsize >= h5min )  pstyle_value = 5;
+                            if ( currfontsize >= h4min )  pstyle_value = 4;
+                            if ( currfontsize >= h3min )  pstyle_value = 3;
+                            if ( currfontsize >= h2min )  pstyle_value = 2;
+                            if ( currfontsize >= h1min )  pstyle_value = 1;
+                        }
+                        else if(currfontsize <= default_size)
+                        {
+                            pstyle_value = -1;
+                        }
+                        // can be val="Normal"
+                    }
+                    in_pstyle = false;
+                }
+                //footnote handling
+                if(in_footnoteref)
+                {
+                    callback_->OnAttribute(attrns.c_str(), lString16("type").c_str(), lString16("note").c_str());
+                    attrname= "href";
+                    lString16 mark = "[" + attrvalue + "]";
+                    callback_->OnText(mark.c_str(), mark.length(),0);
+                    attrvalue = lString16("#") + attrvalue;
+                    in_footnoteref = false;
+                }
+                if(in_footnote){
+                    if(attrname == "id")
+                    {
+                        callback_->OnTagOpen(L"", L"title");
+                        callback_->OnTagOpen(L"", L"p");
+                        callback_->OnText(attrvalue.c_str(),attrvalue.length(),flags);
+                        callback_->OnTagClose(L"", L"p");
+                        callback_->OnTagClose(L"", L"title");
+                    }
+                    if(attrname == "type" && (attrvalue == "separator" || attrvalue =="continuationSeparator"))
+                    {
+                        callback_->OnTagClose(L"",L"section");
+                        in_footnote = false;
+                        allow_footnote_pbr = false;
+                        break;
+                    }
+                }
+                //embedded image handling
+                if(in_blip_img)
+                {
+                    if (attrname == "embed")
+                    {
+                        attrname = "src";
+                        lString16 rID = attrvalue;
+                        attrvalue = docxItems.findHrefById(rID);
+                    }
+                    in_blip_img =false;
+                }
+
+                //hyperlinks handling
+                if(in_hyperlink)
+                {
+                    if (attrname == "id")
+                    {
+                        attrvalue = docxLinks.findTargetById(attrvalue);
+                        attrname = "href";
+                    }
+                    in_hyperlink = false;
+                }
+                //toc handling
+                if(in_tocref)
+                {
+                    if(attrname == "id")
+                    {
+                        m_state = ps_attr;
+                        break;
+                    }
+                    else if (attrname == "name")
+                    {
+                        attrname = "id";
+                    }
+                }
+                if(in_sdt_a)
+                {
+                    if(attrname == "anchor")
+                    {
+                        attrname = "href";
+                        attrvalue = lString16("#") + attrvalue;
+                    }
+                    in_sdt_a = false;
+                }
+                //superscript and subscript handling
+                if(rpr_vertalign)
+                {
+                    if (attrname == "val" && attrvalue == "superscript")
+                    {
+                        rpr_superscript = true;
+                        rpr_subscript = false;
+                    }
+                    else if (attrname == "val" && attrvalue == "subscript")
+                    {
+                        rpr_subscript = true;
+                        rpr_superscript = false;
+                    }
+                    rpr_vertalign = false;
+                }
+                if (rpr_b && tagname == "b" && attrname == "val" && (attrvalue == "0" || attrvalue == "none"))
+                {
+                    rpr_b = false;
+                }
+                if (rpr_i && tagname == "i" && attrname == "val" && (attrvalue == "0" || attrvalue == "none"))
+                {
+                    rpr_i = false;
+                }
+                if (rpr_u && tagname == "u" && attrname == "val" && (attrvalue == "0" || attrvalue == "none"))
+                {
+                    rpr_u = false;
+                }
+                //<group> removing procedure
+                if(nodraw_group)
+                {
+                    callback_->OnAttribute(attrns.c_str(),lString16("src").c_str(), lString16("Intentional_error").c_str());
+                    nodraw_group = false;
+                }
+                if ((flags & TXTFLG_CONVERT_8BIT_ENTITY_ENCODING) && m_conv_table) {
+                    PreProcessXmlString(attrvalue, 0, m_conv_table);
+                }
+                if(!noattrib)
+                {
+                    //CRLog::error("OnAttrib [%s:%s = \"%s\"]",LCSTR(attrns), LCSTR(attrname), LCSTR(attrvalue));
+                    callback_->OnAttribute(attrns.c_str(), attrname.c_str(), attrvalue.c_str());
+                }
+                if(separate_img)
+                {
+                    callback_->OnAttribute(L"",L"class",L"section_image");
+                    callback_->OnTagClose(L"",L"p");
+                    callback_->OnTagOpen(L"",L"p");
+                    separate_img = false;
+                }
+                if (in_xml_tag && attrname == "encoding")
+                {
+                    SetCharset(attrvalue.c_str());
+                }
+                //CRLog::trace("LvXmlParser::Parse() ps_attr ret");
+            }
+                break;
+            case ps_text:
+            {
+                //footnotes page-to-page separation handling
+                if (allow_footnote_pbr)
+                {
+                    //callback_->OnTagOpen(L"", L"pagebreak");
+                    //callback_->OnText(L"\u200B", 1, flags);
+                    //callback_->OnTagClose(L"", L"pagebreak");
+
+                    in_footnote = false;
+                    allow_footnote_pbr = false;
+                }
+
+                //bold italic underline list tag insertion
+                if (in_t)
+                {
+                    if(in_header)
+                    {
+                        switch (pstyle_value){
+                            case 1:
+                                callback_->OnTagOpen(L"", lString16("h1").c_str());
+                                break;
+                            case 2:
+                                callback_->OnTagOpen(L"", lString16("h2").c_str());
+                                break;
+                            case 3:
+                                callback_->OnTagOpen(L"", lString16("h3").c_str());
+                                break;
+                            case 4:
+                                callback_->OnTagOpen(L"", lString16("h4").c_str());
+                                break;
+                            case 5:
+                                callback_->OnTagOpen(L"", lString16("h5").c_str());
+                                break;
+                            case 6:
+                                callback_->OnTagOpen(L"", lString16("h6").c_str());
+                                break;
+                            default:
+                                //val="Normal"
+                                in_header = false;
+                                break;
+                        }
+                        in_header = false;
+                        pstyle_value = 0;
+                    }
+                    if (rpr_b)
+                    {
+                        callback_->OnTagOpen(L"", lString16("b").c_str());
+                    }
+                    if (rpr_i)
+                    {
+                        callback_->OnTagOpen(L"", lString16("i").c_str());
+                    }
+                    if (rpr_u)
+                    {
+                        callback_->OnTagOpen(L"", lString16("u").c_str());
+                    }
+                    if (rpr_superscript)
+                    {
+                        callback_->OnTagOpen(L"", lString16("sup").c_str());
+                    }
+                    else if (rpr_subscript)
+                    {
+                        callback_->OnTagOpen(L"", lString16("sub").c_str());
+                    }
+                }
+                ReadText();
+                fragments_counter++;
+                //bold italic underline list tag insertion closing tags
+                if (in_t)
+                {
+                    if (rpr_u)
+                    {
+                        callback_->OnTagClose(L"", lString16("u").c_str());
+                        rpr_u = false;
+                    }
+                    if (rpr_i)
+                    {
+                        callback_->OnTagClose(L"", lString16("i").c_str());
+                        rpr_i = false;
+                    }
+                    if (rpr_b)
+                    {
+                        callback_->OnTagClose(L"", lString16("b").c_str());
+                        rpr_b = false;
+                    }
+
+                    if (rpr_superscript)
+                    {
+                        callback_->OnTagClose(L"", lString16("sup").c_str());
+                        rpr_superscript=false;
+                    }
+                    else if (rpr_subscript)
+                    {
+                        callback_->OnTagClose(L"", lString16("sub").c_str());
+                        rpr_subscript=false;
+                    }
+                    in_t = false;
+                }
+
+                if(need_coverpage_)
+                {
+                    //CRLog::trace("LvXmlParser: text fragments read : %d", fragments_counter);
+                    if (fragments_counter >= FIRSTPAGE_BLOCKS_MAX_DOCX)
+                    {
+                        firstpage_thumb_num_reached = true;
+                    }
+                }
+                m_state = ps_lt;
+            }
+                break;
+            default:
+            {
+            }
+        }
+    }
+    callback_->OnStop();
+    return !error;
+}
+
 
 #define TEXT_SPLIT_SIZE 8192
 
@@ -3404,7 +4503,8 @@ bool LvXmlParser::ReadText()
                 enc_table = this->m_conv_table;
 
             int nlen = PreProcessXmlString(buf, last_split_txtlen, flags, enc_table);
-            if ( (flags & TXTFLG_TRIM) && (!(flags & TXTFLG_PRE) || (flags & TXTFLG_PRE_PARA_SPLITTING)) ) {
+            if ( (flags & TXTFLG_TRIM) && (!(flags & TXTFLG_PRE) || (flags & TXTFLG_PRE_PARA_SPLITTING)) )
+            {
                 nlen = TrimDoubleSpaces(buf, nlen,
                     ((flags & TXTFLG_TRIM_ALLOW_START_SPACE) || pre_para_splitting)?true:false,
                     (flags & TXTFLG_TRIM_ALLOW_END_SPACE)?true:false,
@@ -3619,6 +4719,11 @@ LvHtmlParser::~LvHtmlParser()
 bool LvHtmlParser::Parse()
 {
     return LvXmlParser::Parse();
+}
+
+bool LvHtmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks,DocxStyles docxStyles)
+{
+    return LvXmlParser::ParseDocx(docxItems, docxLinks, docxStyles);
 }
 
 /// read file contents to string

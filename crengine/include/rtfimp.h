@@ -375,6 +375,8 @@ public:
     virtual bool CheckFormat();
     /// parses input stream
     virtual bool Parse();
+
+    virtual bool ParseDocx(DocxItems docxItems,DocxLinks docxLinks, DocxStyles docxStyles) { return false; };
     /// resets parsing, moves to beginning of stream
     virtual void Reset();
     /// sets charset by name

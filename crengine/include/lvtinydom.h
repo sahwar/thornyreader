@@ -1724,7 +1724,7 @@ class ldomElementWriter
     friend class LvDomWriter;
     friend class LvDomAutocloseWriter;
     //friend ldomElementWriter * pop( ldomElementWriter * obj, lUInt16 id );
-    ldomElementWriter(CrDom * document, lUInt16 nsid, lUInt16 id, ldomElementWriter * parent);
+    ldomElementWriter(CrDom * document, lUInt16 nsid, lUInt16 id, ldomElementWriter * parent, lUInt32 flags);
     ~ldomElementWriter();
 };
 
@@ -1947,5 +1947,6 @@ lString16 ExtractDocLanguage(CrDom* dom);
 /// returns "(Series Name #number)" if pSeriesNumber is NULL, separate name and number otherwise
 lString16 ExtractDocSeries(CrDom* dom, int* pSeriesNumber=NULL);
 lString16 ExtractDocThumbImageName(CrDom* dom);
+
 
 #endif

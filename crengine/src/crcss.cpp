@@ -67,7 +67,7 @@ img, image, .section_image, .coverpage, coverpage {
   padding-bottom: 1em;
 }
 
-p image, li image {
+p image, li image , p img, li img {
   display: inline;
   padding-left: 1em;
   padding-right: 1em;
@@ -81,6 +81,11 @@ cite p image{
 a, b, strong, q, u, del, s, strike, small, big, sub, sup, acronym, span, font {
   display: inline;
 }
+
+.hidden {
+display: none;
+}
+
 b, strong {
   font-weight: bold;
 }
@@ -176,6 +181,7 @@ pre, code, .code {
   margin-right: 0em;
   font-family: "Roboto Mono", monospace;
 }
+
 tt, samp, kbd {
   display: inline;
   font-family: "Roboto Mono", monospace;
@@ -244,6 +250,10 @@ table {
 td, th {
   text-indent: 0px;
   padding: 3px;
+}
+td > p {
+text-indent: 0px;
+text-align: center;
 }
 th {
   font-weight: bold;
@@ -366,7 +376,7 @@ head, form, script {
   display: none;
 }
 
-pagebreak {
+pagebreak{
   page-break-after: always;
   height: 0;
 }
