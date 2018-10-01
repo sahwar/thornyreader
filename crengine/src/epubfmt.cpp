@@ -1,46 +1,10 @@
 #include "include/epubfmt.h"
 #include "include/docxhandler.h"
+#include "include/EpubItems.h"
 
-class EpubItem
-{
-public:
-	lString16 href;
-	lString16 mediaType;
-	lString16 id;
-	lString16 title;
 
-	EpubItem() {}
 
-	EpubItem(const EpubItem &v) : href(v.href), mediaType(v.mediaType), id(v.id) {}
 
-	EpubItem &operator=(const EpubItem &v)
-	{
-		href = v.href;
-		mediaType = v.mediaType;
-		id = v.id;
-		return *this;
-	}
-};
-
-class EpubItems : public LVPtrVector<EpubItem>
-{
-public:
-	EpubItem *findById(const lString16 &id)
-	{
-		if (id.empty())
-		{
-			return NULL;
-		}
-		for (int i = 0; i < length(); i++)
-		{
-			if (get(i)->id == id)
-			{
-				return get(i);
-			}
-		}
-		return NULL;
-	}
-};
 bool DetectEpubFormat(LVStreamRef stream)
 {
 	LVContainerRef m_arc = LVOpenArchive(stream);
@@ -721,6 +685,7 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 
 	// read content.opf
 	EpubItems epubItems;
+	EpubItems NotesItems;
 	//EpubItem * epubToc = NULL; //TODO
 	LVArray<EpubItem *> spineItems;
 	lString16 codeBase;
@@ -864,6 +829,26 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 				}
 			}
 		}
+        //we're counting xpaths from 1 NOT from 0
+        int refcount = 1;
+        while (1)
+        {
+            ldomNode *item = doc->nodeFromXPath(lString16("package/guide/reference[") << fmt::decimal(refcount) << "]");
+            if (!item)
+            {
+                break;
+            }
+            lString16 type = item->getAttributeValue("type");
+            lString16 href = item->getAttributeValue("href");
+            lString16 id = item->getAttributeValue("id");
+            lString16 title = item->getAttributeValue("title");
+            if(type == "notes" || type == "glossary")
+            {
+                NotesItems.add(new EpubItem(href,type,id,title));
+            }
+            refcount++;
+        }
+
 		// spine == itemrefs
 		if (epubItems.length() > 0)
 		{
@@ -894,13 +879,21 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 					{
 						break;
 					}
-						EpubItem *epubItem = epubItems.findById(item->getAttributeValue("idref"));
-						if (epubItem)
-						{
-							// TODO: add to document
-							spineItems.add(epubItem);
-						}
-				}
+                    EpubItem *epubItem = epubItems.findById(item->getAttributeValue("idref"));
+                    if (epubItem)
+                    {
+                        bool allowed = true;
+                        for (int i = 0; i < NotesItems.length(); i++)
+                        {
+                            if(epubItem->href == NotesItems.get(i)->href)
+                                  allowed = false;
+                        }
+                        if(allowed)
+                        {
+                            spineItems.add(epubItem);
+                        }
+                    }
+                }
 			}
 		}
 		delete doc;
@@ -936,6 +929,12 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 			//CRLog::trace("subst: %s => %s", LCSTR(name), LCSTR(subst));
 		}
 	}
+	for (int i = 0; i < NotesItems.length(); i++)
+    {
+        lString16 name = codeBase + NotesItems[i]->href;
+        lString16 subst = cs16("_doc_fragment_") + fmt::decimal(i);
+        appender.addPathSubstitution(name, subst);
+    }
 	for (int i = 0; i < spineItems.length(); i++)
 	{
 		if (spineItems[i]->mediaType == "application/xhtml+xml")
@@ -952,6 +951,7 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 					//CRLog::trace("base: %s", UnicodeToUtf8(base).c_str());
 					//LvXmlParser
 					LvHtmlParser parser(stream, &appender, firstpage_thumb);
+					parser.setEpubNotes(NotesItems);
 					if (parser.CheckFormat() && parser.Parse())
 					{
 						// valid
@@ -968,6 +968,38 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 			}
 		}
 	}
+	//writer.OnTagClose(L"", L"body");
+    //special footnotes parsing
+
+	writer.setFlags( TXTFLG_IN_NOTES );
+    for (int i = 0; i < NotesItems.length(); i++)
+    {
+        lString16 name = codeBase + NotesItems[i]->href;
+        LVStreamRef stream = m_arc->OpenStream(name.c_str(), LVOM_READ);
+        if (!stream.isNull())
+        {
+            appender.setCodeBase(name);
+            lString16 base = name;
+            LVExtractLastPathElement(base);
+            //CRLog::trace("base: %s", UnicodeToUtf8(base).c_str());
+            //LvXmlParser
+            LvHtmlParser parser(stream, &appender, firstpage_thumb);
+            if (parser.CheckFormat() && parser.ParseEpubFootnotes())
+            {
+                // valid
+                fragmentCount++;
+                lString8 headCss = appender.getHeadStyleText();
+                //CRLog::trace("style: %s", headCss.c_str());
+                styleParser.parse(base, headCss);
+            }
+            else
+            {
+                CRLog::error("Document type is not XML/XHTML for fragment %s", LCSTR(name));
+            }
+        }
+    }
+    writer.OnTagClose(L"", L"body");
+    writer.OnStop();
 
 	if (!ncxHref.empty())
 	{
@@ -990,9 +1022,6 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 			}
 		}
 	}
-
-	writer.OnTagClose(L"", L"body");
-	writer.OnStop();
 	CRLog::debug("EPUB: %d documents merged", fragmentCount);
 
 	if (!fontList.empty())

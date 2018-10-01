@@ -664,6 +664,8 @@ public:
     lvRect getFullMargins();
     //returns string name if any parent name is from white list
     lString16 getMainParentName();
+    //returns specified parent node from ancestor nodes. Returns NULL if not found.
+    ldomNode *getParentNode(const char *name);
 };
 
 /**

@@ -6282,6 +6282,10 @@ ldomNode * LvDocFragmentWriter::OnTagOpen( const lChar16 * nsname, const lChar16
             }
             // add base tag, too (e.g., in CSS, styles are often defined for body tag"
             parent->OnTagOpen(L"", baseTag.c_str());
+            if (parent->getFlags() & TXTFLG_IN_NOTES)
+            {
+                parent->OnAttribute(L"", L"name", L"notes");
+            }
             parent->OnTagBody();
             return baseElement;
         }
@@ -7222,6 +7226,23 @@ ldomNode * ldomNode::getParentNode() const
         break;
     }
     return parentIndex ? getTinyNode(parentIndex) : NULL;
+}
+
+//returns specified parent node from ancestor nodes. Returns NULL if not found.
+ldomNode * ldomNode::getParentNode(const char * name)
+{
+    if(this->isNodeName(name))
+        return this;
+    ldomNode* node = this;
+    while (node->getParentNode()!=NULL)
+    {
+        node = node->getParentNode();
+        if(node->isNodeName(name))
+        {
+            return node;
+        }
+    }
+    return NULL;
 }
 
 /// returns true child node is element

@@ -1195,8 +1195,14 @@ void renderFinalBlock( ldomNode * enode, LFormattedText * txform, RenderRectAcce
 
             ldomNode * parent = enode->getParentNode();
             int tflags = LTEXT_FLAG_OWNTEXT;
-            if ( parent->getNodeId() == el_a )
-                tflags |= LTEXT_IS_LINK;
+            //if ( parent->getNodeId() == el_a || parent->getParentNode()->getNodeId() == el_a )
+            if (enode->getParentNode("a") != NULL)
+            {
+                if (enode->getParentNode("a")->getNodeId() == el_a)
+                {
+                    tflags |= LTEXT_IS_LINK;
+                }
+            }
             LVFont * font = parent->getFont().get();
             css_style_ref_t style = parent->getStyle();
             lUInt32 cl = style->color.type!=css_val_color ? 0xFFFFFFFF : style->color.value;
@@ -1568,7 +1574,15 @@ int renderBlockElement( LVRendPageContext & context, ldomNode * enode, int x, in
                                 const src_text_fragment_t * src = txform->GetSrcInfo( line->words[w].src_text_index );
                                 if ( src && src->object ) {
                                     ldomNode * node = (ldomNode*)src->object;
-                                    ldomNode * parent = node->getParentNode();
+                                    //ldomNode *parent = node->getParentNode();
+                                    ldomNode *parent;
+                                    if (node->getParentNode("a") != NULL)
+                                    {
+                                        parent = node->getParentNode("a");
+                                    }
+                                    else{
+                                        parent = node->getParentNode();
+                                    }
                                     if ( parent->getNodeId()==el_a && parent->hasAttribute(LXML_NS_ANY, attr_href )
                                             && parent->getAttributeValue(LXML_NS_ANY, attr_type ) == "note") {
                                         lString16 href = parent->getAttributeValue(LXML_NS_ANY, attr_href );

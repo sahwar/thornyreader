@@ -22,6 +22,7 @@
 #include "crtxtenc.h"
 #include "dtddef.h"
 #include "docxhandler.h"
+#include "EpubItems.h"
 
 #define XML_CHAR_BUFFER_SIZE 4096
 #define XML_FLAG_NO_SPACE_TEXT 1
@@ -92,6 +93,7 @@ public:
 #define TXTFLG_RTF                          64
 #define TXTFLG_PRE_PARA_SPLITTING           128
 #define TXTFLG_KEEP_SPACES                  256
+#define TXTFLG_IN_NOTES                     512
 #define TXTFLG_ENCODING_MASK                0xFF00
 #define TXTFLG_ENCODING_SHIFT               8
 #define TXTFLG_CONVERT_8BIT_ENTITY_ENCODING 0x10000
@@ -323,6 +325,7 @@ private:
     bool need_coverpage_;
     Tagmap m_;
     bool tags_init_ = false;
+    EpubItems * EpubNotes_;
 protected:
     bool possible_capitalized_tags_;
     bool m_allowHtml;
@@ -334,6 +337,10 @@ public:
     virtual bool Parse();
     //highly modified xml parser for docx parsing
     virtual bool ParseDocx(DocxItems docxItems, DocxLinks docxLinks,DocxStyles docxStyles);
+    //highly modified xml parser for epub footnotes parsing
+    virtual bool ParseEpubFootnotes();
+    //add epub notes list for parser
+    void setEpubNotes(EpubItems epubItems);
     /// sets charset by name
     virtual void SetCharset(const lChar16* name);
     /// resets parsing, moves to beginning of stream
@@ -365,6 +372,7 @@ public:
     virtual bool Parse();
     virtual bool ParseDocx(DocxItems docxItems, DocxLinks docxLinks,DocxStyles docxStyles);
     //virtual bool ParseDocx(DocxItems docxItems);
+    virtual bool ParseEpubFootnotes();
     LvHtmlParser(LVStreamRef stream, LvXMLParserCallback * callback);
     LvHtmlParser(LVStreamRef stream, LvXMLParserCallback * callback, bool need_coverpage);
     bool need_coverpage_;
