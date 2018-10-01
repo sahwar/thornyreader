@@ -2477,6 +2477,12 @@ static void UpdateOutline(LVDocView *doc_view,
 
 void LVDocView::GetOutline(LVPtrVector<LvTocItem, false> &outline)
 {
+    if(this->doc_format_==DOC_FORMAT_DOCX)
+    {
+        CRLog::trace("No outline for docx format yet.");
+        return;
+        //todo (possibly) implement docx outline
+    }
 	outline.clear();
 	if (cr_dom_)
 	{
