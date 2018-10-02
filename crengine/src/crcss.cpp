@@ -311,19 +311,19 @@ text-author, .epigraph_author, .citation_author {
 body[name="notes"], body[name="comments"] {
   font-size: 70%;
 }
-body[name="notes"] h1, body[name="notes"] h2, body[name="notes"] h3
-{
-page-break-before:avoid;
-page-break-inside:avoid;
-page-break-after :avoid;
+
+body[name="notes"] title {
+  page-break-before: avoid;
+  page-break-inside: avoid;
+  page-break-after : avoid;
 }
 
 body[name="notes"] section title {
   display: run-in;
   text-align: left;
-  /*page-break-before: auto;*/
-  /*page-break-inside: auto;*/
-  /*page-break-after: auto;*/
+  page-break-before: avoid;
+  page-break-inside: avoid;
+  page-break-after : avoid;
 }
 body[name="notes"] section title p {
   display: inline;
@@ -332,9 +332,9 @@ body[name="notes"] section title p {
 body[name="comments"] section title {
   display: run-in;
   text-align: left;
-  /*page-break-before: auto;*/
-  /*page-break-inside: auto;*/
-  /*page-break-after: auto;*/
+  page-break-before: avoid;
+  page-break-inside: avoid;
+  page-break-after : avoid;
 }
 body[name="comments"] section title p {
   display: inline;

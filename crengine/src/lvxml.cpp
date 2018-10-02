@@ -4005,9 +4005,10 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
 
 bool LvXmlParser::ParseEpubFootnotes()
 {
-    CRLog::error("ParseEpubFootnotes()");
     Reset();
     callback_->OnStart(this);
+    callback_->OnTagOpen(L"",L"body");
+    callback_->OnAttribute(L"",L"name",L"notes");
     //int txt_count = 0;
     int flags = callback_->getFlags();
     bool error = false;
@@ -4017,7 +4018,8 @@ bool LvXmlParser::ParseEpubFootnotes()
     bool body_started = false;
     bool firstpage_thumb_num_reached = false;
 
-    bool in_footnote = false;
+    bool in_section = false;
+    bool in_section_inner = false;
     bool in_a = false;
 
     int fragments_counter = 0;
@@ -4101,7 +4103,7 @@ bool LvXmlParser::ParseEpubFootnotes()
 
                 tagns = "";
 
-                if(tagname == "html" || tagname == "body")
+                if(tagname == "html" || tagname == "body" || tagname == "meta"|| tagname == "link" || tagname == "xml")
                 {
                     if (SkipTillChar('>'))
                     {
@@ -4110,20 +4112,72 @@ bool LvXmlParser::ParseEpubFootnotes()
                     }
                     break;
                 }
-                if (tagname == "div" && !close_flag)
+                if ((tagname == "a" || tagname == "head") && !close_flag)
                 {
-                    tagname = "section";
-                    in_footnote = true;
-                    m_state = ps_attr;
-                    //break;
-                }
-                if (tagname == "div" && close_flag && in_footnote)
-                {
-                    tagname = "section";
-                    in_footnote = false;
+                    if (SkipTillChar('/'))
+                    {
+                        m_state = ps_text;
+                        ch = ReadCharFromBuffer();
+                    }
+                    if (SkipTillChar('>'))
+                    {
+                        m_state = ps_text;
+                        ch = ReadCharFromBuffer();
+                    }
+                    break;
                 }
 
-                //all other closing tags handling
+                if (tagname == "div")
+                {
+                    tagname = "section";
+                }
+
+                if (in_section)
+                {
+                    if (tagname == "section" && !close_flag)
+                    {
+                        in_section_inner = true;
+                        if (SkipTillChar('>'))
+                        {
+                            m_state = ps_text;
+                            ch = ReadCharFromBuffer();
+                        }
+                        break;
+                    }
+                    if (tagname == "section" && close_flag && in_section_inner)
+                    {
+                        in_section_inner = false;
+                        if (SkipTillChar('>'))
+                        {
+                            m_state = ps_text;
+                            ch = ReadCharFromBuffer();
+                        }
+                        break;
+                    }
+                }
+
+                if (tagname == "section")
+                {
+                    if (!close_flag)
+                    {
+                        in_section = true;
+                    }
+                    else if (close_flag && !in_section_inner)
+                    {
+                        in_section = false;
+                    }
+                }
+
+                if (tagname == "h1" ||
+                    tagname == "h2" ||
+                    tagname == "h3" ||
+                    tagname == "h4" ||
+                    tagname == "h5" ||
+                    tagname == "h6")
+                {
+                    tagname = "title";
+                }
+
                 if (close_flag)
                 {
                     callback_->OnTagClose(tagns.c_str(), tagname.c_str());
@@ -4255,6 +4309,7 @@ bool LvXmlParser::ParseEpubFootnotes()
             }
         }
     }
+    callback_->OnTagClose(L"",L"body");
     callback_->OnStop();
     return !error;
 }

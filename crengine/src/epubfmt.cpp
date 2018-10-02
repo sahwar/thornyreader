@@ -919,10 +919,12 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 	writer.OnStart(NULL);
 	writer.OnTagOpenNoAttr(L"", L"body");
 	int fragmentCount = 0;
+	int itemcounter = 0;
 	for (int i = 0; i < spineItems.length(); i++)
 	{
 		if (spineItems[i]->mediaType == "application/xhtml+xml")
 		{
+			itemcounter++;
 			lString16 name = codeBase + spineItems[i]->href;
 			lString16 subst = cs16("_doc_fragment_") + fmt::decimal(i);
 			appender.addPathSubstitution(name, subst);
@@ -932,8 +934,9 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 	for (int i = 0; i < NotesItems.length(); i++)
     {
         lString16 name = codeBase + NotesItems[i]->href;
-        lString16 subst = cs16("_doc_fragment_") + fmt::decimal(i);
+        lString16 subst = cs16("_doc_fragment_") + fmt::decimal(itemcounter);
         appender.addPathSubstitution(name, subst);
+	    itemcounter++;
     }
 	for (int i = 0; i < spineItems.length(); i++)
 	{

@@ -6203,7 +6203,15 @@ void LvDocFragmentWriter::OnAttribute(const lChar16* nsname,
             parent->OnAttribute(nsname, attrname, convertId(lString16(attrvalue)).c_str() );
         } else if ( !lStr_cmp(attrname, "name") ) {
             //CRLog::trace("name attribute = %s", LCSTR(lString16(attrvalue)));
-            parent->OnAttribute(nsname, attrname, convertId(lString16(attrvalue)).c_str() );
+            if (lStr_cmp(attrvalue, "notes") != 0) //notes attribute avoiding
+            {
+                parent->OnAttribute(nsname, attrname, convertId(lString16(attrvalue)).c_str());
+            }
+            else
+            {
+                // pass [name="notes"] attribute safely
+                parent->OnAttribute(nsname, attrname, attrvalue);
+            }
         } else {
             parent->OnAttribute(nsname, attrname, attrvalue);
         }
