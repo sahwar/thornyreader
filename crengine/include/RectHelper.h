@@ -63,7 +63,12 @@ public:
 
     lvRect getRect(ldomWord word);
 
+    lvRect getRect(ldomWord word, bool init);
+
+    lvRect getRect(ldomXPointer xPointer);
+
     bool processRect(ldomXPointerEx xpointer, lvRect &rect);
+
     //FOR TOC
     bool FindLastIndexEnable_ = false;
 

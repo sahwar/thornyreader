@@ -61,6 +61,12 @@
 #define CMD_RES_CONVERT			        35
 #define CMD_REQ_VERSION   			    36
 #define CMD_RES_VERSION			        37
+#define CMD_REQ_XPATH   			    38
+#define CMD_RES_XPATH		            39
+#define CMD_REQ_RANGE_HITBOX   		    40
+#define CMD_RES_RANGE_HITBOX	        41
+#define CMD_REQ_XPATH_HITBOX   	        42
+#define CMD_RES_XPATH_HITBOX		    43
 
 #define CMD_REQ_PDF_STORAGE 124
 #define CMD_RES_PDF_STORAGE 125
