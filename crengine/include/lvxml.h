@@ -360,6 +360,8 @@ public:
     bool docxTagAllowed(lString16 tagname);
     //docx tags to filter initialization
     void initDocxTagsFilter();
+
+    bool ReadTextToString(lString16 &output, bool write_to_tree);
 };
 
 extern const char * * HTML_AUTOCLOSE_TABLE[];

@@ -4021,6 +4021,11 @@ bool LvXmlParser::ParseEpubFootnotes()
     bool in_section = false;
     bool in_section_inner = false;
     bool in_a = false;
+    bool in_body = false;
+    bool save_title_content = false;
+    bool title_content_saved = false;
+    bool put_title_back = false;
+    bool in_head = false;
 
     int fragments_counter = 0;
     lString16 tagname;
@@ -4028,6 +4033,7 @@ bool LvXmlParser::ParseEpubFootnotes()
     lString16 attrname;
     lString16 attrns;
     lString16 attrvalue;
+    lString16 buffer;
 
     for (; !eof_ && !error && !firstpage_thumb_num_reached ;)
     {
@@ -4099,7 +4105,8 @@ bool LvXmlParser::ParseEpubFootnotes()
                 }
                 tagns.lowercase();
                 tagname.lowercase();
-                //CRLog::error("%s:%s",LCSTR(tagns),LCSTR(tagname));
+                //if(!close_flag) CRLog::error(" <%s>",LCSTR(tagname));
+                //if( close_flag) CRLog::error("</%s>",LCSTR(tagname));
 
                 tagns = "";
 
@@ -4111,6 +4118,17 @@ bool LvXmlParser::ParseEpubFootnotes()
                         ch = ReadCharFromBuffer();
                     }
                     break;
+                }
+                if (tagname == "head")
+                {
+                    if(!close_flag)
+                    {
+                        in_head = true;
+                    }
+                    else
+                    {
+                        in_head = false;
+                    }
                 }
                 if ((tagname == "a" || tagname == "head") && !close_flag)
                 {
@@ -4127,6 +4145,55 @@ bool LvXmlParser::ParseEpubFootnotes()
                     break;
                 }
 
+                if (tagname == "h1" ||
+                    tagname == "h2" ||
+                    tagname == "h3" ||
+                    tagname == "h4" ||
+                    tagname == "h5" ||
+                    tagname == "h6")
+                {
+                    tagname = "title";
+                }
+                if(in_head)
+                {
+                    if (SkipTillChar('>'))
+                    {
+                        m_state = ps_text;
+                        ch = ReadCharFromBuffer();
+                    }
+                    break;
+                }
+                if(tagname == "title" && !in_section && !in_head)
+                {
+                    if (!close_flag) // set flags and remove title tag
+                    {
+                        save_title_content = true;
+                        title_content_saved = false;
+                    }
+                    if (close_flag)
+                    {
+
+                        save_title_content = false;
+                    }
+                    if (!put_title_back)
+                    {
+                        if (SkipTillChar('>'))
+                        {
+                            m_state = ps_text;
+                            ch = ReadCharFromBuffer();
+                        }
+                        break;
+                    }
+                    if (put_title_back)
+                    {
+                        callback_->OnTagOpen(L"", L"title");
+                        callback_->OnText(buffer.c_str(), buffer.length(), flags);
+                        callback_->OnTagClose(L"", L"title");
+                        put_title_back = false;
+                        break;
+                    }
+                }
+
                 if (tagname == "div")
                 {
                     tagname = "section";
@@ -4134,6 +4201,19 @@ bool LvXmlParser::ParseEpubFootnotes()
 
                 if (in_section)
                 {
+                    if(tagname == "title")
+                    {
+                        //title tag exists in current section, no need to insert another one
+                        //do nothing
+                        title_content_saved = false;
+                    }
+                    if(tagname != "title" && title_content_saved)
+                    {
+                        callback_->OnTagOpen(L"",L"title");
+                        callback_->OnText(buffer.c_str(),buffer.length(),flags);
+                        callback_->OnTagClose(L"",L"title");
+                        title_content_saved = false;
+                    }
                     if (tagname == "section" && !close_flag)
                     {
                         in_section_inner = true;
@@ -4168,15 +4248,6 @@ bool LvXmlParser::ParseEpubFootnotes()
                     }
                 }
 
-                if (tagname == "h1" ||
-                    tagname == "h2" ||
-                    tagname == "h3" ||
-                    tagname == "h4" ||
-                    tagname == "h5" ||
-                    tagname == "h6")
-                {
-                    tagname = "title";
-                }
 
                 if (close_flag)
                 {
@@ -4291,7 +4362,30 @@ bool LvXmlParser::ParseEpubFootnotes()
                 break;
             case ps_text:
             {
-                ReadText();
+                if(in_head)
+                {
+                    if (SkipTillChar('<'))
+                    {
+                        m_state = ps_lt;
+                        ch = ReadCharFromBuffer();
+                    }
+                    break;
+                }
+                if (save_title_content)
+                {
+                    ReadTextToString(buffer,false);
+                    //CRLog::error("saving to buffer = [%s]", LCSTR(buffer));
+                    if (buffer.atoi() <= 0)
+                    {
+                        put_title_back = true;
+                    }
+                    title_content_saved = true;
+                }
+                else
+                {
+                    ReadText();
+                }
+
                 fragments_counter++;
                 if(need_coverpage_)
                 {
@@ -4775,6 +4869,12 @@ int LVTextFileBase::fillCharBuffer()
 
 bool LvXmlParser::ReadText()
 {
+    lString16 temp;
+    return ReadTextToString(temp,true);
+}
+
+bool LvXmlParser::ReadTextToString(lString16 & output, bool write_to_tree)
+{
     // TODO: remove tracking of file pos
     //int text_start_pos = 0;
     //int ch_start_pos = 0;
@@ -4856,12 +4956,24 @@ bool LvXmlParser::ReadText()
                     lString16 tmp;
                     tmp.reserve(nlen + tabCount * 8);
                     ExpandTabs(tmp, buf, nlen);
-                    callback_->OnText(tmp.c_str(), tmp.length(), flags);
+                    if(write_to_tree)
+                    {
+                        callback_->OnText(tmp.c_str(), tmp.length(), flags);
+                    }
+                    output = tmp;
                 } else {
+                    if(write_to_tree)
+                    {
                     callback_->OnText(buf, nlen, flags);
+                    }
+                    output = buf;
                 }
             } else {
+                if(write_to_tree)
+                {
                 callback_->OnText(buf, nlen, flags);
+                }
+                output = buf;
             }
 
             m_txt_buf.erase(0, last_split_txtlen);

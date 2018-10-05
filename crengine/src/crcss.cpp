@@ -48,7 +48,8 @@ body, p, .justindent {
 }
 
 DocFragment {
-  page-break-before: always;
+  /*page-break-before: always;*/
+  page-break-before: avoid;
 }
 
 /* TEST AREA */
@@ -313,7 +314,7 @@ body[name="notes"], body[name="comments"] {
 }
 
 body[name="notes"] title {
-  page-break-before: avoid;
+  page-break-before: always;
   page-break-inside: avoid;
   page-break-after : avoid;
 }
