@@ -916,7 +916,9 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 	//m_doc->setCodeBase( codeBase );
 
 	LvDocFragmentWriter appender(&writer, cs16("body"), cs16("DocFragment"), lString16::empty_str);
-	writer.OnStart(NULL);
+    LvDocFragmentWriter appender2(&writer, cs16("body"), cs16("NoteFragment"), lString16::empty_str);
+
+    writer.OnStart(NULL);
 	writer.OnTagOpenNoAttr(L"", L"body");
 	int fragmentCount = 0;
 	int itemcounter = 0;
@@ -928,6 +930,7 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 			lString16 name = codeBase + spineItems[i]->href;
 			lString16 subst = cs16("_doc_fragment_") + fmt::decimal(i);
 			appender.addPathSubstitution(name, subst);
+			appender2.addPathSubstitution(name, subst);
 			//CRLog::trace("subst: %s => %s", LCSTR(name), LCSTR(subst));
 		}
 	}
@@ -936,7 +939,8 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
         lString16 name = codeBase + NotesItems[i]->href;
         lString16 subst = cs16("_doc_fragment_") + fmt::decimal(itemcounter);
         appender.addPathSubstitution(name, subst);
-	    itemcounter++;
+        appender2.addPathSubstitution(name, subst);
+        itemcounter++;
     }
 	for (int i = 0; i < spineItems.length(); i++)
 	{
@@ -967,11 +971,20 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 					{
 						CRLog::error("Document type is not XML/XHTML for fragment %s", LCSTR(name));
 					}
-				}
-			}
-		}
-	}
-	//writer.OnTagClose(L"", L"body");
+                }
+            }
+        }
+    }
+    if (NotesItems.length() > 0)
+    {
+        //writer.OnTagOpen(L"", L"NoteFragment");
+        //writer.OnTagOpen(L"", L"body");
+        writer.OnTagOpen(L"", L"pagebreak");
+        writer.OnText(L"\u200B", 1, TXTFLG_KEEP_SPACES | TXTFLG_TRIM_ALLOW_END_SPACE | TXTFLG_TRIM_ALLOW_START_SPACE);
+        writer.OnTagClose(L"", L"pagebreak");
+        //writer.OnTagClose(L"", L"body");
+        //writer.OnTagClose(L"", L"NoteFragment");
+    }
     //special footnotes parsing
 
 	writer.setFlags( TXTFLG_IN_NOTES );
@@ -981,17 +994,17 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
         LVStreamRef stream = m_arc->OpenStream(name.c_str(), LVOM_READ);
         if (!stream.isNull())
         {
-            appender.setCodeBase(name);
+	        appender2.setCodeBase(name);
             lString16 base = name;
             LVExtractLastPathElement(base);
             //CRLog::trace("base: %s", UnicodeToUtf8(base).c_str());
             //LvXmlParser
-            LvHtmlParser parser(stream, &appender, firstpage_thumb);
+            LvHtmlParser parser(stream, &appender2, firstpage_thumb);
             if (parser.CheckFormat() && parser.ParseEpubFootnotes())
             {
                 // valid
                 fragmentCount++;
-                lString8 headCss = appender.getHeadStyleText();
+                lString8 headCss = appender2.getHeadStyleText();
                 //CRLog::trace("style: %s", headCss.c_str());
                 styleParser.parse(base, headCss);
             }
