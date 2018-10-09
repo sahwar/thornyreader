@@ -686,6 +686,7 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 	// read content.opf
 	EpubItems epubItems;
 	EpubItems NotesItems;
+	LVArray<LinkStruct> LinksList;
 	//EpubItem * epubToc = NULL; //TODO
 	LVArray<EpubItem *> spineItems;
 	lString16 codeBase;
@@ -962,6 +963,7 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 					//LvXmlParser
 					LvHtmlParser parser(stream, &appender, firstpage_thumb);
 					parser.setEpubNotes(NotesItems);
+					parser.setLinksList(LinksList);
 					if (parser.CheckFormat() && parser.Parse())
 					{
 						// valid
@@ -974,10 +976,16 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 					{
 						CRLog::error("Document type is not XML/XHTML for fragment %s", LCSTR(name));
 					}
+                    LinksList = parser.getLinksList();
                 }
             }
         }
     }
+	CRLog::error("Linkslist length = %d",LinksList.length());
+	for (int i = 0; i < LinksList.length(); i++)
+	{
+		CRLog::error("LinksList %d = %s = %s",LinksList.get(i).num_,LCSTR(LinksList.get(i).id_),LCSTR(LinksList.get(i).href_));
+	}
     writer.OnTagOpen(L"", L"DocFragment");
 	writer.OnTagOpen(L"", L"NoteFragment");
 	writer.OnText(L"\u200B", 1, TXTFLG_KEEP_SPACES | TXTFLG_TRIM_ALLOW_END_SPACE | TXTFLG_TRIM_ALLOW_START_SPACE);
@@ -997,6 +1005,7 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
             //CRLog::trace("base: %s", UnicodeToUtf8(base).c_str());
             //LvXmlParser
             LvHtmlParser parser(stream, &appender3, firstpage_thumb);
+            parser.setLinksList(LinksList);
             if (parser.CheckFormat() && parser.ParseEpubFootnotesToRead())
             {
                 // valid

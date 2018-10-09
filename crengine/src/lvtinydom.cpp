@@ -6133,6 +6133,8 @@ lString16 LvDocFragmentWriter::convertHref( lString16 href )
 {
     if ( href.pos("://")>=0 )
         return href; // fully qualified href: no conversion
+    if ( href.pos("~")>=0 )
+        return href.substr(1); // fully qualified href: no conversion
 #if 0
     CRLog::trace("convertHref(%s, codeBase=%s, filePathName=%s)",
             LCSTR(href),
@@ -6144,7 +6146,6 @@ lString16 LvDocFragmentWriter::convertHref( lString16 href )
         if (replacement.empty())
             return href;
         lString16 p = cs16("#") + replacement + "_" + href.substr(1);
-        //CRLog::trace("href %s -> %s", LCSTR(href), LCSTR(p));
         return p;
     }
 
@@ -6200,14 +6201,7 @@ void LvDocFragmentWriter::OnAttribute(const lChar16* nsname,
         if ( !lStr_cmp(attrname, "href") || !lStr_cmp(attrname, "src" )|| !lStr_cmp(attrname, "nref" ) ) {
             parent->OnAttribute(nsname, attrname, convertHref(lString16(attrvalue)).c_str() );
         } else if ( !lStr_cmp(attrname, "id") ) {
-            if(!lString16(attrvalue).startsWith("back_")) // "back_...." protection
-            {
                 parent->OnAttribute(nsname, attrname, convertId(lString16(attrvalue)).c_str() );
-            }
-            else
-            {
-                parent->OnAttribute(nsname, attrname, attrvalue);
-            }
         } else if ( !lStr_cmp(attrname, "name") ) {
             //CRLog::trace("name attribute = %s", LCSTR(lString16(attrvalue)));
             if (lStr_cmp(attrvalue, "notes") != 0 && lStr_cmp(attrvalue, "notes_visible") != 0) //notes attribute avoiding

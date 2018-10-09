@@ -2606,8 +2606,8 @@ bool LvXmlParser::Parse()
     lString16 attrvalue;
     bool in_a = false;
     bool is_note= false;
-
-    //int backlinkscounter=0;
+    lString16 href_temp;
+    lString16 id_temp;
 
 	for (; !eof_ && !error && !firstpage_thumb_num_reached ;)
     {
@@ -2863,12 +2863,27 @@ bool LvXmlParser::Parse()
                         }
                     }
                 }
-                //if(in_a && attrname == "id" && is_note)
-                //{
-                //    attrvalue = lString16("back_") + lString16::itoa(backlinkscounter);
-                //    backlinkscounter++;
-                //    is_note = false;
-                //}
+
+                if (in_a && is_note)
+                {
+                    if (attrname == "href")
+                    {
+                        href_temp = attrvalue;
+                    }
+                    if (attrname == "id")
+                    {
+                        attrvalue = lString16("back_") + lString16::itoa(LinksList_.length());
+                        id_temp = lString16("#") + callback_->convertId(attrvalue);
+                    }
+                    if (!href_temp.empty() && !id_temp.empty())
+                    {
+                        is_note = false;
+                        CRLog::error("adding link");
+                        LinksList_.add(LinkStruct(LinksList_.length(), id_temp, href_temp));
+                        href_temp = lString16::empty_str;
+                        id_temp = lString16::empty_str;
+                    }
+                }
 
                 callback_->OnAttribute(attrns.c_str(), attrname.c_str(), attrvalue.c_str());
                 if (in_xml_tag && attrname == "encoding")
@@ -4048,6 +4063,8 @@ bool LvXmlParser::ParseEpubFootnotes(bool toRead)
     lString16 attrns;
     lString16 attrvalue;
     lString16 buffer;
+    int buffernum =-1;
+    LVArray<LinkStruct> LinksList = getLinksList();
 
     for (; !eof_ && !error && !firstpage_thumb_num_reached ;)
     {
@@ -4240,8 +4257,15 @@ bool LvXmlParser::ParseEpubFootnotes(bool toRead)
                         }
                         else if(toRead)
                         {
+                            LinkStruct currlink;
+                            if(LinksList.length() !=0 && buffernum != -1)
+                            {
+                                currlink = LinksList.get(buffernum);
+                            }
+
                             callback_->OnTagOpen(L"", L"title");
                             callback_->OnTagOpen(L"", L"a");
+                            callback_->OnAttribute(L"",L"href", (lString16("~") + currlink.id_).c_str());
                             callback_->OnText(buffer.c_str(), buffer.length(), flags);
                             callback_->OnTagClose(L"", L"a");
                             callback_->OnTagClose(L"", L"title");
@@ -4265,8 +4289,17 @@ bool LvXmlParser::ParseEpubFootnotes(bool toRead)
                     {
                         if(toRead)
                         {
+                            LinkStruct currlink;
+                            //CRLog::error("getting link buffernnum = %d",buffernum);
+                            if(LinksList_.length() !=0 && buffernum != -1)
+                            {
+                                currlink = LinksList.get(buffernum-1);
+                                //CRLog::error("currlink href = %s",LCSTR(currlink.id_));
+                            }
                             callback_->OnTagOpen(L"", L"title");
                             callback_->OnTagOpen(L"", L"a");
+                            callback_->OnAttribute(L"",L"href",(lString16("~") + currlink.id_).c_str());
+
                             callback_->OnText(buffer.c_str(), buffer.length(), flags);
                             callback_->OnTagClose(L"", L"a");
                             callback_->OnTagClose(L"", L"title");
@@ -4447,7 +4480,13 @@ bool LvXmlParser::ParseEpubFootnotes(bool toRead)
                     //CRLog::error("saving to buffer = [%s]", LCSTR(buffer));
                     if (buffer.atoi() <= 0)
                     {
+                        buffernum = -1;
                         title_is_text = true;
+                    }
+                    else
+                    {
+                        buffernum = buffer.atoi();
+                        title_is_text = false;
                     }
                     title_content_saved = true;
                 }
@@ -5158,6 +5197,16 @@ LvXmlParser::~LvXmlParser() {}
 void LvXmlParser::setEpubNotes(EpubItems epubItems)
 {
     EpubNotes_ = new EpubItems(epubItems);
+}
+
+void LvXmlParser::setLinksList(LVArray<LinkStruct> LinksList)
+{
+    LinksList_ = LinksList;
+}
+
+LVArray<LinkStruct> LvXmlParser::getLinksList()
+{
+    return LinksList_;
 }
 
 lString16 htmlCharset(lString16 htmlHeader)

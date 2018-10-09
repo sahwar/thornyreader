@@ -29,6 +29,8 @@
 
 typedef std::map<lUInt32,int> Tagmap;
 typedef std::map<lUInt32,int>::iterator iter;
+//typedef std::map<lUInt32,lString16> LinksMap;
+//typedef std::map<lUInt32,lString16>::iterator LinksIter;
 
 //class LvXmlParser;
 class LVFileFormatParser;
@@ -78,6 +80,8 @@ public:
     virtual bool OnBlob(lString16 name, const lUInt8 * data, int size) = 0;
     /// call to set document property
     virtual void OnDocProperty(const char* name, lString8 value) { }
+    virtual lString16 convertId( lString16 id ) {}
+    virtual lString16 convertHref( lString16 id ) {}
     virtual ~LvXMLParserCallback() {}
 };
 
@@ -326,6 +330,7 @@ private:
     Tagmap m_;
     bool tags_init_ = false;
     EpubItems * EpubNotes_;
+    LVArray<LinkStruct> LinksList_;
 protected:
     bool possible_capitalized_tags_;
     bool m_allowHtml;
@@ -341,6 +346,10 @@ public:
     virtual bool ParseEpubFootnotes(bool toRead);
     //add epub notes list for parser
     void setEpubNotes(EpubItems epubItems);
+
+    void setLinksList(LVArray<LinkStruct> LinksList);
+
+    LVArray<LinkStruct> getLinksList();
     /// sets charset by name
     virtual void SetCharset(const lChar16* name);
     /// resets parsing, moves to beginning of stream
