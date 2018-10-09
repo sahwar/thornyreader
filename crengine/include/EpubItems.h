@@ -65,11 +65,10 @@ public:
 class LinkStruct
 {
 public:
-    int num_ = 0;
     lString16 href_ = lString16::empty_str;
     lString16 id_ = lString16::empty_str;
     LinkStruct(){}
-    LinkStruct(int num,lString16 id, lString16 href): num_(num), href_(href), id_(id){}
+    LinkStruct(lString16 id, lString16 href): href_(href), id_(id){}
     ~LinkStruct(){}
 };
 

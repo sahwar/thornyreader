@@ -2868,7 +2868,7 @@ bool LvXmlParser::Parse()
                 {
                     if (attrname == "href")
                     {
-                        href_temp = attrvalue;
+                        href_temp = callback_->convertHref(attrvalue);
                     }
                     if (attrname == "id")
                     {
@@ -2879,7 +2879,7 @@ bool LvXmlParser::Parse()
                     {
                         is_note = false;
                         CRLog::error("adding link");
-                        LinksList_.add(LinkStruct(LinksList_.length(), id_temp, href_temp));
+                        LinksList_.add(LinkStruct(id_temp, href_temp));
                         href_temp = lString16::empty_str;
                         id_temp = lString16::empty_str;
                     }
@@ -4065,6 +4065,7 @@ bool LvXmlParser::ParseEpubFootnotes(bool toRead)
     lString16 buffer;
     int buffernum =-1;
     LVArray<LinkStruct> LinksList = getLinksList();
+    lString16 temp_section_id;
 
     for (; !eof_ && !error && !firstpage_thumb_num_reached ;)
     {
@@ -4257,18 +4258,33 @@ bool LvXmlParser::ParseEpubFootnotes(bool toRead)
                         }
                         else if(toRead)
                         {
-                            LinkStruct currlink;
-                            if(LinksList.length() !=0 && buffernum != -1)
+                            lString16 currlink_id;
+                            if(LinksList_.length() !=0 && buffernum != -1)
                             {
-                                currlink = LinksList.get(buffernum);
+                                for (int i = 0; i < LinksList.length(); i++)
+                                {
+                                    if(LinksList_.get(i).href_ == temp_section_id)
+                                    {
+                                        currlink_id = LinksList_.get(i).id_;
+                                        break;
+                                    }
+                                }
                             }
-
-                            callback_->OnTagOpen(L"", L"title");
-                            callback_->OnTagOpen(L"", L"a");
-                            callback_->OnAttribute(L"",L"href", (lString16("~") + currlink.id_).c_str());
-                            callback_->OnText(buffer.c_str(), buffer.length(), flags);
-                            callback_->OnTagClose(L"", L"a");
-                            callback_->OnTagClose(L"", L"title");
+                            if(!currlink_id.empty())
+                            {
+                                callback_->OnTagOpen(L"", L"title");
+                                callback_->OnTagOpen(L"", L"a");
+                                callback_->OnAttribute(L"",L"href",(lString16("~") + currlink_id).c_str());
+                                callback_->OnText(buffer.c_str(), buffer.length(), flags);
+                                callback_->OnTagClose(L"", L"a");
+                                callback_->OnTagClose(L"", L"title");
+                            }
+                            else
+                            {
+                                callback_->OnTagOpen(L"", L"title");
+                                callback_->OnText(buffer.c_str(), buffer.length(), flags);
+                                callback_->OnTagClose(L"", L"title");
+                            }
                         }
                         else
                         {
@@ -4289,20 +4305,33 @@ bool LvXmlParser::ParseEpubFootnotes(bool toRead)
                     {
                         if(toRead)
                         {
-                            LinkStruct currlink;
-                            //CRLog::error("getting link buffernnum = %d",buffernum);
+                            lString16 currlink_id;
                             if(LinksList_.length() !=0 && buffernum != -1)
                             {
-                                currlink = LinksList.get(buffernum-1);
-                                //CRLog::error("currlink href = %s",LCSTR(currlink.id_));
+                                for (int i = 0; i < LinksList.length(); i++)
+                                {
+                                    if(LinksList_.get(i).href_ == temp_section_id)
+                                    {
+                                        currlink_id = LinksList_.get(i).id_;
+                                        break;
+                                    }
+                                }
                             }
-                            callback_->OnTagOpen(L"", L"title");
-                            callback_->OnTagOpen(L"", L"a");
-                            callback_->OnAttribute(L"",L"href",(lString16("~") + currlink.id_).c_str());
-
-                            callback_->OnText(buffer.c_str(), buffer.length(), flags);
-                            callback_->OnTagClose(L"", L"a");
-                            callback_->OnTagClose(L"", L"title");
+                            if(!currlink_id.empty())
+                            {
+                                callback_->OnTagOpen(L"", L"title");
+                                callback_->OnTagOpen(L"", L"a");
+                                callback_->OnAttribute(L"",L"href",(lString16("~") + currlink_id).c_str());
+                                callback_->OnText(buffer.c_str(), buffer.length(), flags);
+                                callback_->OnTagClose(L"", L"a");
+                                callback_->OnTagClose(L"", L"title");
+                            }
+                            else
+                            {
+                                callback_->OnTagOpen(L"", L"title");
+                                callback_->OnText(buffer.c_str(), buffer.length(), flags);
+                                callback_->OnTagClose(L"", L"title");
+                            }
                         }
                         else
                         {
@@ -4447,7 +4476,10 @@ bool LvXmlParser::ParseEpubFootnotes(bool toRead)
                 if ((flags & TXTFLG_CONVERT_8BIT_ENTITY_ENCODING) && m_conv_table) {
                     PreProcessXmlString(attrvalue, 0, m_conv_table);
                 }
-
+                if(in_section && attrname == "id")
+                {
+                    temp_section_id = lString16("#") + callback_->convertId(attrvalue);
+                }
                 if(in_section && attrname == "id" && !toRead)
                 {
                     attrvalue.append("_note");
