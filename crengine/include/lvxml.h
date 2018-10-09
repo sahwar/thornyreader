@@ -338,7 +338,7 @@ public:
     //highly modified xml parser for docx parsing
     virtual bool ParseDocx(DocxItems docxItems, DocxLinks docxLinks,DocxStyles docxStyles);
     //highly modified xml parser for epub footnotes parsing
-    virtual bool ParseEpubFootnotes();
+    virtual bool ParseEpubFootnotes(bool toRead);
     //add epub notes list for parser
     void setEpubNotes(EpubItems epubItems);
     /// sets charset by name
@@ -374,7 +374,8 @@ public:
     virtual bool Parse();
     virtual bool ParseDocx(DocxItems docxItems, DocxLinks docxLinks,DocxStyles docxStyles);
     //virtual bool ParseDocx(DocxItems docxItems);
-    virtual bool ParseEpubFootnotes();
+    virtual bool ParseEpubFootnotesToDisplay();
+    virtual bool ParseEpubFootnotesToRead();
     LvHtmlParser(LVStreamRef stream, LvXMLParserCallback * callback);
     LvHtmlParser(LVStreamRef stream, LvXMLParserCallback * callback, bool need_coverpage);
     bool need_coverpage_;

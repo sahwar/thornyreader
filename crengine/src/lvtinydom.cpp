@@ -6197,13 +6197,20 @@ void LvDocFragmentWriter::OnAttribute(const lChar16* nsname,
 		const lChar16* attrname, const lChar16* attrvalue)
 {
     if ( insideTag ) {
-        if ( !lStr_cmp(attrname, "href") || !lStr_cmp(attrname, "src") ) {
+        if ( !lStr_cmp(attrname, "href") || !lStr_cmp(attrname, "src" )|| !lStr_cmp(attrname, "nref" ) ) {
             parent->OnAttribute(nsname, attrname, convertHref(lString16(attrvalue)).c_str() );
         } else if ( !lStr_cmp(attrname, "id") ) {
-            parent->OnAttribute(nsname, attrname, convertId(lString16(attrvalue)).c_str() );
+            if(!lString16(attrvalue).startsWith("back_")) // "back_...." protection
+            {
+                parent->OnAttribute(nsname, attrname, convertId(lString16(attrvalue)).c_str() );
+            }
+            else
+            {
+                parent->OnAttribute(nsname, attrname, attrvalue);
+            }
         } else if ( !lStr_cmp(attrname, "name") ) {
             //CRLog::trace("name attribute = %s", LCSTR(lString16(attrvalue)));
-            if (lStr_cmp(attrvalue, "notes") != 0) //notes attribute avoiding
+            if (lStr_cmp(attrvalue, "notes") != 0 && lStr_cmp(attrvalue, "notes_visible") != 0) //notes attribute avoiding
             {
                 parent->OnAttribute(nsname, attrname, convertId(lString16(attrvalue)).c_str());
             }

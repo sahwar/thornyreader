@@ -308,6 +308,35 @@ text-author, .epigraph_author, .citation_author {
   margin-right: 1em;
 }
 
+
+body[name="notes_visible"] title {
+  page-break-before: avoid;
+  page-break-inside: avoid;
+  page-break-after : avoid;
+}
+
+body[name="notes_visible"] section title {
+  font-size: 100%;
+  display: run-in;
+  text-align: left;
+  page-break-before: avoid;
+  page-break-inside: avoid;
+  page-break-after : avoid;
+}
+
+body[name="notes_visible"] section title a {
+  font-size: 100%;
+  display: run-in;
+  text-align: left;
+  page-break-before: avoid;
+  page-break-inside: avoid;
+  page-break-after : avoid;
+}
+
+body[name="notes_visible"] section title p {
+  display: inline;
+}
+
 body[name="notes"], body[name="comments"] {
   font-size: 70%;
 }
@@ -319,6 +348,7 @@ body[name="notes"] title {
 }
 
 body[name="notes"] section title {
+  font-size: 100%;
   display: run-in;
   text-align: left;
   page-break-before: avoid;

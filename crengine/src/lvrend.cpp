@@ -1583,12 +1583,15 @@ int renderBlockElement( LVRendPageContext & context, ldomNode * enode, int x, in
                                     else{
                                         parent = node->getParentNode();
                                     }
-                                    if ( parent->getNodeId()==el_a && parent->hasAttribute(LXML_NS_ANY, attr_href )
-                                            && parent->getAttributeValue(LXML_NS_ANY, attr_type ) == "note") {
-                                        lString16 href = parent->getAttributeValue(LXML_NS_ANY, attr_href );
-                                        if ( href.length()>0 && href.at(0)=='#' ) {
-                                            href.erase(0,1);
-                                            context.addLink( href );
+                                    if (parent->getNodeId() == el_a && parent->hasAttribute( LXML_NS_ANY, attr_href)
+                                        && parent->getAttributeValue(LXML_NS_ANY,attr_type) == "note")
+                                    {
+                                        //lString16 href = parent->getAttributeValue(LXML_NS_ANY, attr_href);
+                                        lString16 nref = parent->getAttributeValue(LXML_NS_ANY, attr_nref);
+                                        if (nref.length() > 0 && nref.at(0) == '#')
+                                        {
+                                            nref.erase(0, 1);
+                                            context.addLink(nref);
                                         }
 
                                     }

@@ -2605,6 +2605,9 @@ bool LvXmlParser::Parse()
     lString16 attrns;
     lString16 attrvalue;
     bool in_a = false;
+    bool is_note= false;
+
+    //int backlinkscounter=0;
 
 	for (; !eof_ && !error && !firstpage_thumb_num_reached ;)
     {
@@ -2854,10 +2857,18 @@ bool LvXmlParser::Parse()
                         if (attrvalue.pos(EpubNotes_->get(i)->href.c_str()) != -1)
                         {
                             callback_->OnAttribute(L"", L"type", L"note");
+                            callback_->OnAttribute(L"", L"nref", (attrvalue + lString16("_note")).c_str());
+                            is_note = true;
                             break;
                         }
                     }
                 }
+                //if(in_a && attrname == "id" && is_note)
+                //{
+                //    attrvalue = lString16("back_") + lString16::itoa(backlinkscounter);
+                //    backlinkscounter++;
+                //    is_note = false;
+                //}
 
                 callback_->OnAttribute(attrns.c_str(), attrname.c_str(), attrvalue.c_str());
                 if (in_xml_tag && attrname == "encoding")
@@ -4003,12 +4014,13 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
     return !error;
 }
 
-bool LvXmlParser::ParseEpubFootnotes()
+bool LvXmlParser::ParseEpubFootnotes(bool toRead)
 {
     Reset();
+    lString16 name = toRead?lString16("notes_visible"):lString16("notes");
     callback_->OnStart(this);
     callback_->OnTagOpen(L"",L"body");
-    callback_->OnAttribute(L"",L"name",L"notes");
+    callback_->OnAttribute(L"", L"name", name.c_str());
     //int txt_count = 0;
     int flags = callback_->getFlags();
     bool error = false;
@@ -4024,7 +4036,9 @@ bool LvXmlParser::ParseEpubFootnotes()
     bool in_body = false;
     bool save_title_content = false;
     bool title_content_saved = false;
-    bool put_title_back = false;
+    bool title_section_check = false;
+    bool reappend_title = false;
+    bool title_is_text = false;
     bool in_head = false;
 
     int fragments_counter = 0;
@@ -4175,7 +4189,7 @@ bool LvXmlParser::ParseEpubFootnotes()
 
                         save_title_content = false;
                     }
-                    if (!put_title_back)
+                    if (!title_is_text)
                     {
                         if (SkipTillChar('>'))
                         {
@@ -4184,12 +4198,12 @@ bool LvXmlParser::ParseEpubFootnotes()
                         }
                         break;
                     }
-                    if (put_title_back)
+                    if (title_is_text)
                     {
                         callback_->OnTagOpen(L"", L"title");
                         callback_->OnText(buffer.c_str(), buffer.length(), flags);
                         callback_->OnTagClose(L"", L"title");
-                        put_title_back = false;
+                        title_is_text = false;
                         break;
                     }
                 }
@@ -4201,6 +4215,46 @@ bool LvXmlParser::ParseEpubFootnotes()
 
                 if (in_section)
                 {
+                    if (tagname == "title" && !close_flag && !title_content_saved)
+                    {
+                        save_title_content = true;
+                        title_section_check = true;
+
+                        //title tag exists in current section, no need to insert another one
+                        //do nothing
+                        if (SkipTillChar('>'))
+                        {
+                            m_state = ps_text;
+                            ch = ReadCharFromBuffer();
+                        }
+                        break;
+                    }
+                    if (tagname == "title" && close_flag && title_section_check)
+                    {
+                        if (title_is_text)
+                        {
+                            callback_->OnTagClose(L"", L"section");
+                            callback_->OnTagOpen(L"", L"title");
+                            callback_->OnText(buffer.c_str(), buffer.length(), flags);
+                            callback_->OnTagClose(L"", L"title");
+                        }
+                        else if(toRead)
+                        {
+                            callback_->OnTagOpen(L"", L"title");
+                            callback_->OnTagOpen(L"", L"a");
+                            callback_->OnText(buffer.c_str(), buffer.length(), flags);
+                            callback_->OnTagClose(L"", L"a");
+                            callback_->OnTagClose(L"", L"title");
+                        }
+                        else
+                        {
+                            callback_->OnTagOpen(L"", L"title");
+                            callback_->OnText(buffer.c_str(), buffer.length(), flags);
+                            callback_->OnTagClose(L"", L"title");
+                        }
+                        save_title_content = false;
+                        title_section_check = false;
+                    }
                     if(tagname == "title")
                     {
                         //title tag exists in current section, no need to insert another one
@@ -4209,9 +4263,21 @@ bool LvXmlParser::ParseEpubFootnotes()
                     }
                     if(tagname != "title" && title_content_saved)
                     {
-                        callback_->OnTagOpen(L"",L"title");
-                        callback_->OnText(buffer.c_str(),buffer.length(),flags);
-                        callback_->OnTagClose(L"",L"title");
+                        if(toRead)
+                        {
+                            callback_->OnTagOpen(L"", L"title");
+                            callback_->OnTagOpen(L"", L"a");
+                            callback_->OnText(buffer.c_str(), buffer.length(), flags);
+                            callback_->OnTagClose(L"", L"a");
+                            callback_->OnTagClose(L"", L"title");
+                        }
+                        else
+                        {
+                            callback_->OnTagOpen(L"", L"title");
+                            callback_->OnText(buffer.c_str(), buffer.length(), flags);
+                            callback_->OnTagClose(L"", L"title");
+                        }
+
                         title_content_saved = false;
                     }
                     if (tagname == "section" && !close_flag)
@@ -4349,6 +4415,10 @@ bool LvXmlParser::ParseEpubFootnotes()
                     PreProcessXmlString(attrvalue, 0, m_conv_table);
                 }
 
+                if(in_section && attrname == "id" && !toRead)
+                {
+                    attrvalue.append("_note");
+                }
                 //CRLog::error("OnAttrib [%s:%s = \"%s\"]",LCSTR(attrns), LCSTR(attrname), LCSTR(attrvalue));
                 callback_->OnAttribute(attrns.c_str(), attrname.c_str(), attrvalue.c_str());
 
@@ -4377,7 +4447,7 @@ bool LvXmlParser::ParseEpubFootnotes()
                     //CRLog::error("saving to buffer = [%s]", LCSTR(buffer));
                     if (buffer.atoi() <= 0)
                     {
-                        put_title_back = true;
+                        title_is_text = true;
                     }
                     title_content_saved = true;
                 }
@@ -5175,9 +5245,14 @@ bool LvHtmlParser::Parse()
     return LvXmlParser::Parse();
 }
 
-bool LvHtmlParser::ParseEpubFootnotes()
+bool LvHtmlParser::ParseEpubFootnotesToDisplay()
 {
-    return LvXmlParser::ParseEpubFootnotes();
+    return LvXmlParser::ParseEpubFootnotes(false);
+}
+
+bool LvHtmlParser::ParseEpubFootnotesToRead()
+{
+    return LvXmlParser::ParseEpubFootnotes(true);
 }
 
 bool LvHtmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks,DocxStyles docxStyles)
