@@ -315,6 +315,10 @@ body[name="notes_visible"] title {
   page-break-after : avoid;
 }
 
+body[name="notes_visible"] section {
+  margin-bottom: 0.5em;
+}
+
 body[name="notes_visible"] section title {
   font-size: 100%;
   display: run-in;
@@ -373,6 +377,12 @@ body[name="comments"] section title p {
 a[type="note"] {
   vertical-align: super;
   font-size: 70%;
+  text-decoration: none;
+}
+
+a[type="note"] sup {
+  vertical-align: super;
+  font-size: 100%;
   text-decoration: none;
 }
 
