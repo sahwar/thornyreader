@@ -2607,7 +2607,6 @@ bool LvXmlParser::Parse()
     bool in_a = false;
     bool is_note= false;
     lString16 href_temp;
-    lString16 id_temp;
 
 	for (; !eof_ && !error && !firstpage_thumb_num_reached ;)
     {
@@ -2852,15 +2851,11 @@ bool LvXmlParser::Parse()
 
                 if(in_a && attrname == "href" && EpubNotes_ != NULL)
                 {
-                    for (int i = 0; i < EpubNotes_->length(); i++)
+                    if(EpubNotes_->hrefCheck(attrvalue))
                     {
-                        if (attrvalue.pos(EpubNotes_->get(i)->href.c_str()) != -1)
-                        {
-                            callback_->OnAttribute(L"", L"type", L"note");
-                            callback_->OnAttribute(L"", L"nref", (attrvalue + lString16("_note")).c_str());
-                            is_note = true;
-                            break;
-                        }
+                        callback_->OnAttribute(L"", L"type", L"note");
+                        callback_->OnAttribute(L"", L"nref", (attrvalue + lString16("_note")).c_str());
+                        is_note = true;
                     }
                 }
 
@@ -2870,18 +2865,14 @@ bool LvXmlParser::Parse()
                     {
                         href_temp = callback_->convertHref(attrvalue);
                     }
-                    if (attrname == "id")
+                    if (!href_temp.empty())
                     {
-                        attrvalue = lString16("back_") + lString16::itoa(LinksList_.length());
-                        id_temp = lString16("#") + callback_->convertId(attrvalue);
-                    }
-                    if (!href_temp.empty() && !id_temp.empty())
-                    {
+                        lString16 temp    = lString16("back_") + lString16::itoa(LinksList_.length());
+                        lString16 id      = lString16("#")     + callback_->convertId(temp);
+                        callback_->OnAttribute(L"", L"id", temp.c_str());
+                        LinksList_.add(LinkStruct(id, href_temp));
                         is_note = false;
-                        CRLog::error("adding link");
-                        LinksList_.add(LinkStruct(id_temp, href_temp));
                         href_temp = lString16::empty_str;
-                        id_temp = lString16::empty_str;
                     }
                 }
 

@@ -53,12 +53,24 @@ public:
         }
         for (int i = 0; i < length(); i++)
         {
-            if (get(i)->id == href)
+            if (get(i)->href == href)
             {
                 return get(i);
             }
         }
         return NULL;
+    }
+
+    bool hrefCheck(lString16 string)
+    {
+        for (int i = 0; i < this->length(); i++)
+        {
+            if (string.pos(this->get(i)->href.c_str()) != -1)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 };
 
