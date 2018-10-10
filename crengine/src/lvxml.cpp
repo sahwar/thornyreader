@@ -2873,10 +2873,13 @@ bool LvXmlParser::Parse()
                     }
                     if (!href_temp.empty())
                     {
-                        lString16 temp    = lString16("back_") + lString16::itoa(LinksList_.length());
+                        //lString16 temp    = lString16("back_") + lString16::itoa(LinksList_.length());
+                        lString16 temp    = lString16("back_") + lString16::itoa(LinksMap_.size());
                         lString16 id      = lString16("#")     + callback_->convertId(temp);
                         callback_->OnAttribute(L"", L"id", temp.c_str());
-                        LinksList_.add(LinkStruct(id, href_temp));
+                        //LinksList_.add(LinkStruct(id, href_temp));
+                        //CRLog::error("added [%s] to [%s]",LCSTR(id),LCSTR(href_temp));
+                        LinksMap_[href_temp.getHash()] = id;
                         is_note = false;
                         href_temp = lString16::empty_str;
                     }
@@ -4061,7 +4064,8 @@ bool LvXmlParser::ParseEpubFootnotes(bool toRead)
     lString16 attrvalue;
     lString16 buffer;
     int buffernum =-1;
-    LVArray<LinkStruct> LinksList = getLinksList();
+    //LVArray<LinkStruct> LinksList = getLinksList();
+    LinksMap LinksMap = getLinksMap();
     lString16 temp_section_id;
 
     for (; !eof_ && !error && !firstpage_thumb_num_reached ;)
@@ -4256,7 +4260,7 @@ bool LvXmlParser::ParseEpubFootnotes(bool toRead)
                         else if(toRead)
                         {
                             lString16 currlink_id;
-                            if(LinksList_.length() !=0 && buffernum != -1)
+                            /*if(LinksList_.length() !=0 && buffernum != -1)
                             {
                                 for (int i = 0; i < LinksList.length(); i++)
                                 {
@@ -4266,6 +4270,23 @@ bool LvXmlParser::ParseEpubFootnotes(bool toRead)
                                         break;
                                     }
                                 }
+                            }*/
+                            if(LinksMap_.size() !=0 && buffernum != -1)
+                            {
+                                if(LinksMap_.find(temp_section_id.getHash())!=LinksMap_.end())
+                                {
+                                    currlink_id = LinksMap_[temp_section_id.getHash()];
+                                    //CRLog::error("found [%s] at [%s]",LCSTR(currlink_id),LCSTR(temp_section_id));
+                                }
+                                /*
+                                for (int i = 0; i < LinksList.length(); i++)
+                                {
+                                    if(LinksList_.get(i).href_ == temp_section_id)
+                                    {
+                                        currlink_id = LinksList_.get(i).id_;
+                                        break;
+                                    }
+                                }*/
                             }
                             if(!currlink_id.empty())
                             {
@@ -4303,16 +4324,20 @@ bool LvXmlParser::ParseEpubFootnotes(bool toRead)
                         if(toRead)
                         {
                             lString16 currlink_id;
-                            if(LinksList_.length() !=0 && buffernum != -1)
+                            if(LinksMap_.size() !=0 && buffernum != -1)
                             {
-                                for (int i = 0; i < LinksList.length(); i++)
+                                if(LinksMap_.find(temp_section_id.getHash())!=LinksMap_.end())
+                                {
+                                    currlink_id = LinksMap_[temp_section_id.getHash()];
+                                }
+                                /*for (int i = 0; i < LinksList.length(); i++)
                                 {
                                     if(LinksList_.get(i).href_ == temp_section_id)
                                     {
                                         currlink_id = LinksList_.get(i).id_;
                                         break;
                                     }
-                                }
+                                }*/
                             }
                             if(!currlink_id.empty())
                             {
@@ -5236,6 +5261,16 @@ void LvXmlParser::setLinksList(LVArray<LinkStruct> LinksList)
 LVArray<LinkStruct> LvXmlParser::getLinksList()
 {
     return LinksList_;
+}
+
+void LvXmlParser::setLinksMap(LinksMap LinksMap)
+{
+    LinksMap_ = LinksMap;
+}
+
+LinksMap LvXmlParser::getLinksMap()
+{
+    return LinksMap_;
 }
 
 lString16 htmlCharset(lString16 htmlHeader)

@@ -29,8 +29,8 @@
 
 typedef std::map<lUInt32,int> Tagmap;
 typedef std::map<lUInt32,int>::iterator iter;
-//typedef std::map<lUInt32,lString16> LinksMap;
-//typedef std::map<lUInt32,lString16>::iterator LinksIter;
+typedef std::map<lUInt32,lString16> LinksMap;
+typedef std::map<lUInt32,lString16>::iterator LinksIter;
 
 //class LvXmlParser;
 class LVFileFormatParser;
@@ -331,6 +331,7 @@ private:
     bool tags_init_ = false;
     EpubItems * EpubNotes_;
     LVArray<LinkStruct> LinksList_;
+    LinksMap LinksMap_;
 protected:
     bool possible_capitalized_tags_;
     bool m_allowHtml;
@@ -371,6 +372,10 @@ public:
     void initDocxTagsFilter();
 
     bool ReadTextToString(lString16 &output, bool write_to_tree);
+
+    void setLinksMap(LinksMap LinksMap);
+
+    LinksMap getLinksMap();
 };
 
 extern const char * * HTML_AUTOCLOSE_TABLE[];

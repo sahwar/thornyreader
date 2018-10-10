@@ -686,7 +686,8 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 	// read content.opf
 	EpubItems epubItems;
 	EpubItems NotesItems;
-	LVArray<LinkStruct> LinksList;
+	//LVArray<LinkStruct> LinksList;
+	LinksMap LinksMap;
 	//EpubItem * epubToc = NULL; //TODO
 	LVArray<EpubItem *> spineItems;
 	lString16 codeBase;
@@ -963,7 +964,8 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 					//LvXmlParser
 					LvHtmlParser parser(stream, &appender, firstpage_thumb);
 					parser.setEpubNotes(NotesItems);
-					parser.setLinksList(LinksList);
+					//parser.setLinksList(LinksList);
+					parser.setLinksMap(LinksMap);
 					if (parser.CheckFormat() && parser.Parse())
 					{
 						// valid
@@ -976,7 +978,8 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 					{
 						CRLog::error("Document type is not XML/XHTML for fragment %s", LCSTR(name));
 					}
-                    LinksList = parser.getLinksList();
+                    //LinksList = parser.getLinksList();
+                    LinksMap = parser.getLinksMap();
                 }
             }
         }
@@ -1005,7 +1008,8 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
             //CRLog::trace("base: %s", UnicodeToUtf8(base).c_str());
             //LvXmlParser
             LvHtmlParser parser(stream, &appender3, firstpage_thumb);
-            parser.setLinksList(LinksList);
+            //parser.setLinksList(LinksList);
+            parser.setLinksMap(LinksMap);
             if (parser.CheckFormat() && parser.ParseEpubFootnotesToRead())
             {
                 // valid
