@@ -117,6 +117,10 @@ sup {
   vertical-align: super;
   font-size: 70%;
 }
+sup small{
+  vertical-align: super;
+  font-size: 100%;  /* 100% of sup == 70% of regular text*/
+}
 nobr {
   display: inline;
   hyphenate: none;
