@@ -2849,6 +2849,12 @@ bool LvXmlParser::Parse()
                     PreProcessXmlString(attrvalue, 0, m_conv_table);
                 }
 
+                if(in_a && attrname == "href" && EpubNotes_ == NULL)
+                {
+                    callback_->OnAttribute(L"", L"nref", attrvalue.c_str());
+                    //is_note = true;
+                }
+
                 if(in_a && attrname == "href" && EpubNotes_ != NULL)
                 {
                     if(EpubNotes_->hrefCheck(attrvalue))
