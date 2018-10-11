@@ -25,6 +25,7 @@
 #include "include/crcss.h"
 #include "include/mobihandler.h"
 #include "include/crconfig.h"
+#include "include/fb2fmt.h"
 
 // Yep, twice include single header with different define.
 // Probably should be last in include list, to don't mess up with other includes.
@@ -440,8 +441,14 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 	LVFileFormatParser *parser = nullptr;
 	if (doc_format == DOC_FORMAT_FB2)
 	{
-		LvDomWriter writer(cr_dom_);
-		parser = new LvXmlParser(stream_, &writer, false, true, cfg_firstpage_thumb_);
+		cr_dom_->setProps(doc_props_);
+		CRLog::error("IMPORTING FB2");
+		if (!ImportFb2Document(stream_, cr_dom_, cfg_firstpage_thumb_))
+		{
+			CRLog::error("IMPORTING FB2 FAILED");
+			return false;
+		}
+		doc_props_ = cr_dom_->getProps();
 	}
     else if (doc_format == DOC_FORMAT_DOCX)
     {

@@ -1783,6 +1783,14 @@ public:
     	doc_->getProps()->setString(name, value);
     }
     LvDomWriter(CrDom* document, bool headerOnly=false);
+    lString16 convertHref( lString16 href )
+    {
+        return href;
+    }
+    lString16 convertId( lString16 href )
+    {
+        return href;
+    }
     virtual ~LvDomWriter();
 };
 
