@@ -1399,7 +1399,7 @@ int renderBlockElement( LVRendPageContext & context, ldomNode * enode, int x, in
             while ( body != NULL && body->getNodeId()!=el_body )
                 body = body->getParentNode();
             if ( body ) {
-                if (body->getAttributeValue(attr_name) == "notes" || body->getAttributeValue(attr_name) == "comments")
+                if (body->getAttributeValue(attr_name) == "notes_hidden")// || body->getAttributeValue(attr_name) == "comments")
                     if ( !enode->getAttributeValue(attr_id).empty() )
                         isFootNoteBody = true;
             }

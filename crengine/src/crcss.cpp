@@ -313,46 +313,14 @@ text-author, .epigraph_author, .citation_author {
 }
 
 
-body[name="notes_visible"] title {
-  page-break-before: avoid;
-  page-break-inside: avoid;
-  page-break-after : avoid;
-}
-
-body[name="notes_visible"] section {
-  margin-bottom: 0.5em;
-}
-
-body[name="notes_visible"] section title {
-  font-size: 100%;
-  display: run-in;
-  text-align: left;
-  page-break-before: avoid;
-  page-break-inside: avoid;
-  page-break-after : avoid;
-}
-
-body[name="notes_visible"] section title a {
-  font-size: 100%;
-  display: run-in;
-  text-align: left;
-  page-break-before: avoid;
-  page-break-inside: avoid;
-  page-break-after : avoid;
-}
-
-body[name="notes_visible"] section title p {
-  display: inline;
-}
-
-body[name="notes"], body[name="comments"] {
-  font-size: 70%;
-}
-
 body[name="notes"] title {
   page-break-before: avoid;
   page-break-inside: avoid;
   page-break-after : avoid;
+}
+
+body[name="notes"] section {
+  margin-bottom: 0.5em;
 }
 
 body[name="notes"] section title {
@@ -363,7 +331,39 @@ body[name="notes"] section title {
   page-break-inside: avoid;
   page-break-after : avoid;
 }
+
+body[name="notes"] section title a {
+  font-size: 100%;
+  display: run-in;
+  text-align: left;
+  page-break-before: avoid;
+  page-break-inside: avoid;
+  page-break-after : avoid;
+}
+
 body[name="notes"] section title p {
+  display: inline;
+}
+
+body[name="notes_hidden"], body[name="comments"] {
+  font-size: 70%;
+}
+
+body[name="notes_hidden"] title {
+  page-break-before: avoid;
+  page-break-inside: avoid;
+  page-break-after : avoid;
+}
+
+body[name="notes_hidden"] section title {
+  font-size: 100%;
+  display: run-in;
+  text-align: left;
+  page-break-before: avoid;
+  page-break-inside: avoid;
+  page-break-after : avoid;
+}
+body[name="notes_hidden"] section title p {
   display: inline;
 }
 
