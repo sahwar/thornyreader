@@ -387,7 +387,7 @@ void createEncryptedEpubWarningDocument(CrDom *m_doc)
 	writer.OnTagClose(NULL, L"p");
 
 	writer.OnTagOpenNoAttr(NULL, L"p");
-	lString16 txt2("Livesci doesn't support reading of DRM protected books.");
+	lString16 txt2("Reading of DRM protected books is not supported.");
 	writer.OnText(txt2.c_str(), txt2.length(), 0);
 	writer.OnTagClose(NULL, L"p");
 
