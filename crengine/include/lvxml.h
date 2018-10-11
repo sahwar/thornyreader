@@ -332,6 +332,7 @@ private:
     EpubItems * EpubNotes_;
     LVArray<LinkStruct> LinksList_;
     LinksMap LinksMap_;
+    bool Notes_exists = false;
 protected:
     bool possible_capitalized_tags_;
     bool m_allowHtml;

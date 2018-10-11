@@ -2877,13 +2877,13 @@ bool LvXmlParser::Parse()
                     PreProcessXmlString(attrvalue, 0, m_conv_table);
                 }
 
-                if(in_a && attrname == "href" && EpubNotes_->empty())
+                if(in_a && attrname == "href" && !Notes_exists)
                 {
                     callback_->OnAttribute(L"", L"nref", (attrvalue + lString16("_note")).c_str());
                     //is_note = true;
                 }
 
-                if(in_a && attrname == "href" && !EpubNotes_->empty())
+                if(in_a && attrname == "href" && Notes_exists)
                 {
                     if(EpubNotes_->hrefCheck(attrvalue))
                     {
@@ -5287,6 +5287,10 @@ LvXmlParser::~LvXmlParser() {}
 void LvXmlParser::setEpubNotes(EpubItems epubItems)
 {
     EpubNotes_ = new EpubItems(epubItems);
+    if(epubItems.length()>0)
+    {
+        Notes_exists = true;
+    }
 }
 
 void LvXmlParser::setLinksList(LVArray<LinkStruct> LinksList)
