@@ -2605,11 +2605,16 @@ bool LvXmlParser::Parse()
     lString16 attrns;
     lString16 attrvalue;
     bool in_a = false;
+    bool in_body = false;
+    bool in_body_notes = false;
+    bool in_note_section = false;
+
     bool is_note= false;
     bool save_a_content= false;
     lString16 link_href;
     lString16 buffer;
     lString16 link_id;
+    lString16 section_id;
 
 	for (; !eof_ && !error && !firstpage_thumb_num_reached ;)
     {
@@ -2790,6 +2795,53 @@ bool LvXmlParser::Parse()
                     }
                 }
 
+                if(tagname == "body")
+                {
+                    if (!close_flag)
+                    {
+                        in_body = true;
+                    }
+                    else
+                    {
+                        in_body_notes = false;
+                        in_body = false;
+                    }
+                }
+
+                if(tagname == "section" && in_body_notes)
+                {
+                    if (!close_flag)
+                    {
+                        in_note_section = true;
+                    }
+                    else
+                    {
+                        in_note_section = false;
+                        section_id = lString16::empty_str;
+                    }
+                }
+
+                if(tagname == "title" && in_note_section)
+                {
+                    if (!close_flag)
+                    {
+                        //in_note_section = true
+
+                        callback_->OnTagOpenNoAttr(L"",L"title");
+                        if(LinksMap_.find(callback_->convertId(lString16("#") + section_id).getHash())!=LinksMap_.end())
+                        {
+                            callback_->OnTagOpen(L"",L"a");
+                            lString16 href = LinksMap_.at(callback_->convertId(lString16("#") + section_id).getHash());
+                            callback_->OnAttribute(L"",L"href",href.c_str());
+                        }
+                        break;
+                    }
+                    else
+                    {
+                        callback_->OnTagClose(L"",L"a");
+                    }
+                }
+
                 if (close_flag)
                 {
                     callback_->OnTagClose(tagns.c_str(), tagname.c_str());
@@ -2884,6 +2936,16 @@ bool LvXmlParser::Parse()
                 }
                 if ((flags & TXTFLG_CONVERT_8BIT_ENTITY_ENCODING) && m_conv_table) {
                     PreProcessXmlString(attrvalue, 0, m_conv_table);
+                }
+
+                if(in_body && attrname == "name" && attrvalue == "notes")
+                {
+                    in_body_notes = true;
+                }
+
+                if(in_note_section && attrname == "id")
+                {
+                    section_id = attrvalue;
                 }
 
                 if(in_a && attrname == "href" && !Notes_exists)
