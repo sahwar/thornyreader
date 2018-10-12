@@ -3,7 +3,7 @@
 //
 
 #include "crengine/include/fb2fmt.h"
-
+#include "crengine/include/FootnotesPrinter.h"
 
 
 bool ImportFb2Document(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
@@ -33,7 +33,7 @@ bool ImportFb2Document(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
     //{
     //	CRLog::error("LinksList %d = %s = %s",LinksList.get(i).num_,LCSTR(LinksList.get(i).id_),LCSTR(LinksList.get(i).href_));
     writer.OnStart(&parser);
-    AppendLinksToDoc(m_doc,LinksList);
+    FootnotesPrinter::AppendLinksToDoc(m_doc,LinksList);
     writer.OnStop();
 
     return true;

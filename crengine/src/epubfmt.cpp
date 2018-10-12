@@ -1,6 +1,7 @@
 #include "include/epubfmt.h"
 #include "include/docxhandler.h"
 #include "include/EpubItems.h"
+#include "include/FootnotesPrinter.h"
 
 
 
@@ -1031,7 +1032,7 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
     writer.OnText(L"\u200B", 1, TXTFLG_KEEP_SPACES | TXTFLG_TRIM_ALLOW_END_SPACE | TXTFLG_TRIM_ALLOW_START_SPACE);
     writer.OnTagClose(L"", L"NoteFragment");
 
-	AppendLinksToDoc(m_doc,LinksList);
+    FootnotesPrinter::AppendLinksToDoc(m_doc,LinksList);
 
     //writer.OnTagClose(L"", L"DocFragment");
     writer.OnTagClose(L"", L"body");

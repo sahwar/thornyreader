@@ -58,6 +58,7 @@ LOCAL_SRC_FILES := \
     src/mobihandler.cpp \
     src/RectHelper.cpp \
     src/fb2fmt.cpp \
+    src/FootnotesPrinter.cpp \
     src/crconfig.cpp
 
 LOCAL_SRC_FILES += \
