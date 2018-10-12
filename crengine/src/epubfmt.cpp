@@ -990,50 +990,57 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 	//{
 	//	CRLog::error("LinksList %d = %s = %s",i,LCSTR(LinksList.get(i).id_),LCSTR(LinksList.get(i).href_));
 	//}
-    writer.OnTagOpen(L"", L"DocFragment");
-	writer.OnTagOpen(L"", L"NoteFragment");
-	writer.OnText(L"\u200B", 1, TXTFLG_KEEP_SPACES | TXTFLG_TRIM_ALLOW_END_SPACE | TXTFLG_TRIM_ALLOW_START_SPACE);
-	writer.OnTagClose(L"", L"NoteFragment");
+	if(NotesItems.length()>0)
+	{
+		writer.OnTagOpen(L"", L"DocFragment");
+		writer.OnTagOpen(L"", L"NoteFragment");
+		writer.OnText(L"\u200B",
+				1,
+				TXTFLG_KEEP_SPACES | TXTFLG_TRIM_ALLOW_END_SPACE | TXTFLG_TRIM_ALLOW_START_SPACE);
+		writer.OnTagClose(L"", L"NoteFragment");
 
-    //special footnotes parsing
-    writer.setFlags(TXTFLG_IN_NOTES);
-    for (int i = 0; i < NotesItems.length(); i++)
+		//special footnotes parsing
+		writer.setFlags(TXTFLG_IN_NOTES);
+		for (int i = 0; i < NotesItems.length(); i++)
+		{
+			lString16 name = codeBase + NotesItems[i]->href;
+			LVStreamRef stream = m_arc->OpenStream(name.c_str(), LVOM_READ);
+			if (!stream.isNull())
+			{
+				appender3.setCodeBase(name);
+				lString16 base = name;
+				LVExtractLastPathElement(base);
+				//CRLog::trace("base: %s", UnicodeToUtf8(base).c_str());
+				//LvXmlParser
+				LvHtmlParser parser(stream, &appender3, firstpage_thumb);
+				//parser.setLinksList(LinksList);
+				parser.setLinksMap(LinksMap);
+				if (parser.CheckFormat() && parser.ParseEpubFootnotes())
+				{
+					// valid
+					//fragmentCount++;
+					lString8 headCss = appender3.getHeadStyleText();
+					//CRLog::trace("style: %s", headCss.c_str());
+					styleParser.parse(base, headCss);
+				}
+				else
+				{
+					CRLog::error("Document type is not XML/XHTML for fragment %s", LCSTR(name));
+				}
+			}
+		}
+
+		writer.OnTagClose(L"", L"DocFragment");
+	}
+    if(LinksList.length()>0)
     {
-        lString16 name = codeBase + NotesItems[i]->href;
-        LVStreamRef stream = m_arc->OpenStream(name.c_str(), LVOM_READ);
-        if (!stream.isNull())
-        {
-            appender3.setCodeBase(name);
-            lString16 base = name;
-            LVExtractLastPathElement(base);
-            //CRLog::trace("base: %s", UnicodeToUtf8(base).c_str());
-            //LvXmlParser
-            LvHtmlParser parser(stream, &appender3, firstpage_thumb);
-            //parser.setLinksList(LinksList);
-            parser.setLinksMap(LinksMap);
-            if (parser.CheckFormat() && parser.ParseEpubFootnotesToRead())
-            {
-                // valid
-                //fragmentCount++;
-                lString8 headCss = appender3.getHeadStyleText();
-                //CRLog::trace("style: %s", headCss.c_str());
-                styleParser.parse(base, headCss);
-            }
-            else
-            {
-                CRLog::error("Document type is not XML/XHTML for fragment %s", LCSTR(name));
-            }
-        }
+	    writer.OnTagOpen(L"", L"DocFragment");
+	    writer.OnTagOpen(L"", L"NoteFragment");
+	    writer.OnText(L"\u200B", 1, TXTFLG_KEEP_SPACES | TXTFLG_TRIM_ALLOW_END_SPACE | TXTFLG_TRIM_ALLOW_START_SPACE);
+	    writer.OnTagClose(L"", L"NoteFragment");
+
+	    FootnotesPrinter::AppendLinksToDoc(m_doc, LinksList);
     }
-
-    writer.OnTagClose(L"", L"DocFragment");
-    writer.OnTagOpen(L"", L"DocFragment");
-    writer.OnTagOpen(L"", L"NoteFragment");
-    writer.OnText(L"\u200B", 1, TXTFLG_KEEP_SPACES | TXTFLG_TRIM_ALLOW_END_SPACE | TXTFLG_TRIM_ALLOW_START_SPACE);
-    writer.OnTagClose(L"", L"NoteFragment");
-
-    FootnotesPrinter::AppendLinksToDoc(m_doc,LinksList);
-
     //writer.OnTagClose(L"", L"DocFragment");
     writer.OnTagClose(L"", L"body");
     writer.OnStop();
