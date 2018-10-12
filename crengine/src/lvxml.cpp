@@ -4128,10 +4128,10 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
     return !error;
 }
 
-bool LvXmlParser::ParseEpubFootnotes(bool toRead)
+bool LvXmlParser::ParseEpubFootnotes()
 {
     Reset();
-    lString16 name = toRead?lString16("notes"):lString16("notes_hidden");
+    lString16 name = lString16("notes");
     callback_->OnStart(this);
     callback_->OnTagOpen(L"",L"body");
     callback_->OnAttribute(L"", L"name", name.c_str());
@@ -4357,20 +4357,9 @@ bool LvXmlParser::ParseEpubFootnotes(bool toRead)
                             callback_->OnTagClose(L"", L"title");
                             callback_->OnTagClose(L"", L"title");
                         }
-                        else if(toRead)
+                        else
                         {
                             lString16 currlink_id;
-                            /*if(LinksList_.length() !=0 && buffernum != -1)
-                            {
-                                for (int i = 0; i < LinksList.length(); i++)
-                                {
-                                    if(LinksList_.get(i).href_ == temp_section_id)
-                                    {
-                                        currlink_id = LinksList_.get(i).id_;
-                                        break;
-                                    }
-                                }
-                            }*/
                             if(LinksMap_.size() !=0 && buffernum != -1)
                             {
                                 if(LinksMap_.find(temp_section_id.getHash())!=LinksMap_.end())
@@ -4379,15 +4368,6 @@ bool LvXmlParser::ParseEpubFootnotes(bool toRead)
                                     //CRLog::error("found [%s] at [%s]",LCSTR(currlink_id),LCSTR(temp_section_id));
                                     currlink_id = lString16("#") + currlink_id ;
                                 }
-                                /*
-                                for (int i = 0; i < LinksList.length(); i++)
-                                {
-                                    if(LinksList_.get(i).href_ == temp_section_id)
-                                    {
-                                        currlink_id = LinksList_.get(i).id_;
-                                        break;
-                                    }
-                                }*/
                             }
                             if(!currlink_id.empty())
                             {
@@ -4404,12 +4384,6 @@ bool LvXmlParser::ParseEpubFootnotes(bool toRead)
                                 callback_->OnText(buffer.c_str(), buffer.length(), flags);
                                 callback_->OnTagClose(L"", L"title");
                             }
-                        }
-                        else
-                        {
-                            callback_->OnTagOpen(L"", L"title");
-                            callback_->OnText(buffer.c_str(), buffer.length(), flags);
-                            callback_->OnTagClose(L"", L"title");
                         }
                         save_title_content = false;
                         title_section_check = false;
@@ -4422,40 +4396,26 @@ bool LvXmlParser::ParseEpubFootnotes(bool toRead)
                     }
                     if(tagname != "title" && title_content_saved)
                     {
-                        if(toRead)
+
+                        lString16 currlink_id;
+                        if (LinksMap_.size() != 0 && buffernum != -1)
                         {
-                            lString16 currlink_id;
-                            if(LinksMap_.size() !=0 && buffernum != -1)
+                            if (LinksMap_.find(temp_section_id.getHash()) != LinksMap_.end())
                             {
-                                if(LinksMap_.find(temp_section_id.getHash())!=LinksMap_.end())
-                                {
-                                    currlink_id = LinksMap_[temp_section_id.getHash()];
-                                    currlink_id = lString16("#") + currlink_id ;
-                                }
-                                /*for (int i = 0; i < LinksList.length(); i++)
-                                {
-                                    if(LinksList_.get(i).href_ == temp_section_id)
-                                    {
-                                        currlink_id = LinksList_.get(i).id_;
-                                        break;
-                                    }
-                                }*/
+                                currlink_id = LinksMap_[temp_section_id.getHash()];
+                                currlink_id = lString16("#") + currlink_id;
                             }
-                            if(!currlink_id.empty())
-                            {
-                                callback_->OnTagOpen(L"", L"title");
-                                callback_->OnTagOpen(L"", L"a");
-                                callback_->OnAttribute(L"",L"href",(lString16("~") + currlink_id).c_str());
-                                callback_->OnText(buffer.c_str(), buffer.length(), flags);
-                                callback_->OnTagClose(L"", L"a");
-                                callback_->OnTagClose(L"", L"title");
-                            }
-                            else
-                            {
-                                callback_->OnTagOpen(L"", L"title");
-                                callback_->OnText(buffer.c_str(), buffer.length(), flags);
-                                callback_->OnTagClose(L"", L"title");
-                            }
+                        }
+                        if (!currlink_id.empty())
+                        {
+                            callback_->OnTagOpen(L"", L"title");
+                            callback_->OnTagOpen(L"", L"a");
+                            callback_->OnAttribute(L"",
+                                    L"href",
+                                    (lString16("~") + currlink_id).c_str());
+                            callback_->OnText(buffer.c_str(), buffer.length(), flags);
+                            callback_->OnTagClose(L"", L"a");
+                            callback_->OnTagClose(L"", L"title");
                         }
                         else
                         {
@@ -4603,10 +4563,6 @@ bool LvXmlParser::ParseEpubFootnotes(bool toRead)
                 if(in_section && attrname == "id")
                 {
                     temp_section_id = lString16("#") + callback_->convertId(attrvalue);
-                }
-                if(in_section && attrname == "id" && !toRead)
-                {
-                    attrvalue.append("_note");
                 }
                 //CRLog::error("OnAttrib [%s:%s = \"%s\"]",LCSTR(attrns), LCSTR(attrname), LCSTR(attrvalue));
                 callback_->OnAttribute(attrns.c_str(), attrname.c_str(), attrvalue.c_str());
@@ -5464,14 +5420,9 @@ bool LvHtmlParser::Parse()
     return LvXmlParser::Parse();
 }
 
-bool LvHtmlParser::ParseEpubFootnotesToDisplay()
+bool LvHtmlParser::ParseEpubFootnotes()
 {
-    return LvXmlParser::ParseEpubFootnotes(false);
-}
-
-bool LvHtmlParser::ParseEpubFootnotesToRead()
-{
-    return LvXmlParser::ParseEpubFootnotes(true);
+    return LvXmlParser::ParseEpubFootnotes();
 }
 
 bool LvHtmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks,DocxStyles docxStyles)
