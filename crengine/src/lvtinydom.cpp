@@ -9038,7 +9038,7 @@ lvRect ldomWord::getRect()
     return result;
 }
 
-void recurseNodesToPrint(ldomNode * node, LvDomWriter* writer)
+void recurseNodesToPrint(ldomNode *node, LvDomWriter *writer)
 {
     if (node->isNull())
     {
@@ -9048,7 +9048,7 @@ void recurseNodesToPrint(ldomNode * node, LvDomWriter* writer)
 
     for (int i = 0; i < node->getChildCount(); i++)
     {
-        ldomNode * child = node->getChildNode(i);
+        ldomNode *child = node->getChildNode(i);
         lString16 nodename = child->getNodeName();
 
         if (child->isText())
@@ -9056,7 +9056,7 @@ void recurseNodesToPrint(ldomNode * node, LvDomWriter* writer)
             lString16 text = child->getText();
             //writer->OnTagOpen(L"", nodename.c_str());
             writer->OnTagOpen(L"", L"span");
-            writer->OnText(text.c_str(),text.length(),0);
+            writer->OnText(text.c_str(), text.length(), 0);
             writer->OnTagClose(L"", L"span");
             //writer->OnTagClose(L"", nodename.c_str());
 
@@ -9067,21 +9067,26 @@ void recurseNodesToPrint(ldomNode * node, LvDomWriter* writer)
         }
         else if (child->isNodeName("a"))
         {
-           if(child->hasAttribute(attr_href))
-           {
-               lString16 href = child->getHRef();
-               if(href!=lString16::empty_str)
-               {
-                   writer->OnTagOpen(L"", nodename.c_str());
-                   writer->OnAttribute(L"",L"href",href.c_str());
-                   recurseNodesToPrint(child, writer);
-                   writer->OnTagClose(L"", nodename.c_str());
-               }
-           }
-           else
-           {
-               recurseNodesToPrint(child, writer);
-           }
+            if (child->hasAttribute(attr_href))
+            {
+                lString16 href = child->getHRef();
+                if (href != lString16::empty_str)
+                {
+                    writer->OnTagOpen(L"", nodename.c_str());
+                    writer->OnAttribute(L"", L"href", href.c_str());
+                    recurseNodesToPrint(child, writer);
+                    writer->OnTagClose(L"", nodename.c_str());
+                }
+            }
+            else
+            {
+                recurseNodesToPrint(child, writer);
+            }
+        }
+        else if (child->isNodeName("title"))
+        {
+            //skip all title tags including their content
+            continue;
         }
         else
         {
@@ -9095,24 +9100,28 @@ void recurseNodesToPrint(ldomNode * node, LvDomWriter* writer)
     }
 }
 
-ldomNode * FindTextInNode(ldomNode * node)
+ldomNode *FindTextInNode(ldomNode *node)
 {
-    if(node == NULL)
+    if (node == NULL)
     {
         return NULL;
     }
     for (int i = 0; i < node->getChildCount(); i++)
     {
-        ldomNode * child = node->getChildNode(i);
-
+        ldomNode *child = node->getChildNode(i);
 
         lString16 text = child->getText();
-        if(text.length()==0)
+        //CRLog::error("node = %s",LCSTR(node->getXPath()));
+        //CRLog::error("text = %s",LCSTR(text));
+
+        if (text.length() == 0)
         {
             continue;
         }
-        if(text.atoi()>0)
+        int num;
+        if (text.atoi(num))
         {
+            //CRLog::error("num = %d",num);
             continue;
         }
         //text is not a number
@@ -9121,34 +9130,36 @@ ldomNode * FindTextInNode(ldomNode * node)
     return NULL;
 }
 
-ldomNode * FindTextInParents(ldomNode *node)
+ldomNode *FindTextInParents(ldomNode *node)
 {
-    if(node==NULL)
+    if (node == NULL)
     {
         return NULL;
     }
     //CRLog::error("node path = %s",LCSTR(node->getXPath()));
 
     int index = node->getNodeIndex();
-    ldomNode * parent = node->getParentNode();
-    if(parent == NULL)
+    ldomNode *parent = node->getParentNode();
+    if (parent == NULL)
     {
         return NULL;
     }
-    for (int i = index + 1 ; i < parent->getChildCount(); i++)
+    for (int i = index + 1; i < parent->getChildCount(); i++)
     {
-        ldomNode * child = parent->getChildNode(i);
+        ldomNode *child = parent->getChildNode(i);
         //CRLog::error("child path = %s",LCSTR(child->getXPath()));
 
         lString16 text = child->getText();
         //CRLog::error("text = %s",LCSTR(text));
 
-        if(text.length()==0)
+        if (text.length() == 0)
         {
             continue;
         }
-        if(text.atoi()>0)
+        int num;
+        if (text.atoi(num))
         {
+            //CRLog::error("num = %d",num);
             continue;
         }
         //text is not a number
@@ -9157,14 +9168,72 @@ ldomNode * FindTextInParents(ldomNode *node)
     return FindTextInParents(parent);
 }
 
-bool AppendLinksToDoc(CrDom *m_doc,LVArray<LinkStruct> LinksList)
+bool NodeContainsNextNote(ldomNode *node, lString16 nextId)
+{
+    for (int i = 0; i < node->getChildCount(); i++)
+    {
+        ldomNode *child = node->getChildNode(i);
+        if (child->isNodeName("a"))
+        {
+            if (nextId.empty())
+            {
+                return false;
+            }
+            if (child->hasAttribute(attr_id))
+            {
+                if (child->getAttributeValue(attr_id) == nextId)
+                {
+                    return true;
+                }
+            }
+            if (child->getText().empty())
+            {
+                return true;
+            }
+        }
+        else
+        {
+            return NodeContainsNextNote(child, nextId);
+        }
+    }
+    return false;
+}
+
+//returns 0 if does not contain, 1 if continue, 2 if break
+bool NodeIsBreak(ldomNode *node, lString16 nextId)
+{
+    lString16 text = node->getText();
+    if (text.empty())
+    {
+        return true;
+    }
+    int num;
+    if (text.atoi(num))
+    {
+        return true;
+    }
+    if (node->isNodeName("pagebreak"))
+    {
+        return true;
+    }
+    if (NodeContainsNextNote(node, nextId))
+    {
+        return true;
+    }
+    return false;
+}
+
+
+
+bool AppendLinksToDoc(CrDom *m_doc, LVArray<LinkStruct> LinksList)
 {
     LvDomWriter writer(m_doc);
 
     writer.OnTagOpenNoAttr(L"", L"FictionBook");
     writer.OnTagOpenNoAttr(L"", L"FictionBook");
     writer.OnTagOpen(L"", L"body");
-    writer.OnAttribute(L"",L"name",L"notes_hidden");
+    writer.OnAttribute(L"", L"name", L"notes_hidden");
+    writer.OnAttribute(L"", L"id", L"notes_hidden");
 
     lString16 hdr("Footnotes");
     writer.OnTagOpenNoAttr(L"", L"h3");
@@ -9175,49 +9244,87 @@ bool AppendLinksToDoc(CrDom *m_doc,LVArray<LinkStruct> LinksList)
     {
         //CRLog::error("New node to print");
         LinkStruct currlink = LinksList.get(i);
-        lString16 num = lString16::itoa(currlink.num_) + lString16("  ");
-        lString16 href = (currlink.href_.startsWith("#"))?currlink.href_.substr(1):currlink.href_;
-        ldomNode * node = m_doc->getElementById(href.c_str());
-        if(node==NULL)
+        LinkStruct nextlink = (i+1<LinksList.length())? LinksList.get(i+1) : LinkStruct();
+        lString16 nextid;
+        if (!nextlink.href_.empty())
         {
-            CRLog::error("Failed to get node from href = %s, skipping",LCSTR(href));
+            nextid = (nextlink.href_.startsWith("#")) ? nextlink.href_.substr(1) : nextlink.href_;
+        }
+        lString16 num = lString16::itoa(currlink.num_) + lString16("  ");
+        lString16 href = (currlink.href_.startsWith("#")) ? currlink.href_.substr(1) : currlink.href_;
+        ldomNode *node = m_doc->getElementById(href.c_str());
+        if (node == NULL)
+        {
+            CRLog::error("Failed to get node from href = %s, skipping", LCSTR(href));
             continue;
         }
-        if(node->isText())
+        if (node->isText())
         {
             CRLog::error("Node is Text, skipping");
             continue;
         }
         href = href + lString16("_note");
-
-        ldomNode *found = FindTextInNode(node);
-        if (node->isNodeName("section") && found == NULL)
+        ldomNode *found;
+        if (node->isNodeName("section"))
         {
             //fb2, epub structure
-            continue;
+            found = node;
+
+            writer.OnTagOpen(L"", L"section");
+            writer.OnAttribute(L"", L"id", href.c_str());
+
+            writer.OnTagOpen(L"", L"title");
+            writer.OnText(num.c_str(), num.length(), 0);
+            writer.OnTagClose(L"", L"title");
+
+            writer.OnTagOpen(L"", found->getNodeName().c_str());
+            recurseNodesToPrint(found, &writer);
+            writer.OnTagClose(L"", found->getNodeName().c_str());
+
+            writer.OnTagClose(L"", L"section");
         }
-        if (found == NULL)
+        else
         {
-            found = FindTextInParents(node);
+            found = FindTextInNode(node);
+            if (found == NULL)
+            {
+                found = FindTextInParents(node);
+            }
+            if (found == NULL)
+            {
+                continue;
+            }
+            int index = found->getNodeIndex();
+            ldomNode *parent = found->getParentNode();
+            if (parent == NULL)
+            {
+                return NULL;
+            }
+            writer.OnTagOpen(L"", L"section");
+            writer.OnAttribute(L"", L"id", href.c_str());
+
+            writer.OnTagOpen(L"", L"title");
+            writer.OnText(num.c_str(), num.length(), 0);
+            writer.OnTagClose(L"", L"title");
+            writer.OnTagOpen(L"", found->getNodeName().c_str());
+            recurseNodesToPrint(found, &writer);
+            writer.OnTagClose(L"", found->getNodeName().c_str());
+
+            for (int i = index + 1; i < parent->getChildCount(); i++)
+            {
+                ldomNode *child = parent->getChildNode(i);
+                //CRLog::error("child path = %s",LCSTR(child->getXPath()));
+                if (NodeIsBreak(child,nextid))
+                {
+                    break;
+                }
+                //text is not a number
+                writer.OnTagClose(L"", child->getNodeName().c_str());
+                recurseNodesToPrint(child, &writer);
+                writer.OnTagClose(L"", child->getNodeName().c_str());
+            }
+            writer.OnTagClose(L"", L"section");
         }
-        if (found == NULL)
-        {
-            continue;
-        }
-
-        writer.OnTagOpen(L"", L"section");
-        writer.OnAttribute(L"", L"id", href.c_str());
-
-        writer.OnTagOpen(L"", L"title");
-        writer.OnText(num.c_str(), num.length(), 0);
-        writer.OnTagClose(L"", L"title");
-
-        writer.OnTagOpen(L"", found->getNodeName().c_str());
-        recurseNodesToPrint(found, &writer);
-        writer.OnTagClose(L"", found->getNodeName().c_str());
-
-        writer.OnTagClose(L"", L"section");
-
     }
 
     writer.OnTagClose(L"", L"body");
