@@ -1959,4 +1959,6 @@ lString16 ExtractDocSeries(CrDom* dom, int* pSeriesNumber=NULL);
 lString16 ExtractDocThumbImageName(CrDom* dom);
 
 
+void recurseNodesToPrint(ldomNode * node, LvDomWriter* writer);
+bool AppendLinksToDoc(CrDom *m_doc,LVArray<LinkStruct> LinksList);
 #endif

@@ -686,7 +686,7 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 	// read content.opf
 	EpubItems epubItems;
 	EpubItems NotesItems;
-	//LVArray<LinkStruct> LinksList;
+	LVArray<LinkStruct> LinksList;
 	LinksMap LinksMap;
 	//EpubItem * epubToc = NULL; //TODO
 	LVArray<EpubItem *> spineItems;
@@ -964,7 +964,7 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 					//LvXmlParser
 					LvHtmlParser parser(stream, &appender, firstpage_thumb);
 					parser.setEpubNotes(NotesItems);
-					//parser.setLinksList(LinksList);
+					parser.setLinksList(LinksList);
 					parser.setLinksMap(LinksMap);
 					if (parser.CheckFormat() && parser.Parse())
 					{
@@ -978,7 +978,7 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 					{
 						CRLog::error("Document type is not XML/XHTML for fragment %s", LCSTR(name));
 					}
-                    //LinksList = parser.getLinksList();
+                    LinksList = parser.getLinksList();
                     LinksMap = parser.getLinksMap();
                 }
             }
@@ -1031,32 +1031,8 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
     writer.OnText(L"\u200B", 1, TXTFLG_KEEP_SPACES | TXTFLG_TRIM_ALLOW_END_SPACE | TXTFLG_TRIM_ALLOW_START_SPACE);
     writer.OnTagClose(L"", L"NoteFragment");
 
-    for (int i = 0; i < NotesItems.length(); i++)
-    {
-        lString16 name = codeBase + NotesItems[i]->href;
-        LVStreamRef stream = m_arc->OpenStream(name.c_str(), LVOM_READ);
-        if (!stream.isNull())
-        {
-	        appender2.setCodeBase(name);
-            lString16 base = name;
-            LVExtractLastPathElement(base);
-            //CRLog::trace("base: %s", UnicodeToUtf8(base).c_str());
-            //LvXmlParser
-            LvHtmlParser parser(stream, &appender2, firstpage_thumb);
-            if (parser.CheckFormat() && parser.ParseEpubFootnotesToDisplay())
-            {
-                // valid
-                fragmentCount++;
-                lString8 headCss = appender2.getHeadStyleText();
-                //CRLog::trace("style: %s", headCss.c_str());
-                styleParser.parse(base, headCss);
-            }
-            else
-            {
-                CRLog::error("Document type is not XML/XHTML for fragment %s", LCSTR(name));
-            }
-        }
-    }
+	AppendLinksToDoc(m_doc,LinksList);
+
     //writer.OnTagClose(L"", L"DocFragment");
     writer.OnTagClose(L"", L"body");
     writer.OnStop();

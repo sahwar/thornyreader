@@ -2607,7 +2607,7 @@ bool LvXmlParser::Parse()
     bool in_a = false;
     bool is_note= false;
     bool save_a_content= false;
-    lString16 href_temp;
+    lString16 link_href;
     lString16 buffer;
     lString16 link_id;
 
@@ -2770,13 +2770,22 @@ bool LvXmlParser::Parse()
                             int bufnum = buffer.atoi();
                             if(bufnum>0 && flag1 && flag2)
                             {
-                                LinksList_.add(LinkStruct(bufnum,link_id, href_temp));
-                                //CRLog::error("LIST added [%s] to [%s]",LCSTR(link_id),LCSTR(href_temp));
+                                if(link_id.empty())
+                                {
+                                    lString16 temp = lString16("back_") + lString16::itoa(LinksList_.length());
+                                    link_id = lString16("#") + callback_->convertId(temp);
+                                    callback_->OnAttribute(L"", L"id", temp.c_str());
+                                }
+                                callback_->OnAttribute(L"", L"type", L"note");
+                                LinksList_.add(LinkStruct(bufnum,link_id, link_href));
+                                LinksMap_[link_href.getHash()] = link_id;
+                                //CRLog::error("LIST added [%s] to [%s]",LCSTR(link_id),LCSTR(link_href));
+                                buffer = lString16::empty_str;
                             }
                         }
                         save_a_content = false;
-                        //struct add here
-                        //link_id = lString16::empty_str;
+                        link_href = lString16::empty_str;
+                        link_id = lString16::empty_str;
                         in_a = false;
                     }
                 }
@@ -2897,18 +2906,11 @@ bool LvXmlParser::Parse()
                 {
                     if (attrname == "href")
                     {
-                        href_temp = callback_->convertHref(attrvalue);
+                        link_href = callback_->convertHref(attrvalue);
                     }
-                    if (!href_temp.empty())
+                    if (attrname == "id")
                     {
-                        //lString16 temp    = lString16("back_") + lString16::itoa(LinksList_.length());
-                        lString16 temp    = lString16("back_") + lString16::itoa(LinksMap_.size());
-                        link_id     = lString16("#")     + callback_->convertId(temp);
-                        callback_->OnAttribute(L"", L"id", temp.c_str());
-                       // LinksList_.add(LinkStruct(LinksList_.length(),link_id, href_temp));
-                        //CRLog::error("MAP added [%s] to [%s]",LCSTR(link_id),LCSTR(href_temp));
-                        LinksMap_[href_temp.getHash()] = link_id;
-                        is_note = false;
+                        link_id = callback_->convertId(attrvalue);
                     }
                 }
 
@@ -2939,7 +2941,7 @@ bool LvXmlParser::Parse()
             if(save_a_content)
             {
                 ReadTextToString(buffer,true);
-                save_a_content = false;
+                //CRLog::error("buffer = %s",LCSTR(buffer));
             }
             else
             {
@@ -4313,6 +4315,7 @@ bool LvXmlParser::ParseEpubFootnotes(bool toRead)
                                 {
                                     currlink_id = LinksMap_[temp_section_id.getHash()];
                                     //CRLog::error("found [%s] at [%s]",LCSTR(currlink_id),LCSTR(temp_section_id));
+                                    currlink_id = lString16("#") + currlink_id ;
                                 }
                                 /*
                                 for (int i = 0; i < LinksList.length(); i++)
@@ -4365,6 +4368,7 @@ bool LvXmlParser::ParseEpubFootnotes(bool toRead)
                                 if(LinksMap_.find(temp_section_id.getHash())!=LinksMap_.end())
                                 {
                                     currlink_id = LinksMap_[temp_section_id.getHash()];
+                                    currlink_id = lString16("#") + currlink_id ;
                                 }
                                 /*for (int i = 0; i < LinksList.length(); i++)
                                 {

@@ -80,8 +80,8 @@ public:
     virtual bool OnBlob(lString16 name, const lUInt8 * data, int size) = 0;
     /// call to set document property
     virtual void OnDocProperty(const char* name, lString8 value) { }
-    virtual lString16 convertId( lString16 id ) {}
-    virtual lString16 convertHref( lString16 id ) {}
+    virtual lString16 convertId( lString16 id )   { return lString16::empty_str;}
+    virtual lString16 convertHref( lString16 id ) { return lString16::empty_str;}
     virtual ~LvXMLParserCallback() {}
 };
 
