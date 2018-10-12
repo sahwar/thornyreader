@@ -2069,7 +2069,15 @@ void ldomElementWriter::updateTocItem()
     if ( _parent && _parent->_tocItem ) {
         lString16 title = getSectionHeader( _element );
         //CRLog::trace("TOC ITEM: %s", LCSTR(title));
-        _tocItem = _parent->_tocItem->addChild(title, ldomXPointer(_element,0), getPath() );
+        ldomNode*body = _element->getParentNode("body");
+        if (!body->hasAttribute(attr_name))
+        {
+            _tocItem = _parent->_tocItem->addChild(title, ldomXPointer(_element, 0), getPath());
+        }
+        else if (body->getAttributeValue(attr_name) != lString16("notes_hidden"))
+        {
+            _tocItem = _parent->_tocItem->addChild(title, ldomXPointer(_element, 0), getPath());
+        }
     }
     _isSection = false;
 }
@@ -6204,7 +6212,7 @@ void LvDocFragmentWriter::OnAttribute(const lChar16* nsname,
                 parent->OnAttribute(nsname, attrname, convertId(lString16(attrvalue)).c_str() );
         } else if ( !lStr_cmp(attrname, "name") ) {
             //CRLog::trace("name attribute = %s", LCSTR(lString16(attrvalue)));
-            if (lStr_cmp(attrvalue, "notes") != 0 && lStr_cmp(attrvalue, "notes_visible") != 0) //notes attribute avoiding
+            if (lStr_cmp(attrvalue, "notes") != 0 ) //notes attribute avoiding
             {
                 parent->OnAttribute(nsname, attrname, convertId(lString16(attrvalue)).c_str());
             }
