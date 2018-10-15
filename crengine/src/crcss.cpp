@@ -386,7 +386,13 @@ a[type="note"] {
 
 a[type="note"] sup {
   vertical-align: super;
-  font-size: 100%;
+  font-size: 100%; /* 100% of sup == 70% of regular text ( a[type="note"] )*/
+  text-decoration: none;
+}
+
+sup a[type="note"] {
+  vertical-align: super;
+  font-size: 100%; /* 100% of a[type="note"] == 70% of regular text (sup)*/
   text-decoration: none;
 }
 
