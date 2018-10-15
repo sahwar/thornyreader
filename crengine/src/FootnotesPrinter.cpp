@@ -206,7 +206,10 @@ bool FootnotesPrinter::AppendLinksToDoc(CrDom *m_doc, LVArray<LinkStruct> LinksL
     writer.OnTagOpenNoAttr(L"", L"h1");
     writer.OnText(space.c_str(), space.length(), 0); // h1 adds new page break
     writer.OnTagClose(L"", L"h1");
+
+    writer.OnTagOpenNoAttr(L"", L"div");
     writer.OnText(space.c_str(), space.length(), 0); // h1 adds new page break
+    writer.OnTagClose(L"", L"div");
 
     writer.OnTagOpenNoAttr(L"", L"h1");
     writer.OnText(hdr.c_str(), hdr.length(), 0); // footnotes header text
