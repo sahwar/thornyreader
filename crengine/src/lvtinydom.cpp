@@ -5593,6 +5593,10 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
                 {
                     return false;
                 }
+                if(name == "font")
+                {
+                    return false;
+                }
                 if(name == "p" && index == 0)
                 {
                     return true;
