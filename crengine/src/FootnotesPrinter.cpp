@@ -191,6 +191,7 @@ bool FootnotesPrinter::NodeIsBreak(ldomNode *node, lString16 nextId)
 
 bool FootnotesPrinter::AppendLinksToDoc(CrDom *m_doc, LVArray<LinkStruct> LinksList)
 {
+   // CRLog::error("PRINTER");
     LvDomWriter writer(m_doc);
 
     writer.OnTagOpenNoAttr(L"", L"FictionBook");
@@ -200,9 +201,9 @@ bool FootnotesPrinter::AppendLinksToDoc(CrDom *m_doc, LVArray<LinkStruct> LinksL
     writer.OnAttribute(L"", L"id", L"notes_hidden");
 
     lString16 hdr("Footnotes");
-    writer.OnTagOpenNoAttr(L"", L"h3");
-    writer.OnText(hdr.c_str(), hdr.length(), 0);
-    writer.OnTagClose(NULL, L"h3");
+    writer.OnTagOpenNoAttr(L"", L"h1");
+    writer.OnText(hdr.c_str(), hdr.length(), 0); // h1 adds new page break + footnotes header text
+    writer.OnTagClose(L"", L"h1");
 
     for (int i = 0; i < LinksList.length(); i++)
     {
@@ -292,7 +293,7 @@ bool FootnotesPrinter::AppendLinksToDoc(CrDom *m_doc, LVArray<LinkStruct> LinksL
     }
 
     writer.OnTagClose(L"", L"body");
-    writer.OnTagOpen(L"", L"NoteFragment");
+    //writer.OnTagOpen(L"", L"NoteFragment");
 
     return true;
 }

@@ -993,10 +993,9 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 	if(NotesItems.length()>0)
 	{
 		writer.OnTagOpen(L"", L"DocFragment");
+		//this excessive notefragment is inserted for correct page separation
 		writer.OnTagOpen(L"", L"NoteFragment");
-		writer.OnText(L"\u200B",
-				1,
-				TXTFLG_KEEP_SPACES | TXTFLG_TRIM_ALLOW_END_SPACE | TXTFLG_TRIM_ALLOW_START_SPACE);
+		writer.OnText(L"\u200B",1,TXTFLG_KEEP_SPACES | TXTFLG_TRIM_ALLOW_END_SPACE | TXTFLG_TRIM_ALLOW_START_SPACE);
 		writer.OnTagClose(L"", L"NoteFragment");
 
 		//special footnotes parsing
@@ -1034,10 +1033,9 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 	}
     if(LinksList.length()>0)
     {
-	    writer.OnTagOpen(L"", L"DocFragment");
-	    writer.OnTagOpen(L"", L"NoteFragment");
-	    writer.OnText(L"\u200B", 1, TXTFLG_KEEP_SPACES | TXTFLG_TRIM_ALLOW_END_SPACE | TXTFLG_TRIM_ALLOW_START_SPACE);
-	    writer.OnTagClose(L"", L"NoteFragment");
+	  //  writer.OnTagOpen(L"", L"NoteFragment");
+	  //  writer.OnText(L"\u200B", 1, TXTFLG_KEEP_SPACES | TXTFLG_TRIM_ALLOW_END_SPACE | TXTFLG_TRIM_ALLOW_START_SPACE);
+	  //  writer.OnTagClose(L"", L"NoteFragment");
 
 	    FootnotesPrinter::AppendLinksToDoc(m_doc, LinksList);
     }
