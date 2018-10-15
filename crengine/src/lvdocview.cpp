@@ -798,7 +798,20 @@ void LVDocView::DrawPageTo(LVDrawBuf *drawbuf, LVRendPageInfo &page, lvRect *pag
 /// returns page count
 int LVDocView::GetPagesCount()
 {
-	return (pages_list_.length());
+    #if DEBUG_NOTES_HIDDEN_SHOW == 1
+    return (pages_list_.length());
+    #endif
+
+    lUInt16 id = this->GetCrDom()->getAttrValueIndex(L"__notes_hidden__");
+    if (this->cr_dom_->getNodeById(id) != NULL)
+    {
+        ldomNode * notes = this->cr_dom_->getNodeById(id);
+        return GetPageForBookmark(ldomXPointer(notes,0));
+    }
+    else
+    {
+	    return (pages_list_.length());
+    }
 }
 
 /// get vertical position of view inside document

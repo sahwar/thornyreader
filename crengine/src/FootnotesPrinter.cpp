@@ -2,6 +2,7 @@
 // Created by Admin on 12/10/2018.
 //
 
+#include "crengine/include/crconfig.h"
 #include "crengine/include/FootnotesPrinter.h"
 
 
@@ -198,11 +199,17 @@ bool FootnotesPrinter::AppendLinksToDoc(CrDom *m_doc, LVArray<LinkStruct> LinksL
     writer.OnTagOpenNoAttr(L"", L"FictionBook");
     writer.OnTagOpen(L"", L"body");
     writer.OnAttribute(L"", L"name", L"notes_hidden");
-    writer.OnAttribute(L"", L"id", L"notes_hidden");
+    writer.OnAttribute(L"", L"id", L"__notes_hidden__"); // used in LDocView::GetpagesCount() for hiding all the footnotes pages.
 
     lString16 hdr("Footnotes");
+    lString16 space("\u200b");
     writer.OnTagOpenNoAttr(L"", L"h1");
-    writer.OnText(hdr.c_str(), hdr.length(), 0); // h1 adds new page break + footnotes header text
+    writer.OnText(space.c_str(), space.length(), 0); // h1 adds new page break
+    writer.OnTagClose(L"", L"h1");
+    writer.OnText(space.c_str(), space.length(), 0); // h1 adds new page break
+
+    writer.OnTagOpenNoAttr(L"", L"h1");
+    writer.OnText(hdr.c_str(), hdr.length(), 0); // footnotes header text
     writer.OnTagClose(L"", L"h1");
 
     for (int i = 0; i < LinksList.length(); i++)
