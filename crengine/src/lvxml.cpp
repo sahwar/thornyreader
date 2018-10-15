@@ -2604,10 +2604,12 @@ bool LvXmlParser::Parse()
     lString16 attrname;
     lString16 attrns;
     lString16 attrvalue;
-    bool in_a = false;
     bool in_body = false;
     bool in_body_notes = false;
     bool in_note_section = false;
+    bool in_sup = false;
+    bool in_a = false;
+    bool in_a_sup = false;
 
     bool is_note= false;
     bool save_a_content= false;
@@ -2749,6 +2751,22 @@ bool LvXmlParser::Parse()
                     }
                 }
 
+                if(tagname == "sup")
+                {
+                    if (!close_flag)
+                    {
+                        in_sup = true;
+                        if(in_a)
+                        {
+                            in_a_sup = true;
+                        }
+                    }
+                    else
+                    {
+                        in_sup = false;
+                    }
+                }
+
                 if (tagname == "a")
                 {
                     if (!close_flag)
@@ -2773,7 +2791,7 @@ bool LvXmlParser::Parse()
                                 flag2 = true;
                             }
                             int bufnum = buffer.atoi();
-                            if(bufnum>0 && flag1 && flag2)
+                            if(bufnum>0 && ((flag1 && flag2) || in_sup || in_a_sup))
                             {
                                 if(link_id.empty())
                                 {
@@ -2792,6 +2810,7 @@ bool LvXmlParser::Parse()
                         link_href = lString16::empty_str;
                         link_id = lString16::empty_str;
                         in_a = false;
+                        in_a_sup = false;
                     }
                 }
 
