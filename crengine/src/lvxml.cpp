@@ -3365,6 +3365,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
     int h5min = docxStyles.h5min_;
     int h6min = docxStyles.h6min_;
 
+    LinksMap LinksMap = LinksMap_;
     for (; !eof_ && !error && !firstpage_thumb_num_reached ;)
     {
         if (m_stopped)
@@ -3905,20 +3906,53 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
                 if(in_footnoteref)
                 {
                     callback_->OnAttribute(attrns.c_str(), lString16("type").c_str(), lString16("note").c_str());
-                    attrname= "href";
+                    lString16 nref = lString16("#") + attrvalue + lString16("_note");
+                    lString16 id   = attrvalue + lString16("_back");
+                    lString16 href = lString16("#") + attrvalue;
+                    callback_->OnAttribute(attrns.c_str(), lString16("nref").c_str(), nref.c_str());
+                    callback_->OnAttribute(attrns.c_str(), lString16("id").c_str(), id.c_str());
                     lString16 mark = "[" + attrvalue + "]";
                     callback_->OnText(mark.c_str(), mark.length(),0);
-                    attrvalue = lString16("#") + attrvalue;
+                    attrname= "href";
+                    LinksList_.add(LinkStruct(attrvalue.atoi(),id,href));
+                    LinksMap_[href.getHash()] = id;
+                    //CRLog::error("linksmap add = %s %s", LCSTR(href),LCSTR(id));
+                    attrvalue = href;
                     in_footnoteref = false;
                 }
                 if(in_footnote){
                     if(attrname == "id")
                     {
-                        callback_->OnTagOpen(L"", L"title");
-                        callback_->OnTagOpen(L"", L"p");
-                        callback_->OnText(attrvalue.c_str(),attrvalue.length(),flags);
-                        callback_->OnTagClose(L"", L"p");
-                        callback_->OnTagClose(L"", L"title");
+                        lString16 currlink_id;
+                        if(LinksMap.size() !=0)
+                        {
+                            if(LinksMap.find((lString16("#") + attrvalue).getHash())!=LinksMap.end())
+                            {
+                                currlink_id = LinksMap[(lString16("#") + attrvalue).getHash()];
+                                //CRLog::error("found [%s] at [%s]",LCSTR(currlink_id),LCSTR(temp_section_id));
+                                currlink_id = lString16("#") + currlink_id ;
+                            }
+                        }
+                        if(!currlink_id.empty())
+                        {
+                            callback_->OnTagOpen(L"", L"title");
+                            callback_->OnTagOpen(L"", L"p");
+                            callback_->OnTagOpen(L"", L"a");
+                            callback_->OnAttribute(L"",L"href",(lString16("~") + currlink_id).c_str());
+                            callback_->OnText(attrvalue.c_str(), attrvalue.length(), flags);
+                            callback_->OnTagClose(L"", L"a");
+                            callback_->OnTagClose(L"", L"p");
+                            callback_->OnTagClose(L"", L"title");
+                        }
+                        else
+                        {
+                            callback_->OnTagOpen(L"", L"title");
+                            callback_->OnTagOpen(L"", L"p");
+                            callback_->OnText(attrvalue.c_str(), attrvalue.length(), flags);
+                            callback_->OnTagClose(L"", L"p");
+                            callback_->OnTagClose(L"", L"title");
+                        }
+
                     }
                     if(attrname == "type" && (attrvalue == "separator" || attrvalue =="continuationSeparator"))
                     {
