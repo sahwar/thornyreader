@@ -664,6 +664,8 @@ public:
     lvRect getFullMargins();
     //returns string name if any parent name is from white list
     lString16 getMainParentName();
+    //returns specified parent node from ancestor nodes. Returns NULL if not found.
+    ldomNode *getParentNode(const char *name);
 };
 
 /**
@@ -1220,6 +1222,7 @@ public:
     lvRect getRect(){ return rect_;};
     ldomNode* getNode(){ return node_;};
     void setRect(lvRect rect){ rect_ = rect;};
+    void setString(lString16 string){ string_ = string;};
 };
 
 class ImgRect
@@ -1781,6 +1784,14 @@ public:
     	doc_->getProps()->setString(name, value);
     }
     LvDomWriter(CrDom* document, bool headerOnly=false);
+    lString16 convertHref( lString16 href )
+    {
+        return href;
+    }
+    lString16 convertId( lString16 href )
+    {
+        return href;
+    }
     virtual ~LvDomWriter();
 };
 

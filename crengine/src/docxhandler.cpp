@@ -5,6 +5,7 @@
 #include "../include/lvstring.h"
 #include "../include/lvstream.h"
 #include "../include/epubfmt.h"
+#include <../include/FootnotesPrinter.h>
 
 //extract main document path
 lString16 DocxGetMainFilePath(LVContainerRef m_arc)
@@ -326,13 +327,19 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
     }
 */
     DocxLinks docxLinks = DocxGetRelsLinks(m_arc);
+    LVArray<LinkStruct> LinksList;
+    LinksMap LinksMap;
     //parse main document
     LVStreamRef stream2 = m_arc->OpenStream(rootfilePath.c_str(), LVOM_READ);
     if (!stream2.isNull())
     {
         LvHtmlParser parser(stream2, &appender, firstpage_thumb);
+        parser.setLinksList(LinksList);
+        parser.setLinksMap(LinksMap);
         if (parser.ParseDocx(docxItems,docxLinks,docxStyles))
         {
+            LinksList = parser.getLinksList();
+            LinksMap = parser.getLinksMap();
             // valid
         }
         else
@@ -351,6 +358,7 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
         if (!stream3.isNull())
         {
             LvHtmlParser parser(stream3, &appender, firstpage_thumb);
+            parser.setLinksMap(LinksMap);
             if (parser.ParseDocx(docxItems,docxLinks,docxStyles))
             {
                 // valid
@@ -370,7 +378,21 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
         CRLog::trace("No footnotes found in docx package.");
     }
     writer.OnTagClose(L"", L"body");
-    writer.OnTagClose(L"", L"body");
+    //footnotes
+    if(!LinksList.empty())
+    {
+        //CRLog::error("Linkslist length = %d",LinksList.length());
+        //for (int i = 0; i < LinksList.length(); i++)
+        //{
+        //	CRLog::error("LinksList %d = %s = %s",i,LCSTR(LinksList.get(i).id_),LCSTR(LinksList.get(i).href_));
+        //}
+
+        writer.OnTagOpen(L"", L"body");
+        writer.OnAttribute(L"", L"name", L"notes_hidden");
+        FootnotesPrinter::AppendLinksToDoc(m_doc, LinksList);
+        writer.OnTagClose(L"", L"body");
+    }
+    writer.OnTagClose(L"", L"body"); //main body closed
     writer.OnStop();
 
 #if 0 // set stylesheet

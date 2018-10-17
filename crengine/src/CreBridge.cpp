@@ -301,6 +301,7 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
             bool bool_val = (bool) int_val;
             doc_view_->cfg_enable_footnotes_ = bool_val;
             doc_view_->GetCrDom()->setDocFlag(DOC_FLAG_ENABLE_FOOTNOTES, bool_val);
+            //doc_view_->GetCrDom()->setDocFlag(DOC_FLAG_ENABLE_FOOTNOTES, true);
             doc_view_->RequestRender();
         } else if (key == CONFIG_CRE_TEXT_ALIGN) {
             int int_val = atoi(val);
@@ -523,6 +524,33 @@ void CreBridge::processPageLinks(CmdRequest& request, CmdResponse& response)
             responseAddLinkUnknown(response, href, l, t, r, b);
         }
     }
+
+    LVArray<TextRect> fnoteslist = doc_view_->GetCurrentPageFootnotesLinks();
+    if(fnoteslist.empty())
+    {
+        return;
+    }
+    float width = doc_view_->GetWidth();
+    float height = doc_view_->GetHeight();
+
+    for (int i = 0; i < fnoteslist.length(); i++)
+    {
+        TextRect curr_link = fnoteslist.get(i);
+        float l = curr_link.getRect().left   / width  ;
+        float t = curr_link.getRect().top    / height ;
+        float r = curr_link.getRect().right  / width  ;
+        float b = curr_link.getRect().bottom / height ;
+        lString16 href = curr_link.getText();
+
+        response.addWords(LINK_TARGET_URI, 0);
+        responseAddString(response, href);
+        response.addFloat(l);
+        response.addFloat(t);
+        response.addFloat(r);
+        response.addFloat(b);
+        //CRLog::error("ltrb = %f, %f, %f, %f , %s", l,t,r,b,LCSTR(href));
+    }
+
 }
 
 void CreBridge::processPageByXPath(CmdRequest& request, CmdResponse& response)

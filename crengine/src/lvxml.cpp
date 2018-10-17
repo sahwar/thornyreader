@@ -16,6 +16,7 @@
 #include "include/fb2def.h"
 #include "include/lvdocview.h"
 #include "include/crconfig.h"
+#include "include/epubfmt.h"
 
 typedef struct {
    unsigned short indx; /* index into big table */
@@ -2603,6 +2604,19 @@ bool LvXmlParser::Parse()
     lString16 attrname;
     lString16 attrns;
     lString16 attrvalue;
+    bool in_body = false;
+    bool in_body_notes = false;
+    bool in_note_section = false;
+    bool in_sup = false;
+    bool in_a = false;
+    bool in_a_sup = false;
+
+    bool is_note= false;
+    bool save_a_content= false;
+    lString16 link_href;
+    lString16 buffer;
+    lString16 link_id;
+    lString16 section_id;
 
 	for (; !eof_ && !error && !firstpage_thumb_num_reached ;)
     {
@@ -2737,6 +2751,117 @@ bool LvXmlParser::Parse()
                     }
                 }
 
+                if(tagname == "sup")
+                {
+                    if (!close_flag)
+                    {
+                        in_sup = true;
+                        if(in_a)
+                        {
+                            in_a_sup = true;
+                        }
+                    }
+                    else
+                    {
+                        in_sup = false;
+                    }
+                }
+
+                if (tagname == "a")
+                {
+                    if (!close_flag)
+                    {
+                        save_a_content = true;
+                        in_a = true;
+                    }
+                    else
+                    {
+                        if(!buffer.empty())
+                        {
+                            bool flag1 = false;
+                            bool flag2 = false;
+                            if(buffer.startsWith("[")|| buffer.startsWith("{"))
+                            {
+                                buffer = buffer.substr(1);
+                                flag1 = true;
+                            }
+                            if(buffer.endsWith("]")|| buffer.endsWith("}"))
+                            {
+                                buffer = buffer.substr(0,buffer.length()-1);
+                                flag2 = true;
+                            }
+                            int bufnum = buffer.atoi();
+                            if(bufnum>0 && ((flag1 && flag2) || in_sup || in_a_sup))
+                            {
+                                if(link_id.empty())
+                                {
+                                    lString16 temp = lString16("back_") + lString16::itoa(LinksList_.length());
+                                    link_id = lString16("#") + callback_->convertId(temp);
+                                    callback_->OnAttribute(L"", L"id", temp.c_str());
+                                }
+                                callback_->OnAttribute(L"", L"nref", (link_href + lString16("_note")).c_str());
+                                callback_->OnAttribute(L"", L"type", L"note");
+                                LinksList_.add(LinkStruct(bufnum,link_id, link_href));
+                                LinksMap_[link_href.getHash()] = link_id;
+                                //CRLog::error("LIST added [%s] to [%s]",LCSTR(link_id),LCSTR(link_href));
+                                buffer = lString16::empty_str;
+                            }
+                        }
+                        save_a_content = false;
+                        link_href = lString16::empty_str;
+                        link_id = lString16::empty_str;
+                        in_a = false;
+                        in_a_sup = false;
+                    }
+                }
+
+                if(tagname == "body")
+                {
+                    if (!close_flag)
+                    {
+                        in_body = true;
+                    }
+                    else
+                    {
+                        in_body_notes = false;
+                        in_body = false;
+                    }
+                }
+
+                if(tagname == "section" && in_body_notes)
+                {
+                    if (!close_flag)
+                    {
+                        in_note_section = true;
+                    }
+                    else
+                    {
+                        in_note_section = false;
+                        section_id = lString16::empty_str;
+                    }
+                }
+
+                if(tagname == "title" && in_note_section)
+                {
+                    if (!close_flag)
+                    {
+                        //in_note_section = true
+
+                        callback_->OnTagOpenNoAttr(L"",L"title");
+                        if(LinksMap_.find(callback_->convertId(lString16("#") + section_id).getHash())!=LinksMap_.end())
+                        {
+                            callback_->OnTagOpen(L"",L"a");
+                            lString16 href = LinksMap_.at(callback_->convertId(lString16("#") + section_id).getHash());
+                            callback_->OnAttribute(L"",L"href",href.c_str());
+                        }
+                        break;
+                    }
+                    else
+                    {
+                        callback_->OnTagClose(L"",L"a");
+                    }
+                }
+
                 if (close_flag)
                 {
                     callback_->OnTagClose(tagns.c_str(), tagname.c_str());
@@ -2832,6 +2957,29 @@ bool LvXmlParser::Parse()
                 if ((flags & TXTFLG_CONVERT_8BIT_ENTITY_ENCODING) && m_conv_table) {
                     PreProcessXmlString(attrvalue, 0, m_conv_table);
                 }
+
+                if(in_body && attrname == "name" && attrvalue == "notes")
+                {
+                    in_body_notes = true;
+                }
+
+                if(in_note_section && attrname == "id")
+                {
+                    section_id = attrvalue;
+                }
+
+                if (in_a)// && is_note)
+                {
+                    if (attrname == "href")
+                    {
+                        link_href = callback_->convertHref(attrvalue);
+                    }
+                    if (attrname == "id")
+                    {
+                        link_id = callback_->convertId(attrvalue);
+                    }
+                }
+
                 callback_->OnAttribute(attrns.c_str(), attrname.c_str(), attrvalue.c_str());
                 if (in_xml_tag && attrname == "encoding")
                 {
@@ -2856,7 +3004,15 @@ bool LvXmlParser::Parse()
 //                        CRLog::trace("Text[%d]:", txt_count);
 //                    }
 //                }
-            ReadText();
+            if(save_a_content)
+            {
+                ReadTextToString(buffer,true);
+                //CRLog::error("buffer = %s",LCSTR(buffer));
+            }
+            else
+            {
+                ReadText();
+            }
             fragments_counter++;
 
 	        if(need_coverpage_)
@@ -3194,6 +3350,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
     int h5min = docxStyles.h5min_;
     int h6min = docxStyles.h6min_;
 
+    LinksMap LinksMap = LinksMap_;
     for (; !eof_ && !error && !firstpage_thumb_num_reached ;)
     {
         if (m_stopped)
@@ -3734,20 +3891,53 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
                 if(in_footnoteref)
                 {
                     callback_->OnAttribute(attrns.c_str(), lString16("type").c_str(), lString16("note").c_str());
-                    attrname= "href";
+                    lString16 nref = lString16("#") + attrvalue + lString16("_note");
+                    lString16 id   = attrvalue + lString16("_back");
+                    lString16 href = lString16("#") + attrvalue;
+                    callback_->OnAttribute(attrns.c_str(), lString16("nref").c_str(), nref.c_str());
+                    callback_->OnAttribute(attrns.c_str(), lString16("id").c_str(), id.c_str());
                     lString16 mark = "[" + attrvalue + "]";
                     callback_->OnText(mark.c_str(), mark.length(),0);
-                    attrvalue = lString16("#") + attrvalue;
+                    attrname= "href";
+                    LinksList_.add(LinkStruct(attrvalue.atoi(),id,href));
+                    LinksMap_[href.getHash()] = id;
+                    //CRLog::error("linksmap add = %s %s", LCSTR(href),LCSTR(id));
+                    attrvalue = href;
                     in_footnoteref = false;
                 }
                 if(in_footnote){
                     if(attrname == "id")
                     {
-                        callback_->OnTagOpen(L"", L"title");
-                        callback_->OnTagOpen(L"", L"p");
-                        callback_->OnText(attrvalue.c_str(),attrvalue.length(),flags);
-                        callback_->OnTagClose(L"", L"p");
-                        callback_->OnTagClose(L"", L"title");
+                        lString16 currlink_id;
+                        if(LinksMap.size() !=0)
+                        {
+                            if(LinksMap.find((lString16("#") + attrvalue).getHash())!=LinksMap.end())
+                            {
+                                currlink_id = LinksMap[(lString16("#") + attrvalue).getHash()];
+                                //CRLog::error("found [%s] at [%s]",LCSTR(currlink_id),LCSTR(temp_section_id));
+                                currlink_id = lString16("#") + currlink_id ;
+                            }
+                        }
+                        if(!currlink_id.empty())
+                        {
+                            callback_->OnTagOpen(L"", L"title");
+                            callback_->OnTagOpen(L"", L"p");
+                            callback_->OnTagOpen(L"", L"a");
+                            callback_->OnAttribute(L"",L"href",(lString16("~") + currlink_id).c_str());
+                            callback_->OnText(attrvalue.c_str(), attrvalue.length(), flags);
+                            callback_->OnTagClose(L"", L"a");
+                            callback_->OnTagClose(L"", L"p");
+                            callback_->OnTagClose(L"", L"title");
+                        }
+                        else
+                        {
+                            callback_->OnTagOpen(L"", L"title");
+                            callback_->OnTagOpen(L"", L"p");
+                            callback_->OnText(attrvalue.c_str(), attrvalue.length(), flags);
+                            callback_->OnTagClose(L"", L"p");
+                            callback_->OnTagClose(L"", L"title");
+                        }
+
                     }
                     if(attrname == "type" && (attrvalue == "separator" || attrvalue =="continuationSeparator"))
                     {
@@ -3976,6 +4166,506 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
     return !error;
 }
 
+bool LvXmlParser::ParseEpubFootnotes()
+{
+    Reset();
+    lString16 name = lString16("notes");
+    callback_->OnStart(this);
+    callback_->OnTagOpen(L"",L"body");
+    callback_->OnAttribute(L"", L"name", name.c_str());
+    //int txt_count = 0;
+    int flags = callback_->getFlags();
+    bool error = false;
+    bool in_xml_tag = false;
+    bool close_flag = false;
+    bool q_flag = false;
+    bool body_started = false;
+    bool firstpage_thumb_num_reached = false;
+
+    bool in_section = false;
+    bool in_section_inner = false;
+    bool in_a = false;
+    bool in_body = false;
+    bool save_title_content = false;
+    bool title_content_saved = false;
+    bool title_section_check = false;
+    bool reappend_title = false;
+    bool title_is_text = false;
+    bool in_head = false;
+
+    int fragments_counter = 0;
+    lString16 tagname;
+    lString16 tagns;
+    lString16 attrname;
+    lString16 attrns;
+    lString16 attrvalue;
+    lString16 buffer;
+    int buffernum =-1;
+    //LVArray<LinkStruct> LinksList = getLinksList();
+    LinksMap LinksMap = getLinksMap();
+    lString16 temp_section_id;
+
+    for (; !eof_ && !error && !firstpage_thumb_num_reached ;)
+    {
+        if (m_stopped)
+            break;
+        // Load next portion of data if necessary
+        lChar16 ch = PeekCharFromBuffer();
+        switch (m_state)
+        {
+            case ps_bof:
+            {
+                //CRLog::trace("LvXmlParser::Parse() ps_bof");
+                // Skip file beginning until '<'
+                for ( ; !eof_ && ch!='<'; ch = PeekNextCharFromBuffer())
+                    ;
+                if (!eof_)
+                {
+                    m_state = ps_lt;
+                    ReadCharFromBuffer();
+                }
+                //CRLog::trace("LvXmlParser::Parse() ps_bof ret");
+            }
+                break;
+
+            case ps_lt:  //look for tags
+            {
+                //CRLog::trace("LvXmlParser::Parse() ps_lt");
+                if (!SkipSpaces())
+                    break;
+                close_flag = false;
+                q_flag = false;
+                if (ch=='/')
+                {
+                    ch = ReadCharFromBuffer();
+                    close_flag = true;
+                }
+                else if (ch=='?')
+                {
+                    // <?xml?>
+                    ch = ReadCharFromBuffer();
+                    q_flag = true;
+                }
+                else if (ch=='!')
+                {
+                    // comments etc...
+                    if (PeekCharFromBuffer(1) == '-' && PeekCharFromBuffer(2) == '-') {
+                        // skip comments
+                        ch = PeekNextCharFromBuffer(2);
+                        while (!eof_ && (ch != '-' || PeekCharFromBuffer(1) != '-'
+                                         || PeekCharFromBuffer(2) != '>') ) {
+                            ch = PeekNextCharFromBuffer();
+                        }
+                        if (ch=='-' && PeekCharFromBuffer(1)=='-'
+                            && PeekCharFromBuffer(2)=='>' )
+                            ch = PeekNextCharFromBuffer(2);
+                        m_state = ps_text;
+                        break;
+                    }
+                }
+                if (!ReadIdent(tagns, tagname) || PeekCharFromBuffer()=='=')
+                {
+                    // Error
+                    if (SkipTillChar('>'))
+                    {
+                        m_state = ps_text;
+                        ch = ReadCharFromBuffer();
+                    }
+                    break;
+                }
+                tagns.lowercase();
+                tagname.lowercase();
+                //if(!close_flag) CRLog::error(" <%s>",LCSTR(tagname));
+                //if( close_flag) CRLog::error("</%s>",LCSTR(tagname));
+
+                tagns = "";
+
+                if(tagname == "html" || tagname == "body" || tagname == "meta"|| tagname == "link" || tagname == "xml")
+                {
+                    if (SkipTillChar('>'))
+                    {
+                        m_state = ps_text;
+                        ch = ReadCharFromBuffer();
+                    }
+                    break;
+                }
+                if (tagname == "head")
+                {
+                    if(!close_flag)
+                    {
+                        in_head = true;
+                    }
+                    else
+                    {
+                        in_head = false;
+                    }
+                }
+                if ((tagname == "a" || tagname == "head") && !close_flag)
+                {
+                    if (SkipTillChar('/'))
+                    {
+                        m_state = ps_text;
+                        ch = ReadCharFromBuffer();
+                    }
+                    if (SkipTillChar('>'))
+                    {
+                        m_state = ps_text;
+                        ch = ReadCharFromBuffer();
+                    }
+                    break;
+                }
+
+                if (tagname == "h1" ||
+                    tagname == "h2" ||
+                    tagname == "h3" ||
+                    tagname == "h4" ||
+                    tagname == "h5" ||
+                    tagname == "h6")
+                {
+                    tagname = "title";
+                }
+                if(in_head)
+                {
+                    if (SkipTillChar('>'))
+                    {
+                        m_state = ps_text;
+                        ch = ReadCharFromBuffer();
+                    }
+                    break;
+                }
+                if(tagname == "title" && !in_section && !in_head)
+                {
+                    if (!close_flag) // set flags and remove title tag
+                    {
+                        save_title_content = true;
+                        title_content_saved = false;
+                    }
+                    if (close_flag)
+                    {
+
+                        save_title_content = false;
+                    }
+                    if (!title_is_text)
+                    {
+                        if (SkipTillChar('>'))
+                        {
+                            m_state = ps_text;
+                            ch = ReadCharFromBuffer();
+                        }
+                        break;
+                    }
+                    if (title_is_text)
+                    {
+                        callback_->OnTagOpen(L"", L"title");
+                        callback_->OnText(buffer.c_str(), buffer.length(), flags);
+                        callback_->OnTagClose(L"", L"title");
+                        title_is_text = false;
+                        break;
+                    }
+                }
+
+                if (tagname == "div")
+                {
+                    tagname = "section";
+                }
+
+                if (in_section)
+                {
+                    if (tagname == "title" && !close_flag && !title_content_saved)
+                    {
+                        save_title_content = true;
+                        title_section_check = true;
+
+                        //title tag exists in current section, no need to insert another one
+                        //do nothing
+                        if (SkipTillChar('>'))
+                        {
+                            m_state = ps_text;
+                            ch = ReadCharFromBuffer();
+                        }
+                        break;
+                    }
+                    if (tagname == "title" && close_flag && title_section_check)
+                    {
+                        if (title_is_text)
+                        {
+                            callback_->OnTagClose(L"", L"section");
+                            callback_->OnTagOpen(L"", L"title");
+                            callback_->OnText(buffer.c_str(), buffer.length(), flags);
+                            callback_->OnTagClose(L"", L"title");
+                            callback_->OnTagClose(L"", L"title");
+                        }
+                        else
+                        {
+                            lString16 currlink_id;
+                            if(LinksMap_.size() !=0 && buffernum != -1)
+                            {
+                                if(LinksMap_.find(temp_section_id.getHash())!=LinksMap_.end())
+                                {
+                                    currlink_id = LinksMap_[temp_section_id.getHash()];
+                                    //CRLog::error("found [%s] at [%s]",LCSTR(currlink_id),LCSTR(temp_section_id));
+                                    currlink_id = lString16("#") + currlink_id ;
+                                }
+                            }
+                            if(!currlink_id.empty())
+                            {
+                                callback_->OnTagOpen(L"", L"title");
+                                callback_->OnTagOpen(L"", L"a");
+                                callback_->OnAttribute(L"",L"href",(lString16("~") + currlink_id).c_str());
+                                callback_->OnText(buffer.c_str(), buffer.length(), flags);
+                                callback_->OnTagClose(L"", L"a");
+                                callback_->OnTagClose(L"", L"title");
+                            }
+                            else
+                            {
+                                callback_->OnTagOpen(L"", L"title");
+                                callback_->OnText(buffer.c_str(), buffer.length(), flags);
+                                callback_->OnTagClose(L"", L"title");
+                            }
+                        }
+                        save_title_content = false;
+                        title_section_check = false;
+                    }
+                    if(tagname == "title")
+                    {
+                        //title tag exists in current section, no need to insert another one
+                        //do nothing
+                        title_content_saved = false;
+                    }
+                    if(tagname != "title" && title_content_saved)
+                    {
+
+                        lString16 currlink_id;
+                        if (LinksMap_.size() != 0 && buffernum != -1)
+                        {
+                            if (LinksMap_.find(temp_section_id.getHash()) != LinksMap_.end())
+                            {
+                                currlink_id = LinksMap_[temp_section_id.getHash()];
+                                currlink_id = lString16("#") + currlink_id;
+                            }
+                        }
+                        if (!currlink_id.empty())
+                        {
+                            callback_->OnTagOpen(L"", L"title");
+                            callback_->OnTagOpen(L"", L"a");
+                            callback_->OnAttribute(L"",
+                                    L"href",
+                                    (lString16("~") + currlink_id).c_str());
+                            callback_->OnText(buffer.c_str(), buffer.length(), flags);
+                            callback_->OnTagClose(L"", L"a");
+                            callback_->OnTagClose(L"", L"title");
+                        }
+                        else
+                        {
+                            callback_->OnTagOpen(L"", L"title");
+                            callback_->OnText(buffer.c_str(), buffer.length(), flags);
+                            callback_->OnTagClose(L"", L"title");
+                        }
+
+                        title_content_saved = false;
+                    }
+                    if (tagname == "section" && !close_flag)
+                    {
+                        in_section_inner = true;
+                        if (SkipTillChar('>'))
+                        {
+                            m_state = ps_text;
+                            ch = ReadCharFromBuffer();
+                        }
+                        break;
+                    }
+                    if (tagname == "section" && close_flag && in_section_inner)
+                    {
+                        in_section_inner = false;
+                        if (SkipTillChar('>'))
+                        {
+                            m_state = ps_text;
+                            ch = ReadCharFromBuffer();
+                        }
+                        break;
+                    }
+                }
+
+                if (tagname == "section")
+                {
+                    if (!close_flag)
+                    {
+                        in_section = true;
+                    }
+                    else if (close_flag && !in_section_inner)
+                    {
+                        in_section = false;
+                    }
+                }
+
+
+                if (close_flag)
+                {
+                    callback_->OnTagClose(tagns.c_str(), tagname.c_str());
+                    //CRLog::trace("</%s:%s>", LCSTR(tagns),LCSTR(tagname));
+                    if (SkipTillChar('>'))
+                    {
+                        m_state = ps_text;
+                        ch = ReadCharFromBuffer();
+                    }
+                    break;
+                }
+
+                if (q_flag) {
+                    tagname.insert(0, 1, '?');
+                    in_xml_tag = (tagname == "?xml");
+                } else {
+                    in_xml_tag = false;
+                }
+
+                    callback_->OnTagOpen(tagns.c_str(), tagname.c_str());
+
+                //CRLog::trace("<%s:%s>", LCSTR(tagns),LCSTR(tagname));
+
+                m_state = ps_attr;
+                //CRLog::trace("LvXmlParser::Parse() ps_lt ret");
+            }
+                break;
+            case ps_attr: //read tags
+            {
+                //CRLog::trace("LvXmlParser::Parse() ps_attr");
+                if (!SkipSpaces())
+                    break;
+                ch = PeekCharFromBuffer();
+                lChar16 nch = PeekCharFromBuffer(1);
+                if (ch == '>' || ((ch == '/' || ch == '?') && nch == '>'))
+                {
+                    callback_->OnTagBody();
+                    // end of tag
+                    if (ch != '>')
+                        callback_->OnTagClose(tagns.c_str(), tagname.c_str());
+                    if (ch == '>')
+                        ch = PeekNextCharFromBuffer();
+                    else
+                        ch = PeekNextCharFromBuffer(1);
+                    m_state = ps_text;
+                    break;
+                }
+                if (!ReadIdent(attrns, attrname))
+                {
+                    // error: skip rest of tag
+                    SkipTillChar('<');
+                    ch = PeekNextCharFromBuffer(1);
+                    callback_->OnTagBody();
+                    m_state = ps_lt;
+                    break;
+                }
+                SkipSpaces();
+                attrvalue.reset(16);
+                ch = PeekCharFromBuffer();
+                // Read attribute value
+                if (ch == '=')
+                {
+                    // Skip '='
+                    ReadCharFromBuffer();
+                    SkipSpaces();
+                    lChar16 qChar = 0;
+                    ch = PeekCharFromBuffer();
+                    if (ch == '\"' || ch == '\'')
+                    {
+                        qChar = ReadCharFromBuffer();
+                    }
+                    for (; !eof_;)
+                    {
+                        ch = PeekCharFromBuffer();
+                        if (ch == '>')
+                            break;
+                        if (!qChar && IsSpaceChar(ch))
+                            break;
+                        if (qChar && ch == qChar)
+                        {
+                            ch = PeekNextCharFromBuffer();
+                            break;
+                        }
+                        ch = ReadCharFromBuffer();
+                        if (ch)
+                            attrvalue += ch;
+                        else
+                            break;
+                    }
+                }
+                if (possible_capitalized_tags_) {
+                    attrns.lowercase();
+                    attrname.lowercase();
+                }
+                attrns = "";
+
+                if ((flags & TXTFLG_CONVERT_8BIT_ENTITY_ENCODING) && m_conv_table) {
+                    PreProcessXmlString(attrvalue, 0, m_conv_table);
+                }
+                if(in_section && attrname == "id")
+                {
+                    temp_section_id = lString16("#") + callback_->convertId(attrvalue);
+                }
+                //CRLog::error("OnAttrib [%s:%s = \"%s\"]",LCSTR(attrns), LCSTR(attrname), LCSTR(attrvalue));
+                callback_->OnAttribute(attrns.c_str(), attrname.c_str(), attrvalue.c_str());
+
+
+                if (in_xml_tag && attrname == "encoding")
+                {
+                    SetCharset(attrvalue.c_str());
+                }
+                //CRLog::trace("LvXmlParser::Parse() ps_attr ret");
+            }
+                break;
+            case ps_text:
+            {
+                if(in_head)
+                {
+                    if (SkipTillChar('<'))
+                    {
+                        m_state = ps_lt;
+                        ch = ReadCharFromBuffer();
+                    }
+                    break;
+                }
+                if (save_title_content)
+                {
+                    ReadTextToString(buffer,false);
+                    //CRLog::error("saving to buffer = [%s]", LCSTR(buffer));
+                    if (buffer.atoi() <= 0)
+                    {
+                        buffernum = -1;
+                        title_is_text = true;
+                    }
+                    else
+                    {
+                        buffernum = buffer.atoi();
+                        title_is_text = false;
+                    }
+                    title_content_saved = true;
+                }
+                else
+                {
+                    ReadText();
+                }
+
+                fragments_counter++;
+                if(need_coverpage_)
+                {
+                    //CRLog::trace("LvXmlParser: text fragments read : %d", fragments_counter);
+                    if (fragments_counter >= FIRSTPAGE_BLOCKS_MAX_DOCX)
+                    {
+                        firstpage_thumb_num_reached = true;
+                    }
+                }
+                m_state = ps_lt;
+            }
+                break;
+            default:
+            {
+            }
+        }
+    }
+    callback_->OnTagClose(L"",L"body");
+    callback_->OnStop();
+    return !error;
+}
 
 #define TEXT_SPLIT_SIZE 8192
 
@@ -4438,6 +5128,12 @@ int LVTextFileBase::fillCharBuffer()
 
 bool LvXmlParser::ReadText()
 {
+    lString16 temp;
+    return ReadTextToString(temp,true);
+}
+
+bool LvXmlParser::ReadTextToString(lString16 & output, bool write_to_tree)
+{
     // TODO: remove tracking of file pos
     //int text_start_pos = 0;
     //int ch_start_pos = 0;
@@ -4519,12 +5215,24 @@ bool LvXmlParser::ReadText()
                     lString16 tmp;
                     tmp.reserve(nlen + tabCount * 8);
                     ExpandTabs(tmp, buf, nlen);
-                    callback_->OnText(tmp.c_str(), tmp.length(), flags);
+                    if(write_to_tree)
+                    {
+                        callback_->OnText(tmp.c_str(), tmp.length(), flags);
+                    }
+                    output = tmp;
                 } else {
+                    if(write_to_tree)
+                    {
                     callback_->OnText(buf, nlen, flags);
+                    }
+                    output = buf;
                 }
             } else {
+                if(write_to_tree)
+                {
                 callback_->OnText(buf, nlen, flags);
+                }
+                output = buf;
             }
 
             m_txt_buf.erase(0, last_split_txtlen);
@@ -4636,6 +5344,35 @@ LvXmlParser::LvXmlParser(LVStreamRef stream, LvXMLParserCallback* callback,bool 
 
 LvXmlParser::~LvXmlParser() {}
 
+void LvXmlParser::setEpubNotes(EpubItems epubItems)
+{
+    EpubNotes_ = new EpubItems(epubItems);
+    if(epubItems.length()>0)
+    {
+        Notes_exists = true;
+    }
+}
+
+void LvXmlParser::setLinksList(LVArray<LinkStruct> LinksList)
+{
+    LinksList_ = LinksList;
+}
+
+LVArray<LinkStruct> LvXmlParser::getLinksList()
+{
+    return LinksList_;
+}
+
+void LvXmlParser::setLinksMap(LinksMap LinksMap)
+{
+    LinksMap_ = LinksMap;
+}
+
+LinksMap LvXmlParser::getLinksMap()
+{
+    return LinksMap_;
+}
+
 lString16 htmlCharset(lString16 htmlHeader)
 {
     // META HTTP-EQUIV
@@ -4719,6 +5456,11 @@ LvHtmlParser::~LvHtmlParser()
 bool LvHtmlParser::Parse()
 {
     return LvXmlParser::Parse();
+}
+
+bool LvHtmlParser::ParseEpubFootnotes()
+{
+    return LvXmlParser::ParseEpubFootnotes();
 }
 
 bool LvHtmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks,DocxStyles docxStyles)

@@ -271,6 +271,12 @@ public:
 
     LVDocView();
     ~LVDocView();
+
+    LVArray<TextRect> GetCurrentPageFootnotesLinks();
+
+    LVArray<TextRect> GetPageFootnotesText(int page, bool rightpage = false);
+
+    LVArray<TextRect> GetPageFootnotesLinks(int page, bool rightpage = false);
 };
 
 #endif //__LV_TEXT_VIEW_H_INCLUDED__

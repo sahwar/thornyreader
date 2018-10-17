@@ -25,6 +25,7 @@
 #include "include/crcss.h"
 #include "include/mobihandler.h"
 #include "include/crconfig.h"
+#include "include/fb2fmt.h"
 
 // Yep, twice include single header with different define.
 // Probably should be last in include list, to don't mess up with other includes.
@@ -440,8 +441,14 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
 	LVFileFormatParser *parser = nullptr;
 	if (doc_format == DOC_FORMAT_FB2)
 	{
-		LvDomWriter writer(cr_dom_);
-		parser = new LvXmlParser(stream_, &writer, false, true, cfg_firstpage_thumb_);
+		cr_dom_->setProps(doc_props_);
+		CRLog::error("IMPORTING FB2");
+		if (!ImportFb2Document(stream_, cr_dom_, cfg_firstpage_thumb_))
+		{
+			CRLog::error("IMPORTING FB2 FAILED");
+			return false;
+		}
+		doc_props_ = cr_dom_->getProps();
 	}
     else if (doc_format == DOC_FORMAT_DOCX)
     {
@@ -791,7 +798,20 @@ void LVDocView::DrawPageTo(LVDrawBuf *drawbuf, LVRendPageInfo &page, lvRect *pag
 /// returns page count
 int LVDocView::GetPagesCount()
 {
-	return (pages_list_.length());
+    #if DEBUG_NOTES_HIDDEN_SHOW == 1
+    return (pages_list_.length());
+    #endif
+
+    lUInt16 id = this->GetCrDom()->getAttrValueIndex(L"__notes_hidden__");
+    if (this->cr_dom_->getNodeById(id) != NULL)
+    {
+        ldomNode * notes = this->cr_dom_->getNodeById(id);
+        return GetPageForBookmark(ldomXPointer(notes,0));
+    }
+    else
+    {
+	    return (pages_list_.length());
+    }
 }
 
 /// get vertical position of view inside document
@@ -1865,6 +1885,170 @@ void LVDocView::GetImageScaleParams(ldomNode* node, int &imgheight, int &imgwidt
 	    imgheight = imgheight * pscale / 1000;
 	    imgwidth = imgwidth * pscale / 1000;
     }
+}
+
+LVArray<TextRect> LVDocView::GetPageFootnotesText(int page, bool rightpage)
+{
+	CHECK_RENDER("GetPageFootnotesText()");
+    LVArray<TextRect> result;
+	if (!cr_dom_)
+	{
+		CRLog::error("No crdom found!");
+		return result;
+	}
+	LVArray<FootNoteInfo>  fnotes = this->pages_list_.get(page)->footnotes_info;
+	if (fnotes.empty())
+	{
+		CRLog::trace("No footnotes on page %d",page);
+		return result;
+	}
+
+	int shift = 0;
+	if (rightpage)
+	{
+		shift = width_ /2;
+	}
+
+	//CRLog::error("Footnotes page = %d", page);
+    FootNoteInfo first_fnote = fnotes.get(0);
+    FootNoteInfo last_fnote = fnotes.get(fnotes.length() - 1);
+
+	int start_y = first_fnote.start;
+	int end_y = last_fnote.start + last_fnote.height;
+
+	int y_zero = 10 + margins_.top + this->pages_list_[page]->height;
+
+	lvPoint start_point(0, start_y);
+	lvPoint end_point(0, end_y);
+	ldomXPointer xp1 = cr_dom_->createXPointer(start_point);
+	ldomXPointer xp2 = cr_dom_->createXPointer(end_point);
+    //CRLog::error("xp1 node = %s",LCSTR(xp1.getNode()->getXPath()));
+    //CRLog::error("xp2 node = %s",LCSTR(xp2.getNode()->getXPath()));
+	ldomXRange range = ldomXRange(xp1, xp2);
+	LVArray<TextRect> word_chars;
+	range.getRangeChars(word_chars);
+
+
+	if (word_chars.empty())
+	{
+		CRLog::error("No footnotes rects on current page, but footnotes exist!");
+		return result;
+	}
+	int abs_top = word_chars.get(0).getRect().top;
+	int curr_top = y_zero;
+	LVFont *font = this->GetBaseFont().get();
+	lvRect last = word_chars.get(0).getRect();
+	for (int i = 0; i < word_chars.length(); i++)
+	{
+		TextRect word = word_chars.get(i);
+		lvRect rect = word.getRect();
+		int curr_height = rect.height();
+//		CRLog::error("before rect = [%d:%d][%d:%d]",rect.left,rect.right,rect.top,rect.bottom);
+		if (rect.top != abs_top)
+		{
+			curr_top = curr_top + rect.height();
+		}
+		abs_top = rect.top;
+		rect.top = curr_top;
+		rect.bottom = curr_top + curr_height;
+		rect.left += margins_.left + shift;
+		rect.right += margins_.left + shift;
+
+
+		int lastheight = last.height();
+		if (rect.height() >= lastheight * 1.5)
+		{
+			int curwidth = font->getCharWidth(word.getText().firstChar());
+			rect.bottom = rect.top + lastheight;
+			rect.right = rect.right + curwidth;
+		}
+
+		word.setRect(rect);
+		word_chars.set(i, word);
+		last = rect;
+	}
+	result.add(word_chars);
+    return result;
+}
+
+LVArray<TextRect> LVDocView::GetPageFootnotesLinks(int page, bool rightpage)
+{
+    LVArray<TextRect> result;
+	LVArray<TextRect> word_chars = GetPageFootnotesText(page, rightpage);
+
+    if(word_chars.empty())
+	{
+		return result;
+	}
+    //Uncomment to pass all text through
+    //return word_chars;
+    //temp
+
+    ldomNode *last_node = word_chars.get(0).getNode();
+	lString16 last_href = last_node->getHRef();
+	LVArray<TextRect> link_list;
+	for (int i = 0; i < word_chars.length(); i++)
+	{
+		TextRect word = word_chars.get(i);
+		ldomNode *node = word.getNode();
+		lString16 href = (node == last_node) ? last_href : node->getHRef();
+		last_href = href;
+		last_node = word.getNode();
+		if (href.empty())
+		{
+			continue;
+		}
+
+		word.setString(href);
+		link_list.add(word);
+	}
+
+	if (link_list.empty())
+	{
+		return result;
+	}
+
+	LVFont *font = this->GetBaseFont().get();
+	TextRect word = link_list.get(0);
+	lvRect rect = word.getRect();
+	lvRect last = rect;
+	lString16 href = word.getText();
+
+	for (int i = 0; i < link_list.length(); i++)
+	{
+		TextRect word = link_list.get(i);
+		lvRect raw_rect = word.getRect();
+		if (raw_rect.top == rect.top && raw_rect.bottom == rect.bottom)
+		{
+			rect.right = raw_rect.right;
+		}
+		else
+		{
+			result.add(TextRect(NULL, rect, href));
+			rect = word.getRect();
+		}
+		href = word.getText();
+		last = raw_rect;
+	}
+	//last link
+	result.add(TextRect(NULL, rect, href));
+	return result;
+}
+
+LVArray<TextRect> LVDocView::GetCurrentPageFootnotesLinks()
+{
+    LVArray<TextRect> result;
+	if (page_columns_ == 2)
+	{
+		result.add(GetPageFootnotesLinks(page_));
+		if (pages_list_.length() > page_ + 1)
+		{
+            result.add(GetPageFootnotesLinks(page_ + 1, true));
+		}
+        return result;
+    }
+	//page_columns = 1
+    return GetPageFootnotesLinks(page_);
 }
 
 void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)

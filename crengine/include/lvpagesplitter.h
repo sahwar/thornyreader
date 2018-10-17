@@ -46,6 +46,19 @@ enum page_type_t {
 };
 
 /// footnote fragment inside page
+class FootNoteInfo {
+public:
+    int start;
+    int height;
+    lString16 id;
+     FootNoteInfo()
+    : start(0), height(0), id(lString16::empty_str)
+    { }
+    FootNoteInfo( int s, int h ,lString16 id)
+    : start(s), height(h), id(id)
+    { }
+};
+
 class LVPageFootNoteInfo {
 public:
     int start;
@@ -54,7 +67,7 @@ public:
     : start(0), height(0)
     { }
     LVPageFootNoteInfo( int s, int h )
-    : start(s), height(h) 
+    : start(s), height(h)
     { }
 };
 
@@ -201,6 +214,7 @@ public:
     int index;  /// index of page
     lInt16 height; /// height of page, does not include footnotes
     lInt16 type;   /// type: PAGE_TYPE_NORMAL, PAGE_TYPE_COVER
+    LVArray<FootNoteInfo> footnotes_info;
     CompactArray<LVPageFootNoteInfo, 1, 4> footnotes; /// footnote fragment list for page
     LVRendPageInfo(int pageStart, lUInt16 pageHeight, int pageIndex)
     : start(pageStart), index(pageIndex), height(pageHeight), type(PAGE_TYPE_NORMAL) {}
@@ -301,6 +315,9 @@ public:
     CompactArray<LVRendLineInfo*, 2, 4> & getLines() { return lines; }
     bool empty() { return lines.empty(); }
     void clear() { lines.clear(); }
+    lString16 getId() {
+        return id;
+    }
 };
 
 class LVRendPageContext

@@ -117,6 +117,10 @@ sup {
   vertical-align: super;
   font-size: 70%;
 }
+sup small{
+  vertical-align: super;
+  font-size: 100%;  /* 100% of sup == 70% of regular text*/
+}
 nobr {
   display: inline;
   hyphenate: none;
@@ -308,27 +312,67 @@ text-author, .epigraph_author, .citation_author {
   margin-right: 1em;
 }
 
-body[name="notes"], body[name="comments"] {
-  font-size: 70%;
+
+body[name="notes"] title {
+  page-break-before: avoid;
+  page-break-inside: avoid;
+  page-break-after : avoid;
+}
+
+body[name="notes"] section {
+  margin-bottom: 0.5em;
 }
 
 body[name="notes"] section title {
+  font-size: 100%;
   display: run-in;
   text-align: left;
-  page-break-before: auto;
-  page-break-inside: auto;
-  page-break-after: auto;
+  page-break-before: avoid;
+  page-break-inside: avoid;
+  page-break-after : avoid;
 }
+
+body[name="notes"] section title a {
+  font-size: 100%;
+  display: run-in;
+  text-align: left;
+  page-break-before: avoid;
+  page-break-inside: avoid;
+  page-break-after : avoid;
+}
+
 body[name="notes"] section title p {
+  display: inline;
+}
+
+body[name="notes_hidden"], body[name="comments"] {
+  font-size: 70%;
+}
+
+body[name="notes_hidden"] title {
+  page-break-before: avoid;
+  page-break-inside: avoid;
+  page-break-after : avoid;
+}
+
+body[name="notes_hidden"] section title {
+  font-size: 100%;
+  display: run-in;
+  text-align: left;
+  page-break-before: avoid;
+  page-break-inside: avoid;
+  page-break-after : avoid;
+}
+body[name="notes_hidden"] section title p {
   display: inline;
 }
 
 body[name="comments"] section title {
   display: run-in;
   text-align: left;
-  page-break-before: auto;
-  page-break-inside: auto;
-  page-break-after: auto;
+  page-break-before: avoid;
+  page-break-inside: avoid;
+  page-break-after : avoid;
 }
 body[name="comments"] section title p {
   display: inline;
@@ -337,6 +381,18 @@ body[name="comments"] section title p {
 a[type="note"] {
   vertical-align: super;
   font-size: 70%;
+  text-decoration: none;
+}
+
+a[type="note"] sup {
+  vertical-align: super;
+  font-size: 100%; /* 100% of sup == 70% of regular text ( a[type="note"] )*/
+  text-decoration: none;
+}
+
+sup a[type="note"] {
+  vertical-align: super;
+  font-size: 100%; /* 100% of a[type="note"] == 70% of regular text (sup)*/
   text-decoration: none;
 }
 
