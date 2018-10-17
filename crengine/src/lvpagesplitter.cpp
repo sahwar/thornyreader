@@ -126,6 +126,7 @@ public:
     const LVRendLineInfo * footend;
     const LVRendLineInfo * footlast;
     LVArray<LVPageFootNoteInfo> footnotes;
+    LVArray<FootNoteInfo> footnotes_info;
     int lastpageend;
 
     PageSplitState(LVRendPageList * pl, int pageHeight)
@@ -187,6 +188,8 @@ public:
         lastpageend = start + h;
         if ( footnotes.length()>0 ) {
             page->footnotes.add( footnotes );
+            page->footnotes_info.add(footnotes_info);
+            footnotes_info.clear();
             footnotes.clear();
             footheight = 0;
         }
@@ -290,6 +293,8 @@ public:
             CRLog::trace("AddFootnoteFragmentToList(%d, %d)", footstart->getStart(), h);
 #endif
             footnotes.add( LVPageFootNoteInfo( footstart->getStart(), h ) );
+            lString16 id = footnote->getId();
+            footnotes_info.add(FootNoteInfo(footstart->getStart(),h,id));
         }
         footstart = footend = NULL;
     }

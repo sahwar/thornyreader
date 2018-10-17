@@ -1222,6 +1222,7 @@ public:
     lvRect getRect(){ return rect_;};
     ldomNode* getNode(){ return node_;};
     void setRect(lvRect rect){ rect_ = rect;};
+    void setString(lString16 string){ string_ = string;};
 };
 
 class ImgRect
