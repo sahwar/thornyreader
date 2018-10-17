@@ -243,7 +243,6 @@ bool FootnotesPrinter::AppendLinksToDoc(CrDom *m_doc, LVArray<LinkStruct> LinksL
         if (node->isNodeName("section"))
         {
             //fb2, epub structure
-            found = node;
 
             writer.OnTagOpen(L"", L"section");
             writer.OnAttribute(L"", L"id", href.c_str());
@@ -252,9 +251,7 @@ bool FootnotesPrinter::AppendLinksToDoc(CrDom *m_doc, LVArray<LinkStruct> LinksL
             writer.OnText(num.c_str(), num.length(), 0);
             writer.OnTagClose(L"", L"title");
 
-            writer.OnTagOpen(L"", found->getNodeName().c_str());
-            recurseNodesToPrint(found, &writer);
-            writer.OnTagClose(L"", found->getNodeName().c_str());
+            recurseNodesToPrint(node, &writer);
 
             writer.OnTagClose(L"", L"section");
         }
