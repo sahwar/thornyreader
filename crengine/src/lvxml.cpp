@@ -3306,7 +3306,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
     bool in_footnoteref= false;
     bool in_footnote = false;
     //flag for hyperlinks
-    bool in_hyperlink = false;
+    bool in_a = false;
     //flags for table of contents
     bool in_tocref = false;
     bool in_toc = false;
@@ -3341,6 +3341,10 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
     bool separate_img = false;
 
     int empty_p_counter = 0;
+
+    bool save_text = false;
+    lString16 str_buffer;
+    lString16 a_href;
 
     int default_size = docxStyles.default_size_;
     int h1min = docxStyles.h1min_;
@@ -3720,12 +3724,39 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
                 if (tagname == "hyperlink")
                 {
                     tagname = "a";
-                    in_hyperlink = true;
+                    if(!close_flag)
+                    {
+                        save_text = true;
+                        in_a = true;
+                    }
+                    if(close_flag)
+                    {
+                        if(a_href.pos("://")==-1 && str_buffer.pos("://")!=-1)
+                        {
+                            //trimming spaces in href
+                            while(str_buffer.startsWith(" "))
+                            {
+                                str_buffer = str_buffer.substr(1);
+                            }
+                            while (str_buffer.endsWith(" "))
+                            {
+                                str_buffer = str_buffer.substr(0,str_buffer.length()-1);
+                            }
+                            callback_->OnAttribute(L"",L"href",str_buffer.c_str());
+                        }
+                        str_buffer = lString16::empty_str;
+                        save_text = false;
+                        in_a = false;
+                    }
                 }
 
                 if(tagname == "a")
                 {
                     in_sdt_a = true;
+                    if(close_flag)
+                    {
+                        save_text = false;
+                    }
                 }
                 //another filtering
                 if(tagname== "instrtext")
@@ -3931,11 +3962,11 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
                         }
                         else
                         {
-                            callback_->OnTagOpen(L"", L"title");
-                            callback_->OnTagOpen(L"", L"p");
-                            callback_->OnText(attrvalue.c_str(), attrvalue.length(), flags);
-                            callback_->OnTagClose(L"", L"p");
-                            callback_->OnTagClose(L"", L"title");
+                            //callback_->OnTagOpen(L"", L"title");
+                            //callback_->OnTagOpen(L"", L"p");
+                            //callback_->OnText(attrvalue.c_str(), attrvalue.length(), flags);
+                            //callback_->OnTagClose(L"", L"p");
+                            //callback_->OnTagClose(L"", L"title");
                         }
 
                     }
@@ -3960,14 +3991,15 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
                 }
 
                 //hyperlinks handling
-                if(in_hyperlink)
+                if(in_a)
                 {
                     if (attrname == "id")
                     {
                         attrvalue = docxLinks.findTargetById(attrvalue);
+                        a_href=attrvalue;
                         attrname = "href";
                     }
-                    in_hyperlink = false;
+                    //in_a = false;
                 }
                 //toc handling
                 if(in_tocref)
@@ -4112,7 +4144,14 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
                         callback_->OnTagOpen(L"", lString16("sub").c_str());
                     }
                 }
-                ReadText();
+                if(save_text)
+                {
+                    ReadTextToString(str_buffer,true);
+                }
+                else
+                {
+                    ReadText();
+                }
                 fragments_counter++;
                 //bold italic underline list tag insertion closing tags
                 if (in_t)
