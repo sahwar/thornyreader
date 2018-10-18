@@ -3646,7 +3646,9 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
                     {
                         if (!first_bilp_in_p)
                         {
-                           separate_img = true;
+                            callback_->OnTagClose(L"",L"p");
+                            callback_->OnAttribute(L"",L"class",L"section_image");
+                            separate_img = true;
                         }
                         first_bilp_in_p = true;
                     }
@@ -3988,6 +3990,10 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
                         attrvalue = docxItems.findHrefById(rID);
                     }
                     in_blip_img =false;
+                    if(separate_img)
+                    {
+                        callback_->OnTagClose(L"",L"p");
+                    }
                 }
 
                 //hyperlinks handling
@@ -4067,8 +4073,6 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
                 if(separate_img)
                 {
                     callback_->OnAttribute(L"",L"class",L"section_image");
-                    callback_->OnTagClose(L"",L"p");
-                    callback_->OnTagOpen(L"",L"p");
                     separate_img = false;
                 }
                 if (in_xml_tag && attrname == "encoding")
