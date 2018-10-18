@@ -2068,6 +2068,10 @@ void ldomElementWriter::updateTocItem()
     // TODO: update item
     if ( _parent && _parent->_tocItem ) {
         lString16 title = getSectionHeader( _element );
+        if(title == "-")
+        {
+            return;
+        }
         //CRLog::trace("TOC ITEM: %s", LCSTR(title));
         ldomNode*body = _element->getParentNode("body");
         if (!body->hasAttribute(attr_name))
