@@ -180,8 +180,7 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
     CmdDataIterator iter(request.first);
     if (!doc_view_) {
         doc_view_ = new LVDocView();
-        if  (FALLBACK_FACE_DEFAULT != lString8("NONE"))
-        {
+        if  (FALLBACK_FACE_DEFAULT != lString8("NONE")) {
             fontMan->InitFallbackFontDefault();
         }
     }
@@ -301,7 +300,6 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
             bool bool_val = (bool) int_val;
             doc_view_->cfg_enable_footnotes_ = bool_val;
             doc_view_->GetCrDom()->setDocFlag(DOC_FLAG_ENABLE_FOOTNOTES, bool_val);
-            //doc_view_->GetCrDom()->setDocFlag(DOC_FLAG_ENABLE_FOOTNOTES, true);
             doc_view_->RequestRender();
         } else if (key == CONFIG_CRE_TEXT_ALIGN) {
             int int_val = atoi(val);

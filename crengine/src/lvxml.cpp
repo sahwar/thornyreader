@@ -2799,7 +2799,7 @@ bool LvXmlParser::Parse()
                                     link_id = lString16("#") + callback_->convertId(temp);
                                     callback_->OnAttribute(L"", L"id", temp.c_str());
                                 }
-                                callback_->OnAttribute(L"", L"nref", (link_href + lString16("_note")).c_str());
+                                //callback_->OnAttribute(L"", L"nref", (link_href + lString16("_note")).c_str());
                                 callback_->OnAttribute(L"", L"type", L"note");
                                 LinksList_.add(LinkStruct(bufnum,link_id, link_href));
                                 LinksMap_[link_href.getHash()] = link_id;
@@ -2966,6 +2966,21 @@ bool LvXmlParser::Parse()
                 if(in_note_section && attrname == "id")
                 {
                     section_id = attrvalue;
+                }
+                if(in_a && attrname == "href" && !Notes_exists)
+                {
+                    callback_->OnAttribute(L"", L"nref", (attrvalue + lString16("_note")).c_str());
+                    //is_note = true;
+                }
+
+                if(in_a && attrname == "href" && Notes_exists)
+                {
+                    if(EpubNotes_->hrefCheck(attrvalue))
+                    {
+                        callback_->OnAttribute(L"", L"type", L"note");
+                        callback_->OnAttribute(L"", L"nref", (attrvalue + lString16("_note")).c_str());
+                        is_note = true;
+                    }
                 }
 
                 if (in_a)// && is_note)
