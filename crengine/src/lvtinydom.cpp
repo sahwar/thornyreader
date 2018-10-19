@@ -2068,8 +2068,20 @@ void ldomElementWriter::updateTocItem()
     // TODO: update item
     if ( _parent && _parent->_tocItem ) {
         lString16 title = getSectionHeader( _element );
+        if(title == "-")
+        {
+            return;
+        }
         //CRLog::trace("TOC ITEM: %s", LCSTR(title));
-        _tocItem = _parent->_tocItem->addChild(title, ldomXPointer(_element,0), getPath() );
+        ldomNode*body = _element->getParentNode("body");
+        if (!body->hasAttribute(attr_name))
+        {
+            _tocItem = _parent->_tocItem->addChild(title, ldomXPointer(_element, 0), getPath());
+        }
+        else if (body->getAttributeValue(attr_name) != lString16("notes_hidden"))
+        {
+            _tocItem = _parent->_tocItem->addChild(title, ldomXPointer(_element, 0), getPath());
+        }
     }
     _isSection = false;
 }
@@ -5585,6 +5597,10 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
                 {
                     return false;
                 }
+                if(name == "font")
+                {
+                    return false;
+                }
                 if(name == "p" && index == 0)
                 {
                     return true;
@@ -6133,6 +6149,8 @@ lString16 LvDocFragmentWriter::convertHref( lString16 href )
 {
     if ( href.pos("://")>=0 )
         return href; // fully qualified href: no conversion
+    if ( href.pos("~")>=0 )
+        return href.substr(1); // fully qualified href: no conversion
 #if 0
     CRLog::trace("convertHref(%s, codeBase=%s, filePathName=%s)",
             LCSTR(href),
@@ -6144,7 +6162,6 @@ lString16 LvDocFragmentWriter::convertHref( lString16 href )
         if (replacement.empty())
             return href;
         lString16 p = cs16("#") + replacement + "_" + href.substr(1);
-        //CRLog::trace("href %s -> %s", LCSTR(href), LCSTR(p));
         return p;
     }
 
@@ -6197,13 +6214,21 @@ void LvDocFragmentWriter::OnAttribute(const lChar16* nsname,
 		const lChar16* attrname, const lChar16* attrvalue)
 {
     if ( insideTag ) {
-        if ( !lStr_cmp(attrname, "href") || !lStr_cmp(attrname, "src") ) {
+        if ( !lStr_cmp(attrname, "href") || !lStr_cmp(attrname, "src" )|| !lStr_cmp(attrname, "nref" ) ) {
             parent->OnAttribute(nsname, attrname, convertHref(lString16(attrvalue)).c_str() );
         } else if ( !lStr_cmp(attrname, "id") ) {
-            parent->OnAttribute(nsname, attrname, convertId(lString16(attrvalue)).c_str() );
+                parent->OnAttribute(nsname, attrname, convertId(lString16(attrvalue)).c_str() );
         } else if ( !lStr_cmp(attrname, "name") ) {
             //CRLog::trace("name attribute = %s", LCSTR(lString16(attrvalue)));
-            parent->OnAttribute(nsname, attrname, convertId(lString16(attrvalue)).c_str() );
+            if (lStr_cmp(attrvalue, "notes") != 0 ) //notes attribute avoiding
+            {
+                parent->OnAttribute(nsname, attrname, convertId(lString16(attrvalue)).c_str());
+            }
+            else
+            {
+                // pass [name="notes"] attribute safely
+                parent->OnAttribute(nsname, attrname, attrvalue);
+            }
         } else {
             parent->OnAttribute(nsname, attrname, attrvalue);
         }
@@ -6282,6 +6307,10 @@ ldomNode * LvDocFragmentWriter::OnTagOpen( const lChar16 * nsname, const lChar16
             }
             // add base tag, too (e.g., in CSS, styles are often defined for body tag"
             parent->OnTagOpen(L"", baseTag.c_str());
+            if (parent->getFlags() & TXTFLG_IN_NOTES)
+            {
+                parent->OnAttribute(L"", L"name", L"notes");
+            }
             parent->OnTagBody();
             return baseElement;
         }
@@ -7222,6 +7251,23 @@ ldomNode * ldomNode::getParentNode() const
         break;
     }
     return parentIndex ? getTinyNode(parentIndex) : NULL;
+}
+
+//returns specified parent node from ancestor nodes. Returns NULL if not found.
+ldomNode * ldomNode::getParentNode(const char * name)
+{
+    if(this->isNodeName(name))
+        return this;
+    ldomNode* node = this;
+    while (node->getParentNode()!=NULL)
+    {
+        node = node->getParentNode();
+        if(node->isNodeName(name))
+        {
+            return node;
+        }
+    }
+    return NULL;
 }
 
 /// returns true child node is element

@@ -1,46 +1,11 @@
 #include "include/epubfmt.h"
 #include "include/docxhandler.h"
+#include "include/EpubItems.h"
+#include "include/FootnotesPrinter.h"
 
-class EpubItem
-{
-public:
-	lString16 href;
-	lString16 mediaType;
-	lString16 id;
-	lString16 title;
 
-	EpubItem() {}
 
-	EpubItem(const EpubItem &v) : href(v.href), mediaType(v.mediaType), id(v.id) {}
 
-	EpubItem &operator=(const EpubItem &v)
-	{
-		href = v.href;
-		mediaType = v.mediaType;
-		id = v.id;
-		return *this;
-	}
-};
-
-class EpubItems : public LVPtrVector<EpubItem>
-{
-public:
-	EpubItem *findById(const lString16 &id)
-	{
-		if (id.empty())
-		{
-			return NULL;
-		}
-		for (int i = 0; i < length(); i++)
-		{
-			if (get(i)->id == id)
-			{
-				return get(i);
-			}
-		}
-		return NULL;
-	}
-};
 bool DetectEpubFormat(LVStreamRef stream)
 {
 	LVContainerRef m_arc = LVOpenArchive(stream);
@@ -423,7 +388,7 @@ void createEncryptedEpubWarningDocument(CrDom *m_doc)
 	writer.OnTagClose(NULL, L"p");
 
 	writer.OnTagOpenNoAttr(NULL, L"p");
-	lString16 txt2("Livesci doesn't support reading of DRM protected books.");
+	lString16 txt2("Reading of DRM protected books is not supported.");
 	writer.OnText(txt2.c_str(), txt2.length(), 0);
 	writer.OnTagClose(NULL, L"p");
 
@@ -721,6 +686,9 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 
 	// read content.opf
 	EpubItems epubItems;
+	EpubItems NotesItems;
+	LVArray<LinkStruct> LinksList;
+	LinksMap LinksMap;
 	//EpubItem * epubToc = NULL; //TODO
 	LVArray<EpubItem *> spineItems;
 	lString16 codeBase;
@@ -864,6 +832,26 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 				}
 			}
 		}
+        //we're counting xpaths from 1 NOT from 0
+        int refcount = 1;
+        while (1)
+        {
+            ldomNode *item = doc->nodeFromXPath(lString16("package/guide/reference[") << fmt::decimal(refcount) << "]");
+            if (!item)
+            {
+                break;
+            }
+            lString16 type = item->getAttributeValue("type");
+            lString16 href = item->getAttributeValue("href");
+            lString16 id = item->getAttributeValue("id");
+            lString16 title = item->getAttributeValue("title");
+            if(type == "notes" || type == "glossary")
+            {
+                NotesItems.add(new EpubItem(href,type,id,title));
+            }
+            refcount++;
+        }
+
 		// spine == itemrefs
 		if (epubItems.length() > 0)
 		{
@@ -894,13 +882,21 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 					{
 						break;
 					}
-						EpubItem *epubItem = epubItems.findById(item->getAttributeValue("idref"));
-						if (epubItem)
-						{
-							// TODO: add to document
-							spineItems.add(epubItem);
-						}
-				}
+                    EpubItem *epubItem = epubItems.findById(item->getAttributeValue("idref"));
+                    if (epubItem)
+                    {
+                        bool allowed = true;
+                        for (int i = 0; i < NotesItems.length(); i++)
+                        {
+                            if(epubItem->href == NotesItems.get(i)->href)
+                                  allowed = false;
+                        }
+                        if(allowed)
+                        {
+                            spineItems.add(epubItem);
+                        }
+                    }
+                }
 			}
 		}
 		delete doc;
@@ -923,19 +919,35 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 	//m_doc->setCodeBase( codeBase );
 
 	LvDocFragmentWriter appender(&writer, cs16("body"), cs16("DocFragment"), lString16::empty_str);
-	writer.OnStart(NULL);
+    LvDocFragmentWriter appender2(&writer, cs16("body"), cs16("NoteFragment"), lString16::empty_str);
+    LvDocFragmentWriter appender3(&writer, cs16("body"), cs16("NoteFragment"), lString16::empty_str);
+
+    writer.OnStart(NULL);
 	writer.OnTagOpenNoAttr(L"", L"body");
 	int fragmentCount = 0;
+	int itemcounter = 0;
 	for (int i = 0; i < spineItems.length(); i++)
 	{
 		if (spineItems[i]->mediaType == "application/xhtml+xml")
 		{
+			itemcounter++;
 			lString16 name = codeBase + spineItems[i]->href;
 			lString16 subst = cs16("_doc_fragment_") + fmt::decimal(i);
 			appender.addPathSubstitution(name, subst);
+			appender2.addPathSubstitution(name, subst);
+			appender3.addPathSubstitution(name, subst);
 			//CRLog::trace("subst: %s => %s", LCSTR(name), LCSTR(subst));
 		}
 	}
+	for (int i = 0; i < NotesItems.length(); i++)
+    {
+        lString16 name = codeBase + NotesItems[i]->href;
+        lString16 subst = cs16("_doc_fragment_") + fmt::decimal(itemcounter);
+        appender.addPathSubstitution(name, subst);
+        appender2.addPathSubstitution(name, subst);
+        appender3.addPathSubstitution(name, subst);
+        itemcounter++;
+    }
 	for (int i = 0; i < spineItems.length(); i++)
 	{
 		if (spineItems[i]->mediaType == "application/xhtml+xml")
@@ -952,6 +964,9 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 					//CRLog::trace("base: %s", UnicodeToUtf8(base).c_str());
 					//LvXmlParser
 					LvHtmlParser parser(stream, &appender, firstpage_thumb);
+					parser.setEpubNotes(NotesItems);
+					parser.setLinksList(LinksList);
+					parser.setLinksMap(LinksMap);
 					if (parser.CheckFormat() && parser.Parse())
 					{
 						// valid
@@ -964,10 +979,69 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 					{
 						CRLog::error("Document type is not XML/XHTML for fragment %s", LCSTR(name));
 					}
+                    LinksList = parser.getLinksList();
+                    LinksMap = parser.getLinksMap();
+                }
+            }
+        }
+    }
+	//CRLog::error("Linkslist length = %d",LinksList.length());
+	//for (int i = 0; i < LinksList.length(); i++)
+	//{
+	//	CRLog::error("LinksList %d = %s = %s",i,LCSTR(LinksList.get(i).id_),LCSTR(LinksList.get(i).href_));
+	//}
+	if(NotesItems.length()>0)
+	{
+		writer.OnTagOpen(L"", L"DocFragment");
+		//this excessive notefragment is inserted for correct page separation
+		writer.OnTagOpen(L"", L"NoteFragment");
+		writer.OnText(L"\u200B",1,TXTFLG_KEEP_SPACES | TXTFLG_TRIM_ALLOW_END_SPACE | TXTFLG_TRIM_ALLOW_START_SPACE);
+		writer.OnTagClose(L"", L"NoteFragment");
+
+		//special footnotes parsing
+		writer.setFlags(TXTFLG_IN_NOTES);
+		for (int i = 0; i < NotesItems.length(); i++)
+		{
+			lString16 name = codeBase + NotesItems[i]->href;
+			LVStreamRef stream = m_arc->OpenStream(name.c_str(), LVOM_READ);
+			if (!stream.isNull())
+			{
+				appender3.setCodeBase(name);
+				lString16 base = name;
+				LVExtractLastPathElement(base);
+				//CRLog::trace("base: %s", UnicodeToUtf8(base).c_str());
+				//LvXmlParser
+				LvHtmlParser parser(stream, &appender3, firstpage_thumb);
+				//parser.setLinksList(LinksList);
+				parser.setLinksMap(LinksMap);
+				if (parser.CheckFormat() && parser.ParseEpubFootnotes())
+				{
+					// valid
+					//fragmentCount++;
+					lString8 headCss = appender3.getHeadStyleText();
+					//CRLog::trace("style: %s", headCss.c_str());
+					styleParser.parse(base, headCss);
+				}
+				else
+				{
+					CRLog::error("Document type is not XML/XHTML for fragment %s", LCSTR(name));
 				}
 			}
 		}
+
+		writer.OnTagClose(L"", L"DocFragment");
 	}
+    if(LinksList.length()>0)
+    {
+	  //  writer.OnTagOpen(L"", L"NoteFragment");
+	  //  writer.OnText(L"\u200B", 1, TXTFLG_KEEP_SPACES | TXTFLG_TRIM_ALLOW_END_SPACE | TXTFLG_TRIM_ALLOW_START_SPACE);
+	  //  writer.OnTagClose(L"", L"NoteFragment");
+
+	    FootnotesPrinter::AppendLinksToDoc(m_doc, LinksList);
+    }
+    //writer.OnTagClose(L"", L"DocFragment");
+    writer.OnTagClose(L"", L"body");
+    writer.OnStop();
 
 	if (!ncxHref.empty())
 	{
@@ -990,9 +1064,6 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 			}
 		}
 	}
-
-	writer.OnTagClose(L"", L"body");
-	writer.OnStop();
 	CRLog::debug("EPUB: %d documents merged", fragmentCount);
 
 	if (!fontList.empty())
