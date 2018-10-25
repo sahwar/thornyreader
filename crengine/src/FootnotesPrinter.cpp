@@ -35,6 +35,21 @@ void FootnotesPrinter::recurseNodesToPrint(ldomNode *node, LvDomWriter *writer)
         }
         else if (child->isNodeName("a"))
         {
+            lString16 text = child->getText();
+            if(text.startsWith("["))
+            {
+                text = text.substr(1);
+            }
+            if( text.endsWith("]"))
+            {
+                text = text.substr(0,text.length()-1);
+            }
+            int num;
+            if (text.atoi(num))
+            {
+                continue;
+            }
+
             if (child->hasAttribute(attr_href))
             {
                 lString16 href = child->getHRef();
@@ -86,6 +101,14 @@ ldomNode * FootnotesPrinter::FindTextInNode(ldomNode *node)
         {
             continue;
         }
+        if(text.startsWith("["))
+        {
+            text = text.substr(1);
+        }
+        if( text.endsWith("]"))
+        {
+            text = text.substr(0,text.length()-1);
+        }
         int num;
         if (text.atoi(num))
         {
@@ -115,19 +138,23 @@ ldomNode * FootnotesPrinter::FindTextInParents(ldomNode *node)
     for (int i = index + 1; i < parent->getChildCount(); i++)
     {
         ldomNode *child = parent->getChildNode(i);
-        //CRLog::error("child path = %s",LCSTR(child->getXPath()));
-
         lString16 text = child->getText();
-        //CRLog::error("text = %s",LCSTR(text));
-
         if (text.length() == 0)
         {
             continue;
         }
+        if(text.startsWith("["))
+        {
+            text = text.substr(1);
+        }
+        if( text.endsWith("]"))
+        {
+            text = text.substr(0,text.length()-1);
+        }
         int num;
         if (text.atoi(num))
         {
-            //CRLog::error("num = %d",num);
+            CRLog::error("num = %d",num);
             continue;
         }
         //text is not a number
@@ -278,9 +305,21 @@ bool FootnotesPrinter::AppendLinksToDoc(CrDom *m_doc, LVArray<LinkStruct> LinksL
             writer.OnTagOpen(L"", L"title");
             writer.OnText(num.c_str(), num.length(), 0);
             writer.OnTagClose(L"", L"title");
-            writer.OnTagOpen(L"", found->getNodeName().c_str());
-            recurseNodesToPrint(found, &writer);
-            writer.OnTagClose(L"", found->getNodeName().c_str());
+            if(found->isText())
+            {
+                lString16 text = found->getText();
+                writer.OnTagOpen(L"", L"p");
+                writer.OnTagOpen(L"", L"span");
+                writer.OnText(text.c_str(), text.length(),0);
+                writer.OnTagClose(L"", L"span");
+                writer.OnTagClose(L"", L"p");
+            }
+            else
+            {
+                writer.OnTagOpen(L"", found->getNodeName().c_str());
+                recurseNodesToPrint(found, &writer);
+                writer.OnTagClose(L"", found->getNodeName().c_str());
+            }
 
             for (int i = index + 1; i < parent->getChildCount(); i++)
             {

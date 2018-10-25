@@ -2610,6 +2610,9 @@ bool LvXmlParser::Parse()
     bool in_sup = false;
     bool in_a = false;
     bool in_a_sup = false;
+    bool in_aside = false;
+    bool in_section = false;
+    bool in_rearnote = false;
 
     bool is_note= false;
     bool save_a_content= false;
@@ -2689,7 +2692,6 @@ bool LvXmlParser::Parse()
                     tagns.lowercase();
                     tagname.lowercase();
                 }
-
                 /*if(tagname=="style") //|| tagname=="table" || tagname=="tr" || tagname=="td") // skipping all <style> tags and <table> <tr> <td> tags
                 {
                     //if (attrname=="name")
@@ -2766,6 +2768,32 @@ bool LvXmlParser::Parse()
                         in_sup = false;
                     }
                 }
+                //epub3
+                if (tagname == "aside" )
+                {
+                    if(!close_flag)
+                    {
+                        in_aside = true;
+                    }
+                    else
+                    {
+                        callback_->OnAttribute(L"",L"class",L"hidden");
+                        in_aside = false;
+                    }
+                }
+
+                if(tagname=="section")
+                {
+                    if(!close_flag)
+                    {
+                        in_section = true;
+                    }
+                    else
+                    {
+                        in_section = false;
+                        in_rearnote = false;
+                    }
+                }
 
                 if (tagname == "a")
                 {
@@ -2791,7 +2819,7 @@ bool LvXmlParser::Parse()
                                 flag2 = true;
                             }
                             int bufnum = buffer.atoi();
-                            if(bufnum>0 && ((flag1 && flag2) || in_sup || in_a_sup))
+                            if(!in_rearnote && !in_aside && bufnum>0 && ((flag1 && flag2) || in_sup || in_a_sup))
                             {
                                 if(link_id.empty())
                                 {
@@ -2958,6 +2986,16 @@ bool LvXmlParser::Parse()
                     PreProcessXmlString(attrvalue, 0, m_conv_table);
                 }
 
+                //epub3
+                if(in_section && attrns == "epub" && attrname == "type" && attrvalue == "rearnote")
+                {
+                    in_rearnote = true;
+                }
+                if(attrns == "epub" && attrname == "type" && attrvalue == "noteref")
+                {
+                    attrns = "";
+                    attrvalue = "note";
+                }
                 if(in_body && attrname == "name" && attrvalue == "notes")
                 {
                     in_body_notes = true;
