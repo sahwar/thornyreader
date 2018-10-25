@@ -5609,6 +5609,10 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
                 {
                     return true;
                 }
+                if(name == "p" && index == 1 )
+                {
+                    if(parentnode->getChildNode(0)->getText().empty()) return true;
+                }
                 if(name == "blockquote" && index == 0)
                 {
                     return true;
