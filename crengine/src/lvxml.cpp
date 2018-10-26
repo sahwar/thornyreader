@@ -11,6 +11,7 @@
 
 *******************************************************/
 
+#include "include/FootnotesPrinter.h"
 #include "include/lvxml.h"
 #include "include/crtxtenc.h"
 #include "include/fb2def.h"
@@ -2613,13 +2614,18 @@ bool LvXmlParser::Parse()
     bool in_aside = false;
     bool in_section = false;
     bool in_rearnote = false;
+    bool in_rearnotes = false;
+    bool in_div = false;
+    bool in_div_section = false;
 
     bool is_note= false;
     bool save_a_content= false;
+    bool save_notes_title = false;
     lString16 link_href;
     lString16 buffer;
     lString16 link_id;
     lString16 section_id;
+    lString16 aside_old_id;
 
 	for (; !eof_ && !error && !firstpage_thumb_num_reached ;)
     {
@@ -2707,12 +2713,34 @@ bool LvXmlParser::Parse()
                     //}}
                 }*/
 
-                if (tagname=="br" && close_flag)
+                if(tagname=="div")
                 {
-                    //  callback_->OnTagOpen(L"",L"br");
-                    callback_->OnText(L"\u200B", 1, flags);
-                    //  callback_->OnTagClose(L"",L"br");
-                    // break;
+                    if (!close_flag)
+                    {
+                        in_div = true;
+                    }
+                    else
+                    {
+                        in_div = false;
+                        if(in_div_section)
+                        {
+                            callback_->OnTagClose(L"",L"p");
+                        }
+                        in_div_section = false;
+                    }
+                }
+
+                if (tagname=="br")
+                {
+                    callback_->OnTagOpen(L"",L"p");
+                    callback_->OnText(L"\u200b", 1, flags);
+                    callback_->OnTagClose(L"",L"p");
+                    if (SkipTillChar('>'))
+                    {
+                        m_state = ps_text;
+                        ch = ReadCharFromBuffer();
+                    }
+                    break;
                 }
                 if(tagname=="blockquote")
                 {
@@ -2777,8 +2805,50 @@ bool LvXmlParser::Parse()
                     }
                     else
                     {
+                        //lString16 aside_new_id = lString16("aside_") + lString16::itoa(AsidesList_.links_.length());
+
+                        //this->AsidesList_.links_.add(LinkStruct(0,lString16::empty_str,callback_->convertId(aside_old_id)));
+
+//                        CRLog::error("aside old = %s, new = %s",LCSTR(aside_old_id),LCSTR(aside_new_id));
+                        //callback_->OnAttribute(L"",L"id",aside_new_id.c_str());
+                        callback_->OnAttribute(L"",L"id",L"~");
                         callback_->OnAttribute(L"",L"class",L"hidden");
                         in_aside = false;
+                    }
+                }
+
+                if(in_div_section &&(tagname =="h1"||
+                                  tagname =="h2"||
+                                  tagname =="h3"||
+                                  tagname =="h4"||
+                                  tagname =="h5"||
+                                  tagname =="h6"||
+                                  tagname =="title"))
+                {
+                    if(!close_flag)
+                    {
+                        callback_->OnAttribute(L"",L"class",L"nobreak");
+                    }
+                    else
+                    {
+                        callback_->OnText(L"   ", 3, flags);
+                    }
+                }
+                if(in_rearnotes && (tagname =="h1"||
+                                    tagname =="h2"||
+                                    tagname =="h3"||
+                                    tagname =="h4"||
+                                    tagname =="h5"||
+                                    tagname =="h6"||
+                                    tagname =="title"))
+                {
+                    if(!close_flag)
+                    {
+                        save_notes_title = true;
+                    }
+                    else
+                    {
+                        save_notes_title = false;
                     }
                 }
 
@@ -2792,6 +2862,7 @@ bool LvXmlParser::Parse()
                     {
                         in_section = false;
                         in_rearnote = false;
+                        in_rearnotes = false;
                     }
                 }
 
@@ -2824,15 +2895,21 @@ bool LvXmlParser::Parse()
                                 if(link_id.empty())
                                 {
                                     lString16 temp = lString16("back_") + lString16::itoa(LinksList_.length());
-                                    link_id = lString16("#") + callback_->convertId(temp);
+                                    link_id = lString16("#") +temp; // + callback_->convertId(temp);
                                     callback_->OnAttribute(L"", L"id", temp.c_str());
                                 }
-                                //callback_->OnAttribute(L"", L"nref", (link_href + lString16("_note")).c_str());
+
+                                //CRLog::error("link_href = %s", LCSTR(link_href));
+                                callback_->OnAttribute(L"", L"nref", (link_href + lString16("_note")).c_str());
                                 callback_->OnAttribute(L"", L"type", L"note");
-                                LinksList_.add(LinkStruct(bufnum,link_id, link_href));
-                                LinksMap_[link_href.getHash()] = link_id;
+                                lString16 tmp_href = callback_->convertHref(link_href);
+                                //lString16 tmp_id = callback_->convertId(link_id);
+                                lString16 tmp_id = link_id;
+                                LinksList_.add(LinkStruct(bufnum, tmp_id, tmp_href));
+                                LinksMap_[tmp_href.getHash()] = link_id;
                                 //CRLog::error("LIST added [%s] to [%s]",LCSTR(link_id),LCSTR(link_href));
                                 buffer = lString16::empty_str;
+
                             }
                         }
                         save_a_content = false;
@@ -2986,18 +3063,39 @@ bool LvXmlParser::Parse()
                     PreProcessXmlString(attrvalue, 0, m_conv_table);
                 }
 
+                if(in_div && attrname == "class" && attrvalue == "section")
+                {
+                    in_div_section = true;
+                    callback_->OnTagOpenNoAttr(L"",L"p");
+                }
                 //epub3
-                if(in_section && attrns == "epub" && attrname == "type" && attrvalue == "rearnote")
+                if(in_section && attrname == "type" && attrvalue == "rearnote")
                 {
                     in_rearnote = true;
                 }
+
+                if(tagname=="section" && attrname == "type" && attrvalue == "rearnotes")
+                {
+                    in_rearnotes = true;
+                    callback_->OnAttribute(L"",L"class",L"hidden");
+                }
+
                 if(attrns == "epub" && attrname == "type" && attrvalue == "noteref")
                 {
                     attrns = "";
                     attrvalue = "note";
                 }
+                if(in_aside)
+                {
+                    if(attrname == "id")
+                    {
+                        aside_old_id = attrvalue;
+                    }
+                }
+
                 if(in_body && attrname == "name" && attrvalue == "notes")
                 {
+                    //CRLog::error("in_body_notes");
                     in_body_notes = true;
                 }
 
@@ -3005,27 +3103,11 @@ bool LvXmlParser::Parse()
                 {
                     section_id = attrvalue;
                 }
-                if(in_a && attrname == "href" && !Notes_exists)
-                {
-                    callback_->OnAttribute(L"", L"nref", (attrvalue + lString16("_note")).c_str());
-                    //is_note = true;
-                }
-
-                if(in_a && attrname == "href" && Notes_exists)
-                {
-                    if(EpubNotes_->hrefCheck(attrvalue))
-                    {
-                        callback_->OnAttribute(L"", L"type", L"note");
-                        callback_->OnAttribute(L"", L"nref", (attrvalue + lString16("_note")).c_str());
-                        is_note = true;
-                    }
-                }
-
                 if (in_a)// && is_note)
                 {
                     if (attrname == "href")
                     {
-                        link_href = callback_->convertHref(attrvalue);
+                        link_href = attrvalue;
                     }
                     if (attrname == "id")
                     {
@@ -3057,7 +3139,11 @@ bool LvXmlParser::Parse()
 //                        CRLog::trace("Text[%d]:", txt_count);
 //                    }
 //                }
-            if(save_a_content)
+            if(save_notes_title)
+            {
+                ReadTextToString(FnotesTitle_,true);
+            }
+            else if(save_a_content)
             {
                 ReadTextToString(buffer,true);
                 //CRLog::error("buffer = %s",LCSTR(buffer));
@@ -3066,6 +3152,7 @@ bool LvXmlParser::Parse()
             {
                 ReadText();
             }
+
             fragments_counter++;
 
 	        if(need_coverpage_)
@@ -5457,6 +5544,16 @@ void LvXmlParser::setLinksList(LVArray<LinkStruct> LinksList)
 LVArray<LinkStruct> LvXmlParser::getLinksList()
 {
     return LinksList_;
+}
+
+void LvXmlParser::setFnotesTitle(lString16 title)
+{
+    FnotesTitle_ = title;
+}
+
+lString16 LvXmlParser::getFnotesTitle()
+{
+    return FnotesTitle_;
 }
 
 void LvXmlParser::setLinksMap(LinksMap LinksMap)

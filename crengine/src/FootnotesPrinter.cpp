@@ -217,30 +217,30 @@ bool FootnotesPrinter::NodeIsBreak(ldomNode *node, lString16 nextId)
     return false;
 }
 
-bool FootnotesPrinter::AppendLinksToDoc(CrDom *m_doc, LVArray<LinkStruct> LinksList)
+void FootnotesPrinter::PrintNum(lString16 num)
 {
-   // CRLog::error("PRINTER");
-    LvDomWriter writer(m_doc);
+    writer_->OnTagOpen(L"", L"title");
+    writer_->OnText(num.c_str(), num.length(), 0);
+    writer_->OnTagClose(L"", L"title");
+}
 
-    writer.OnTagOpenNoAttr(L"", L"FictionBook");
-    writer.OnTagOpenNoAttr(L"", L"FictionBook");
-    writer.OnTagOpen(L"", L"body");
-    writer.OnAttribute(L"", L"name", L"notes_hidden");
-    writer.OnAttribute(L"", L"id", L"__notes_hidden__"); // used in LDocView::GetpagesCount() for hiding all the footnotes pages.
+void FootnotesPrinter::PrintLinkNum(lString16 num, lString16 id)
+{
 
-    lString16 hdr("Footnotes");
-    lString16 space("\u200b");
-    writer.OnTagOpenNoAttr(L"", L"h1");
-    writer.OnText(space.c_str(), space.length(), 0); // h1 adds new page break
-    writer.OnTagClose(L"", L"h1");
+    writer_->OnTagOpen(L"", L"title");
+    writer_->OnTagOpen(L"", L"a");
+    writer_->OnAttribute(L"", L"href", ("#"+id).c_str());
+    writer_->OnText(num.c_str(), num.length(), 0);
+    writer_->OnTagClose(L"", L"a");
+    writer_->OnTagClose(L"", L"title");
+}
 
-    writer.OnTagOpenNoAttr(L"", L"div");
-    writer.OnText(space.c_str(), space.length(), 0); // h1 adds new page break
-    writer.OnTagClose(L"", L"div");
 
-    writer.OnTagOpenNoAttr(L"", L"h1");
-    writer.OnText(hdr.c_str(), hdr.length(), 0); // footnotes header text
-    writer.OnTagClose(L"", L"h1");
+bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
+{
+    //CRLog::error("PRINTER");
+
+    PrintHeader();
 
     for (int i = 0; i < LinksList.length(); i++)
     {
@@ -254,7 +254,7 @@ bool FootnotesPrinter::AppendLinksToDoc(CrDom *m_doc, LVArray<LinkStruct> LinksL
         }
         lString16 num = lString16::itoa(currlink.num_) + lString16("  ");
         lString16 href = (currlink.href_.startsWith("#")) ? currlink.href_.substr(1) : currlink.href_;
-        ldomNode *node = m_doc->getElementById(href.c_str());
+        ldomNode *node = doc_->getElementById(href.c_str());
         if (node == NULL)
         {
             CRLog::error("Failed to get node from href = %s, skipping", LCSTR(href));
@@ -265,22 +265,29 @@ bool FootnotesPrinter::AppendLinksToDoc(CrDom *m_doc, LVArray<LinkStruct> LinksL
             CRLog::error("Node is Text, skipping");
             continue;
         }
+        if(node->isNodeName("DocFragment"))
+        {
+            continue;
+        }
         href = href + lString16("_note");
         ldomNode *found;
         if (node->isNodeName("section"))
         {
             //fb2, epub structure
+            writer_->OnTagOpen(L"", L"section");
+            writer_->OnAttribute(L"", L"id", href.c_str());
 
-            writer.OnTagOpen(L"", L"section");
-            writer.OnAttribute(L"", L"id", href.c_str());
+            if(hidden_)
+            {
+                PrintNum(num);
+            }
+            else
+            {
+                PrintLinkNum(num, currlink.id_);
+            }
+            recurseNodesToPrint(node, writer_);
 
-            writer.OnTagOpen(L"", L"title");
-            writer.OnText(num.c_str(), num.length(), 0);
-            writer.OnTagClose(L"", L"title");
-
-            recurseNodesToPrint(node, &writer);
-
-            writer.OnTagClose(L"", L"section");
+            writer_->OnTagClose(L"", L"section");
         }
         else
         {
@@ -299,26 +306,32 @@ bool FootnotesPrinter::AppendLinksToDoc(CrDom *m_doc, LVArray<LinkStruct> LinksL
             {
                 return NULL;
             }
-            writer.OnTagOpen(L"", L"section");
-            writer.OnAttribute(L"", L"id", href.c_str());
+            writer_->OnTagOpen(L"", L"section");
+            writer_->OnAttribute(L"", L"id", href.c_str());
 
-            writer.OnTagOpen(L"", L"title");
-            writer.OnText(num.c_str(), num.length(), 0);
-            writer.OnTagClose(L"", L"title");
-            if(found->isText())
+            if(hidden_)
             {
-                lString16 text = found->getText();
-                writer.OnTagOpen(L"", L"p");
-                writer.OnTagOpen(L"", L"span");
-                writer.OnText(text.c_str(), text.length(),0);
-                writer.OnTagClose(L"", L"span");
-                writer.OnTagClose(L"", L"p");
+                PrintNum(num);
             }
             else
             {
-                writer.OnTagOpen(L"", found->getNodeName().c_str());
-                recurseNodesToPrint(found, &writer);
-                writer.OnTagClose(L"", found->getNodeName().c_str());
+                PrintLinkNum(num, currlink.id_);
+            }
+
+            if(found->isText())
+            {
+                lString16 text = found->getText();
+                writer_->OnTagOpen(L"", L"p");
+                writer_->OnTagOpen(L"", L"span");
+                writer_->OnText(text.c_str(), text.length(),0);
+                writer_->OnTagClose(L"", L"span");
+                writer_->OnTagClose(L"", L"p");
+            }
+            else
+            {
+                writer_->OnTagOpen(L"", found->getNodeName().c_str());
+                recurseNodesToPrint(found, writer_);
+                writer_->OnTagClose(L"", found->getNodeName().c_str());
             }
 
             for (int i = index + 1; i < parent->getChildCount(); i++)
@@ -330,17 +343,45 @@ bool FootnotesPrinter::AppendLinksToDoc(CrDom *m_doc, LVArray<LinkStruct> LinksL
                     break;
                 }
                 //text is not a number
-                writer.OnTagClose(L"", child->getNodeName().c_str());
-                recurseNodesToPrint(child, &writer);
-                writer.OnTagClose(L"", child->getNodeName().c_str());
+                writer_->OnTagClose(L"", child->getNodeName().c_str());
+                recurseNodesToPrint(child, writer_);
+                writer_->OnTagClose(L"", child->getNodeName().c_str());
             }
-            writer.OnTagClose(L"", L"section");
+            writer_->OnTagClose(L"", L"section");
         }
     }
 
-    writer.OnTagClose(L"", L"body");
+    writer_->OnTagClose(L"", L"body");
     //writer.OnTagOpen(L"", L"NoteFragment");
 
     return true;
 }
 
+void FootnotesPrinter::PrintHeader()
+{
+    writer_->OnTagOpenNoAttr(L"", L"FictionBook");
+    writer_->OnTagOpenNoAttr(L"", L"FictionBook");
+    writer_->OnTagOpen(L"", L"body");
+    lString16 space("\u200b");
+
+    if(hidden_)
+    {
+        writer_->OnAttribute(L"", L"name", L"notes_hidden");
+        writer_->OnAttribute(L"", L"id", NOTES_HIDDEN_ID); // used in LDocView::GetpagesCount() for hiding all the footnotes pages.
+        writer_->OnTagOpenNoAttr(L"", L"h1");
+        writer_->OnText(space.c_str(), space.length(), 0); // h1 adds new page break
+        writer_->OnTagClose(L"", L"h1");
+
+        writer_->OnTagOpenNoAttr(L"", L"div");
+        writer_->OnText(space.c_str(), space.length(), 0); // h1 adds new page break
+        writer_->OnTagClose(L"", L"div");
+    }
+    else
+    {
+        writer_->OnAttribute(L"", L"name", L"notes");
+    }
+
+    writer_->OnTagOpenNoAttr(L"", L"h1");
+    writer_->OnText(title_.c_str(), title_.length(), 0); // footnotes header text
+    writer_->OnTagClose(L"", L"h1");
+}

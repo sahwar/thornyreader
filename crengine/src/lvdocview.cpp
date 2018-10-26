@@ -802,7 +802,7 @@ int LVDocView::GetPagesCount()
     return (pages_list_.length());
     #endif
 
-    lUInt16 id = this->GetCrDom()->getAttrValueIndex(L"__notes_hidden__");
+    lUInt16 id = this->GetCrDom()->getAttrValueIndex(NOTES_HIDDEN_ID);
     if (this->cr_dom_->getNodeById(id) != NULL)
     {
         ldomNode * notes = this->cr_dom_->getNodeById(id);

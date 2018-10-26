@@ -689,6 +689,7 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 	EpubItems NotesItems;
 	LVArray<LinkStruct> LinksList;
 	LinksMap LinksMap;
+	lString16 FnotesTitle;
 	//EpubItem * epubToc = NULL; //TODO
 	LVArray<EpubItem *> spineItems;
 	lString16 codeBase;
@@ -967,6 +968,7 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 					parser.setEpubNotes(NotesItems);
 					parser.setLinksList(LinksList);
 					parser.setLinksMap(LinksMap);
+					parser.setFnotesTitle(FnotesTitle);
 					if (parser.CheckFormat() && parser.Parse())
 					{
 						// valid
@@ -981,15 +983,25 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 					}
                     LinksList = parser.getLinksList();
                     LinksMap = parser.getLinksMap();
+                    FnotesTitle = parser.getFnotesTitle();
                 }
             }
         }
     }
-	//CRLog::error("Linkslist length = %d",LinksList.length());
-	//for (int i = 0; i < LinksList.length(); i++)
-	//{
-	//	CRLog::error("LinksList %d = %s = %s",i,LCSTR(LinksList.get(i).id_),LCSTR(LinksList.get(i).href_));
-	//}
+
+	if(LinksList.length()>0 && !FnotesTitle.empty())
+	{
+		//CRLog::error("FnotesTitle = %s",LCSTR(FnotesTitle));
+		for (int i = 0; i < LinksList.length(); i++)
+		{
+		    LinkStruct link = LinksList.get(i);
+			//CRLog::error("List item #%d = %s , %s",i,LCSTR(link.id_),LCSTR(link.href_));
+		}
+        VisiNotesPrinter printer(m_doc);
+        printer.SetTitle(FnotesTitle);
+		printer.PrintLinksList(LinksList);
+	}
+
 	if(NotesItems.length()>0)
 	{
 		writer.OnTagOpen(L"", L"DocFragment");
@@ -1031,13 +1043,20 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 
 		writer.OnTagClose(L"", L"DocFragment");
 	}
+
+    //CRLog::error("Linkslist length = %d",LinksList.length());
+    for (int i = 0; i < LinksList.length(); i++)
+    {
+    	//CRLog::error("LinksList %d = %s = %s",i,LCSTR(LinksList.get(i).id_),LCSTR(LinksList.get(i).href_));
+    }
     if(LinksList.length()>0)
     {
 	  //  writer.OnTagOpen(L"", L"NoteFragment");
 	  //  writer.OnText(L"\u200B", 1, TXTFLG_KEEP_SPACES | TXTFLG_TRIM_ALLOW_END_SPACE | TXTFLG_TRIM_ALLOW_START_SPACE);
 	  //  writer.OnTagClose(L"", L"NoteFragment");
-
-	    FootnotesPrinter::AppendLinksToDoc(m_doc, LinksList);
+        //CRLog::error("printing footnotes");
+        FootnotesPrinter printer(m_doc);
+	    printer.PrintLinksList(LinksList);
     }
     //writer.OnTagClose(L"", L"DocFragment");
     writer.OnTagClose(L"", L"body");

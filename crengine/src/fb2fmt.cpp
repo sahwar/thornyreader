@@ -33,7 +33,8 @@ bool ImportFb2Document(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
     //{
     //	CRLog::error("LinksList %d = %s = %s",LinksList.get(i).num_,LCSTR(LinksList.get(i).id_),LCSTR(LinksList.get(i).href_));
     writer.OnStart(&parser);
-    FootnotesPrinter::AppendLinksToDoc(m_doc,LinksList);
+    FootnotesPrinter printer(m_doc);
+    printer.PrintLinksList(LinksList);
     writer.OnStop();
 
     return true;

@@ -331,6 +331,7 @@ private:
     bool tags_init_ = false;
     EpubItems * EpubNotes_;
     LVArray<LinkStruct> LinksList_;
+    lString16 FnotesTitle_;
     LinksMap LinksMap_;
     bool Notes_exists = false;
 protected:
@@ -352,6 +353,10 @@ public:
     void setLinksList(LVArray<LinkStruct> LinksList);
 
     LVArray<LinkStruct> getLinksList();
+
+    void setFnotesTitle(lString16 title);
+
+    lString16 getFnotesTitle();
     /// sets charset by name
     virtual void SetCharset(const lChar16* name);
     /// resets parsing, moves to beginning of stream

@@ -86,6 +86,13 @@ a, b, strong, q, u, del, s, strike, small, big, sub, sup, acronym, span, font {
 display: none;
 }
 
+.nobreak{
+page-break-before: avoid;
+page-break-inside: avoid;
+page-break-after: avoid;
+display: run-in;
+}
+
 b, strong {
   font-weight: bold;
 }
