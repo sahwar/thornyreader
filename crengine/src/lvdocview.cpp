@@ -754,6 +754,7 @@ void LVDocView::DrawPageTo(LVDrawBuf *drawbuf, LVRendPageInfo &page, lvRect *pag
 	}
 	// draw footnotes
 	int fny = clip.top + (page.height ? page.height + FOOTNOTE_MARGIN : FOOTNOTE_MARGIN);
+    fny += (fontMan->font_size_ * 0.25);
 	int fy = fny;
 	bool footnoteDrawed = false;
 	for (int fn = 0; fn < page.footnotes.length(); fn++)
@@ -762,7 +763,7 @@ void LVDocView::DrawPageTo(LVDrawBuf *drawbuf, LVRendPageInfo &page, lvRect *pag
 		int fheight = page.footnotes[fn].height;
 		clip.top = fy + offset;
 		clip.left = pageRect->left + margins_.left;
-		clip.right = pageRect->right - margins_.right;
+		clip.right = pageRect->right - margins_.right + gTextLeftShift;
 		clip.bottom = fy + offset + fheight;
 		drawbuf->SetClipRect(&clip);
 		DrawDocument(
@@ -1916,7 +1917,7 @@ LVArray<TextRect> LVDocView::GetPageFootnotesText(int page, bool rightpage)
 	int start_y = first_fnote.start;
 	int end_y = last_fnote.start + last_fnote.height;
 
-	int y_zero = 10 + margins_.top + this->pages_list_[page]->height;
+	int y_zero = 10 + margins_.top + this->pages_list_[page]->height + (fontMan->font_size_ * 0.25);
 
 	lvPoint start_point(0, start_y);
 	lvPoint end_point(0, end_y);
