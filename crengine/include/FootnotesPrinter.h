@@ -42,22 +42,24 @@ public:
 
     void PrintLinkNum(lString16 num, lString16 id);
 
-    lString16 StripDocFragment(lString16 in);
+    virtual bool PrintIsAllowed(lString16 href){ return true;};
 };
 
-class VisiNotesPrinter : public  FootnotesPrinter
+class Epub3NotesPrinter : public  FootnotesPrinter
 {
+private:
+    LinksMap AsidesMap_;
 public:
-    VisiNotesPrinter(){}
+    Epub3NotesPrinter(){}
 
-    VisiNotesPrinter(CrDom *m_doc){
+    Epub3NotesPrinter(CrDom *m_doc, Epub3Notes Epub3Notes){
+        AsidesMap_ = Epub3Notes.AsidesMap_;
+        title_ = Epub3Notes.FootnotesTitle_;
         writer_ = new LvDomWriter(m_doc);
         doc_ = m_doc;
         hidden_ = false;
     }
-    void SetTitle(lString16 title){title_ = title;}
-
-    void PrintNum(lString16 num, lString16 id);
+    bool PrintIsAllowed(lString16 href);
 };
 
 #endif //CODE_THORNYREADER_PURE_FOOTNOTESPRINTER_H

@@ -3,6 +3,7 @@
 
 #include <crengine/include/lvstring.h>
 #include <crengine/include/lvptrvec.h>
+typedef std::map<lUInt32,lString16> LinksMap;
 
 class EpubItem
 {
@@ -83,6 +84,19 @@ public:
     LinkStruct(){}
     LinkStruct(int num, lString16 id, lString16 href):num_(num), id_(id), href_(href) {}
     ~LinkStruct(){}
+};
+
+class Epub3Notes
+{
+public:
+    LinksMap AsidesMap_;
+    lString16 FootnotesTitle_;
+    void addTitle(lString16 title){FootnotesTitle_ = title; }
+    void AddAside(lString16 href) {
+        lUInt32 hash = href.getHash();
+        AsidesMap_[hash] = "1";
+    }
+    int size() { return AsidesMap_.size(); }
 };
 
 #endif //CODE_THORNYREADER_PURE_EPUBITEMS_H

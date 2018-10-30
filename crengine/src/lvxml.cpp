@@ -3089,7 +3089,18 @@ bool LvXmlParser::Parse()
                 {
                     if(attrname == "id")
                     {
+                        //CRLog::error("attrval = %d",("#" + callback_->convertId(attrvalue)).getHash());
+                        lString16 hrf = "#" + callback_->convertId(attrvalue);
+                        Epub3Notes_.AddAside(hrf);
                         aside_old_id = attrvalue;
+                    }
+                }
+                if(in_rearnote )
+                {
+                    if(attrname == "id")
+                    {
+                        lString16 hrf = "#" + callback_->convertId(attrvalue);
+                        Epub3Notes_.AddAside(hrf);
                     }
                 }
 
@@ -3141,7 +3152,7 @@ bool LvXmlParser::Parse()
 //                }
             if(save_notes_title)
             {
-                ReadTextToString(FnotesTitle_,true);
+                ReadTextToString(Epub3Notes_.FootnotesTitle_,true);
             }
             else if(save_a_content)
             {
@@ -5546,16 +5557,6 @@ LVArray<LinkStruct> LvXmlParser::getLinksList()
     return LinksList_;
 }
 
-void LvXmlParser::setFnotesTitle(lString16 title)
-{
-    FnotesTitle_ = title;
-}
-
-lString16 LvXmlParser::getFnotesTitle()
-{
-    return FnotesTitle_;
-}
-
 void LvXmlParser::setLinksMap(LinksMap LinksMap)
 {
     LinksMap_ = LinksMap;
@@ -5564,6 +5565,16 @@ void LvXmlParser::setLinksMap(LinksMap LinksMap)
 LinksMap LvXmlParser::getLinksMap()
 {
     return LinksMap_;
+}
+
+void LvXmlParser::setEpub3Notes(Epub3Notes Epub3Notes)
+{
+    Epub3Notes_ = Epub3Notes;
+}
+
+Epub3Notes LvXmlParser::getEpub3Notes()
+{
+    return Epub3Notes_;
 }
 
 lString16 htmlCharset(lString16 htmlHeader)

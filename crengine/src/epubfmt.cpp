@@ -689,7 +689,7 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 	EpubItems NotesItems;
 	LVArray<LinkStruct> LinksList;
 	LinksMap LinksMap;
-	lString16 FnotesTitle;
+	Epub3Notes Epub3Notes;
 	//EpubItem * epubToc = NULL; //TODO
 	LVArray<EpubItem *> spineItems;
 	lString16 codeBase;
@@ -968,7 +968,7 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 					parser.setEpubNotes(NotesItems);
 					parser.setLinksList(LinksList);
 					parser.setLinksMap(LinksMap);
-					parser.setFnotesTitle(FnotesTitle);
+					parser.setEpub3Notes(Epub3Notes);
 					if (parser.CheckFormat() && parser.Parse())
 					{
 						// valid
@@ -983,22 +983,23 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 					}
                     LinksList = parser.getLinksList();
                     LinksMap = parser.getLinksMap();
-                    FnotesTitle = parser.getFnotesTitle();
+					Epub3Notes = parser.getEpub3Notes();
                 }
             }
         }
     }
 
-	if(LinksList.length()>0 && !FnotesTitle.empty())
+	if(LinksList.length()>0 && Epub3Notes.size() > 0)
 	{
 		//CRLog::error("FnotesTitle = %s",LCSTR(FnotesTitle));
+		/*
 		for (int i = 0; i < LinksList.length(); i++)
 		{
 		    LinkStruct link = LinksList.get(i);
-			//CRLog::error("List item #%d = %s , %s",i,LCSTR(link.id_),LCSTR(link.href_));
+			CRLog::error("List item #%d = %s , %s",i,LCSTR(link.id_),LCSTR(link.href_));
 		}
-        VisiNotesPrinter printer(m_doc);
-        printer.SetTitle(FnotesTitle);
+		*/
+        Epub3NotesPrinter printer(m_doc,Epub3Notes);
 		printer.PrintLinksList(LinksList);
 	}
 

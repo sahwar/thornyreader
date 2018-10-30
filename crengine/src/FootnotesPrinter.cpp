@@ -235,7 +235,6 @@ void FootnotesPrinter::PrintLinkNum(lString16 num, lString16 id)
     writer_->OnTagClose(L"", L"title");
 }
 
-
 bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
 {
     //CRLog::error("PRINTER");
@@ -248,6 +247,11 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
         LinkStruct currlink = LinksList.get(i);
         LinkStruct nextlink = (i+1<LinksList.length())? LinksList.get(i+1) : LinkStruct();
         lString16 nextid;
+
+        if(!this->PrintIsAllowed(currlink.href_))
+        {
+            continue;
+        }
         if (!nextlink.href_.empty())
         {
             nextid = (nextlink.href_.startsWith("#")) ? nextlink.href_.substr(1) : nextlink.href_;
@@ -269,7 +273,10 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
         {
             continue;
         }
-        href = href + lString16("_note");
+        if(this->hidden_)
+        {
+            href = href + lString16("_note");
+        }
         ldomNode *found;
         if (node->isNodeName("section"))
         {
@@ -384,4 +391,13 @@ void FootnotesPrinter::PrintHeader()
     writer_->OnTagOpenNoAttr(L"", L"h1");
     writer_->OnText(title_.c_str(), title_.length(), 0); // footnotes header text
     writer_->OnTagClose(L"", L"h1");
+}
+
+bool Epub3NotesPrinter::PrintIsAllowed(lString16 href)
+{
+    if (AsidesMap_.find(href.getHash()) != AsidesMap_.end())
+    {
+        return true;
+    }
+    return false;
 }
