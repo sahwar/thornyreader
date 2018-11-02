@@ -2650,7 +2650,7 @@ void LvDomWriter::OnTagClose(const lChar16*, const lChar16* tagname) {
             _currNode->getElement()->getAttributeValue("type") == "text/css") {
             lString16 href = _currNode->getElement()->getAttributeValue("href");
             lString16 stylesheetFile = LVCombinePaths(doc_->getCodeBase(), href);
-            CRLog::trace("Internal stylesheet file: %s", LCSTR(stylesheetFile));
+            //CRLog::trace("Internal stylesheet file: %s", LCSTR(stylesheetFile));
             doc_->stylesheet_file_name_ = stylesheetFile;
             doc_->applyDocStylesheet();
         }
@@ -6512,7 +6512,7 @@ void LvDomAutocloseWriter::OnTagClose(const lChar16* /*nsname*/, const lChar16* 
 
             lString16 href = _currNode->getElement()->getAttributeValue("href");
             lString16 stylesheetFile = LVCombinePaths(doc_->getCodeBase(), href);
-            CRLog::trace("Internal stylesheet file: %s", LCSTR(stylesheetFile));
+            //CRLog::trace("Internal stylesheet file: %s", LCSTR(stylesheetFile));
             doc_->stylesheet_file_name_ = stylesheetFile;
             doc_->applyDocStylesheet();
         }
