@@ -6,6 +6,7 @@
 #include "thornyreader/include/StSocket.h"
 #include "include/CreBridge.h"
 #include "include/mobihandler.h"
+#include "thornyreader_version.h"
 
 static int CeilToEvenInt(int n)
 {

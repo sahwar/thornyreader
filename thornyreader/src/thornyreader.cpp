@@ -16,6 +16,7 @@
 
 #include <android/log.h>
 #include "thornyreader.h"
+#include "thornyreader_version.h"
 
 const bool ThornyBuildDebug() {
 #if !defined(NDEBUG) || defined(DEBUG) || defined(_DEBUG) || defined(TRDEBUG)

@@ -20,7 +20,6 @@
 #include <fcntl.h>
 #include <string>
 #include <android/log.h>
-#include "thornyreader_version.h"
 #include "debug_generate_crash.h"
 #include "StProtocol.h"
 
