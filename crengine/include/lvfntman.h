@@ -212,9 +212,7 @@ public:
     /// returns font family id
     virtual css_font_family_t getFontFamily() const { return _family; };
     /// draws text string
-    virtual void DrawTextString(LVDrawBuf* buf, int x, int y, const lChar16* text, int len,
-                       lChar16 def_char, lUInt32 * palette = NULL, bool addHyphen = false,
-                       lUInt32 flags=0, int letter_spacing=0 ) = 0;
+    virtual void DrawTextString(LVDrawBuf *buf, int x, int y, const lChar16 *text, int len, lChar16 def_char, lUInt32 *palette, bool addHyphen, lUInt32 flags, int letter_spacing, bool reverse) = 0;
     /// constructor
     LVFont() : _visual_alignment_width(-1), _hash(0) { }
 
@@ -404,16 +402,7 @@ public:
     /// returns font family id
     virtual css_font_family_t getFontFamily() const { return _family; }
     /// draws text string
-    virtual void DrawTextString(LVDrawBuf* buf,
-                                int x,
-                                int y,
-                                const lChar16* text,
-                                int len,
-                                lChar16 def_char,
-                                lUInt32* palette,
-                                bool addHyphen,
-                                lUInt32 flags=0,
-                                int letter_spacing=0);
+    virtual void DrawTextString(LVDrawBuf *buf, int x, int y, const lChar16 *text, int len, lChar16 def_char, lUInt32 *palette, bool addHyphen, lUInt32 flags, int letter_spacing, bool reverse);
 };
 
 #define LVFONT_TRANSFORM_EMBOLDEN 1

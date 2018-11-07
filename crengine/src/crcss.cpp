@@ -370,6 +370,16 @@ sup a[type="note"] {
   text-decoration: none;
 }
 
+p[dir="rtl"], html[dir="rtl"], body[dir="rtl"] {
+  text-align: right;
+  display: block;
+}
+
+.rtl {
+  text-align: right;
+  display: block;
+}
+
 annotation {
   display: block;
   font-size: 80%;

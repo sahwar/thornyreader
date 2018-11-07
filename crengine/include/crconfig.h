@@ -13,6 +13,7 @@
 #define FALLBACK_CYCLE_MAX 5
 #define FONT_FOLDER "/system/fonts/"
 #define SYSTEM_FALLBACK_FONTS_ENABLE 1
+#define RTL_DISPLAY_ENABLE           1
 #define FALLBACK_FACE_DEFAULT lString8("Roboto") // lString8("NONE") to switch it off
 
 #define META_MAX_LENGTH 2000
