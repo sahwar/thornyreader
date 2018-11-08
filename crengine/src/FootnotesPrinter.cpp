@@ -1,7 +1,6 @@
 //
 // Created by Admin on 12/10/2018.
 //
-
 #include "crengine/include/crconfig.h"
 #include "crengine/include/FootnotesPrinter.h"
 
@@ -238,7 +237,7 @@ void FootnotesPrinter::PrintLinkNum(lString16 num, lString16 id)
 bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
 {
     //CRLog::error("PRINTER");
-
+    StrMap map;
     PrintHeader();
 
     for (int i = 0; i < LinksList.length(); i++)
@@ -258,6 +257,12 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
         }
         lString16 num = lString16::itoa(currlink.num_) + lString16("  ");
         lString16 href = (currlink.href_.startsWith("#")) ? currlink.href_.substr(1) : currlink.href_;
+        if(map.find(href.getHash())!=map.end())
+        {
+            continue;
+        }
+        map[href.getHash()]=href;
+
         ldomNode *node = doc_->getElementById(href.c_str());
         if (node == NULL)
         {

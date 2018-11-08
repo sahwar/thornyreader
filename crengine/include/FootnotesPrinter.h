@@ -7,6 +7,8 @@
 
 #include "lvtinydom.h"
 #include "fb2def.h"
+#include <map>
+typedef std::map<lUInt32,lString16> StrMap;
 
 class FootnotesPrinter
 {
