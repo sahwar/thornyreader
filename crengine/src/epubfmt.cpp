@@ -11,6 +11,7 @@ bool DetectEpubFormat(LVStreamRef stream)
 	LVContainerRef m_arc = LVOpenArchive(stream);
 	if (m_arc.isNull())
 	{
+	    CRLog::error("failed to open stream %s",LCSTR(stream.get()->GetName()));
 		// Not a ZIP archive
 		return false;
 	}
@@ -665,12 +666,16 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 	// check root media type
 	lString16 rootfilePath = EpubGetRootFilePath(arc);
 	if (rootfilePath.empty())
-		return false;
+    {
+        CRLog::error("ImportEpubDocument failed to obtain rootfile path. Trying to use hardcoded one");
+        //return false;
+	    rootfilePath = lString16("OEBPS/content.opf");
+    }
 
 	EncryptedDataContainer *decryptor = new EncryptedDataContainer(arc);
 	if (decryptor->open())
 	{
-		CRLog::debug("EPUB: encrypted items detected");
+		CRLog::debug("ImportEpubDocument: encrypted items detected");
 	}
 
 	LVContainerRef m_arc = LVContainerRef(decryptor);
@@ -703,6 +708,7 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 
 	if (content_stream.isNull())
 	{
+		CRLog::error("ImportEpubDocument : failed to open rootfile %s",LCSTR(rootfilePath));
 		return false;
 	}
 

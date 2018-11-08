@@ -745,7 +745,9 @@ bool LVTextFileBase::AutodetectEncoding( bool utfOnly )
     }
     unsigned char * buf = new unsigned char[ sz ];
     lvsize_t bytesRead = 0;
-    if ( m_stream->Read( buf, sz, &bytesRead )!=LVERR_OK ) {
+    if (m_stream->Read(buf, sz, &bytesRead) != LVERR_OK)
+    {
+        CRLog::error("LVTextFileBase::AutodetectEncoding failed to read");
         delete[] buf;
         m_stream->SetPos( oldpos );
         return false;
@@ -2576,6 +2578,10 @@ bool LvXmlParser::CheckFormat() {
                     res = IsSpaceChar( chbuf[i] );
             }
         }
+    }
+    else
+    {
+        CRLog::error("LvXmlParser::CheckFormat() : Failed to check format. Chars decoded = %d",charsDecoded);
     }
     delete[] chbuf;
     Reset();

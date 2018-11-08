@@ -463,13 +463,17 @@ bool LVDocView::LoadDoc(int doc_format, LVStreamRef stream)
     }
 	else if (doc_format == DOC_FORMAT_EPUB)
 	{
+		CRLog::error("IMPORTING EPUB");
+
 		if (!DetectEpubFormat(stream_))
 		{
+			CRLog::error("DetectEpubFormat fail");
 			return false;
 		}
 		cr_dom_->setProps(doc_props_);
 		if (!ImportEpubDocument(stream_, cr_dom_, cfg_firstpage_thumb_))
 		{
+			CRLog::error("EPUB IMPORT FAILED");
 			return false;
 		}
 		doc_props_ = cr_dom_->getProps();
