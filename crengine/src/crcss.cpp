@@ -67,7 +67,7 @@ img, image, .section_image, .coverpage, coverpage {
   padding-bottom: 1em;
 }
 
-p image, li image , p img, li img {
+p image, li image /*, p img, li img*/ {
   display: inline;
   padding-left: 1em;
   padding-right: 1em;
@@ -147,7 +147,8 @@ h3, .title3 {
 h1, h2, h3, title,
 h1 > p, h2 > p, h3 > p, title > p,
 .title, .title0, .title1, .title2, .title3,
-.title > p, .title0 > p, .title1 > p, .title2 > p, .title3 > p {
+.title > p, .title0 > p, .title1 > p, .title2 > p, .title3 > p
+h1 > span, h2 > span, h3 > span, title > span{
   display: block;
   page-break-before: always;
   page-break-inside: avoid;
