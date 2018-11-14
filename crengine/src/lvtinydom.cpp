@@ -6186,6 +6186,10 @@ lString16 LvDocFragmentWriter::convertHref( lString16 href )
         p = codeBasePrefix;
     } else {
         lString16 replacement = pathSubstitutions.get(p);
+        if(replacement.empty())
+        {
+            replacement =  pathSubstitutions.get(DecodeHTMLUrlString(p));
+        }
         //CRLog::trace("href %s -> %s", LCSTR(p), LCSTR(replacement));
         if ( !replacement.empty() )
             p = replacement;
