@@ -1904,7 +1904,7 @@ LVArray<TextRect> LVDocView::GetPageFootnotesText(int page, bool rightpage)
 	LVArray<FootNoteInfo>  fnotes = this->pages_list_.get(page)->footnotes_info;
 	if (fnotes.empty())
 	{
-		CRLog::trace("No footnotes on page %d",page);
+		//CRLog::trace("No footnotes on page %d",page);
 		return result;
 	}
 
