@@ -5717,9 +5717,16 @@ LVArray<TextRectGroup> reverseWordsOrder(LVArray<TextRectGroup> words)
 
     LVFont * font = firstword_txrect.getNode()->getParentNode()->getFont().get();
 
-    int first_left  = (first_rect.left>first_rect.right) ? first_rect.right : first_rect.right;
-    first_left -= first_rect.width();
-    //CRLog::error("first left = %d",first_left);
+    int startx  = (first_rect.left>first_rect.right) ? first_rect.right : first_rect.right;
+    startx -= first_rect.width();
+
+    TextRectGroup last_word = words.get(words.length()-1);
+    TextRect last = last_word.list_.get(last_word.list_.length()-1);
+    if(last.getText().lastChar() == ' ')
+    {
+        startx -= font->getCharWidth(' ');
+    }
+    //CRLog::error("first left = %d",startx);
     //CRLog::error("rfirst left = %d",first_rect.left);
     //CRLog::error("rfirst right = %d",first_rect.right);
     LVArray<TextRectGroup> nonRTLBuffer;
@@ -5735,7 +5742,7 @@ LVArray<TextRectGroup> reverseWordsOrder(LVArray<TextRectGroup> words)
         {
             if(nonRTLBuffer.length()>0)
             {
-                int startx_nonrtlbuff = first_left - buffwidth;
+                int startx_nonrtlbuff = startx - buffwidth;
                 for (int b = nonRTLBuffer.length()-1; b >=0  ; b--)
                 {
                     TextRectGroup buff_word = nonRTLBuffer.get(b);
@@ -5763,7 +5770,7 @@ LVArray<TextRectGroup> reverseWordsOrder(LVArray<TextRectGroup> words)
                 buffwidth = 0;
                 nonRTLBuffer.clear();
             }
-            //CRLog::error("rtl word after buff = [%s], is rtl = %d, first_left = %d", LCSTR(currword.getText()), (int) currword.is_rtl_, first_left);
+            //CRLog::error("rtl word after buff = [%s], is rtl = %d, startx = %d", LCSTR(currword.getText()), (int) currword.is_rtl_, startx);
 
             for (int c = 0; c < currword.list_.length(); c++)
             {
@@ -5777,25 +5784,25 @@ LVArray<TextRectGroup> reverseWordsOrder(LVArray<TextRectGroup> words)
                 curr_rect.bottom = curr_rect.top + height;
 
                 int width = curr_rect.width();
-                lvRect new_rect(first_left, curr_rect.top, first_left + width, curr_rect.bottom);
+                lvRect new_rect(startx, curr_rect.top, startx + width, curr_rect.bottom);
                 curr.setRect(new_rect);
                 currword.list_.set(c, curr);
-                first_left += width;
+                startx += width;
             }
             result.add(currword);
         }
         else //currword.is_rtl_
         {
-           // CRLog::error("word to buff = [%s], is rtl = %d, first_left = %d", LCSTR(currword.getText()), (int) currword.is_rtl_, first_left);
+           // CRLog::error("word to buff = [%s], is rtl = %d, startx = %d", LCSTR(currword.getText()), (int) currword.is_rtl_, startx);
             nonRTLBuffer.add(currword);
             buffwidth +=currword.getWidth(font);
-            first_left+=currword.getWidth(font);
+            startx+=currword.getWidth(font);
         }
         prev_state = currword.is_rtl_;
     }
     if(nonRTLBuffer.length()>0)
     {
-        int startx_nonrtlbuff = first_left - buffwidth;
+        int startx_nonrtlbuff = startx - buffwidth;
         for (int b = nonRTLBuffer.length()-1; b >=0  ; b--)
         {
             TextRectGroup buff_word = nonRTLBuffer.get(b);
@@ -5915,25 +5922,6 @@ LVArray<TextRect> reverseLine(TextRectGroup group)
 
     return result;
 }
-/*
-        if(!lines_rtl_flag[l]) // non-RTL line
-        {
-            CRLog::error("__NONRTL__line %d", l);
-            for (int w = 0; w <= lines_length[l] ; w++)
-            {
-                CRLog::error("____word %d", w);
-                for (int c = 0; c < lines_words[l][w].length(); c++)
-                {
-                    TextRect curr = lines_words[l][w].get(c);
-                    lString16 curr_text = curr.getText();
-                    CRLog::error("letter = [%s]", LCSTR(curr_text));
-                    intermediate_list.add(curr);
-                }
-            }
-        }
-        else //RTL line
-        {
-*/
 
 LVArray<TextRect> RTL_mix(LVArray<TextRect> in_list)
 {

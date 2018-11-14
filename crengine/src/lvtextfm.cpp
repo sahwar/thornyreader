@@ -1384,6 +1384,12 @@ public:
         lChar16 ch = (this->text_[0] == ' ')?this->text_[1]:this->text_[0];
         return isPunct(ch);
     }
+
+    lString16 getText()
+    {
+        return lString16(text_,len_);
+    }
+
 };
 
 
@@ -1625,8 +1631,12 @@ void LFormattedText::Draw( LVDrawBuf * buf, int x, int y, ldomMarkedRangeList * 
             if (printrtl)
             {
                 int startx = WordItems.get(0).x_;
-                //startx -= font->getCharWidth(' ');
 
+                WordItem last = WordItems.get(WordItems.length()-1);
+                if(last.getText().lastChar() == ' ')
+                {
+                    startx -= font->getCharWidth(' ');
+                }
                 LVArray<WordItem> nonRTLBuffer;
                 int buffwidth = 0;
                 bool prev_state = WordItems.get(WordItems.length() - 1).is_rtl_;
