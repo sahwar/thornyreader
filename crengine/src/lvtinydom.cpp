@@ -5570,13 +5570,457 @@ void ldomXRange::getRangeWords(LVArray<ldomWord>& words_list) {
     forEach2(&collector);
 }
 
+bool char_isRTL(const lChar16 c){
+/*
+    if(c==0x00A6) // BROKEN BAR
+        return false;
+    if((c>=0x0030)&&(c<=0x0039)) // digits
+    {
+        return false;
+    }
+    return true;
+*/
+    return ( //(c==0x00A6) ||  // UNICODE "BROKEN BAR"
+                   (c>=0x0590)&&(c<=0x05FF)) ||
+           (c == 0x05BE) || (c == 0x05C0) || (c == 0x05C3) || (c == 0x05C6) ||
+           ((c>=0x05D0)&&(c<=0x05F4)) ||
+           (c==0x0608) || (c==0x060B) ||
+           (c==0x060D) ||
+           ((c>=0x061B)&&(c<=0x064A)) ||
+           ((c>=0x066D)&&(c<=0x066F)) ||
+           ((c>=0x0671)&&(c<=0x06D5)) ||
+           ((c>=0x06E5)&&(c<=0x06E6)) ||
+           ((c>=0x06EE)&&(c<=0x06EF)) ||
+           ((c>=0x06FA)&&(c<=0x0710)) ||
+           ((c>=0x0712)&&(c<=0x072F)) ||
+           ((c>=0x074D)&&(c<=0x07A5)) ||
+           ((c>=0x07B1)&&(c<=0x07EA)) ||
+           ((c>=0x07F4)&&(c<=0x07F5)) ||
+           ((c>=0x07FA)&&(c<=0x0815)) ||
+           (c==0x081A) || (c==0x0824) ||
+           (c==0x0828) ||
+           ((c>=0x0830)&&(c<=0x0858)) ||
+           ((c>=0x085E)&&(c<=0x08AC)) ||
+           (c==0x200F) || (c==0xFB1D) ||
+           ((c>=0xFB1F)&&(c<=0xFB28)) ||
+           ((c>=0xFB2A)&&(c<=0xFD3D)) ||
+           ((c>=0xFD50)&&(c<=0xFDFC)) ||
+           ((c>=0xFE70)&&(c<=0xFEFC)) ||
+           ((c>=0x10800)&&(c<=0x1091B)) ||
+           ((c>=0x10920)&&(c<=0x10A00)) ||
+           ((c>=0x10A10)&&(c<=0x10A33)) ||
+           ((c>=0x10A40)&&(c<=0x10B35)) ||
+           ((c>=0x10B40)&&(c<=0x10C48)) ||
+           ((c>=0x1EE00)&&(c<=0x1EEBB));
+}
+
+bool char_isPunct(const lChar16 c){
+    return ((c>=33) && (c<=47)) ||
+           ((c>=58) && (c<=64)) ||
+           ((c>=91) && (c<=96)) ||
+           ((c>=123)&& (c<=126))||
+           (c == 0x00A6);
+}
+
+class TextRectGroup{
+public:
+    TextRectGroup(){};
+    LVArray<TextRect> list_;
+    bool is_rtl_;
+
+    int getWidth(LVFont *font)
+    {
+        int result = 0;
+        if(!this->list_.empty())
+        {
+            for (int i = 0; i < list_.length(); i++)
+            {
+                result += font->getCharWidth(list_.get(i).getText().firstChar());
+            }
+        }
+        return result;
+    }
+
+    void addTextRect(TextRect textRect)
+    {
+        list_.add(textRect);
+    }
+};
+
+
+LVArray<TextRect> reverseWord(LVArray<TextRect> in_word)
+{
+    LVArray<TextRect> result;
+    int first_left = in_word.get(0).getRect().left;
+    for (int i = in_word.length()-1; i >=0 ; i--)
+    {
+        TextRect curr = in_word.get(i);
+        lvRect curr_rect = curr.getRect();
+        int width = curr_rect.width();
+        lvRect new_rect(first_left,curr_rect.top,first_left+width,curr_rect.bottom);
+        curr.setRect(new_rect);
+        result.add(curr);
+        first_left += width;
+    }
+    return result;
+}
+
+LVArray<TextRectGroup> reverseWordsOrder(LVArray<TextRectGroup> words)
+{
+    CRLog::error("revvwordsorder1");
+    LVArray<TextRectGroup> result;
+    if(words.empty())
+    {
+        CRLog::error("words empty");
+        return result;
+    }
+    result.reserve(words.length()+1);
+    CRLog::error("revvwordsorder2");
+
+
+    for (int i = 0; i < words.length(); i++)
+    {
+        lString16 text;
+        TextRectGroup word = words.get(i);
+        LVFont * font;
+        for (int j = 0; j <  word.list_.length(); j++)
+        {
+            text+=word.list_.get(j).getText();
+            font = word.list_.get(j).getNode()->getParentNode()->getFont().get();
+        }
+
+        CRLog::error("word = [%s], width = %d",LCSTR(text),word.getWidth(font));
+    }
+
+    //use first word in line that contains symbols
+    int count = 0;
+    for (int i = 0; i < words.length() ; i++)
+    {
+        if (!words.get(i).list_.empty())
+        {
+            count=i;
+            CRLog::error("count = %d",count);
+            break;
+        }
+    }
+
+    TextRect  firstword_txrect = words.get(count).list_.get(0);
+    lString16 first_text = firstword_txrect.getText();
+    lvRect    first_rect = firstword_txrect.getRect();
+    CRLog::error("first text = [%s], left = %d",LCSTR(first_text),first_rect.left);
+
+    LVFont * font = firstword_txrect.getNode()->getParentNode()->getFont().get();
+
+    int first_left  = (first_rect.left>first_rect.right) ? first_rect.right : first_rect.right;
+    first_left -= first_rect.width();
+    CRLog::error("first left = %d",first_left);
+    CRLog::error("rfirst left = %d",first_rect.left);
+    CRLog::error("rfirst right = %d",first_rect.right);
+    LVArray<TextRectGroup> nonRTLBuffer;
+
+    int buffwidth = 0;
+
+    for (int w = words.length()-1; w >= 0; w--)
+    {
+        TextRectGroup currword = words.get(w);
+
+        lString16 text;
+        for (int i = 0; i < currword.list_.length(); i++)
+        {
+            text += currword.list_.get(i).getText();
+        }
+        CRLog::error("word = [%s], is rtl = %d, first_left = %d", LCSTR(text), (int) currword.is_rtl_, first_left);
+
+        if(!currword.is_rtl_)
+        {
+            nonRTLBuffer.add(currword);
+            buffwidth +=currword.getWidth(font);
+            first_left+=currword.getWidth(font);
+        }
+        else //currword.is_rtl_
+        {
+            if(nonRTLBuffer.length()>0)
+            {
+                /*int startx_nonrtlbuff = first_left - buffwidth;
+                for (int b = 0; b >= nonRTLBuffer.length() ; b++)
+                {
+                    TextRectGroup curr_word = nonRTLBuffer.get(b);
+                    LVFont * font = curr_word.list_[0].getNode()->getParentNode()->getFont().get();
+                    int wordwidth = 0;
+                    for (int c = 0; c < curr_word.list_.length(); c++)
+                    {
+                        TextRect  curr_txrect = currword.list_.get(c);
+                        lString16 curr_txrect_text = curr_txrect.getText();
+                        lvRect    curr_txrect_rect = curr_txrect.getRect();
+                        int charwidth = font->getCharWidth(curr_txrect_text.firstChar());
+
+                        int height = font->getHeight();
+
+                        lvRect new_rect(startx_nonrtlbuff,curr_txrect_rect.top,startx_nonrtlbuff + charwidth,curr_txrect_rect.top+height);
+
+                        curr_txrect.setRect(new_rect);
+                        curr_word.list_.set(c, curr_txrect);
+                        wordwidth += charwidth;
+                        startx_nonrtlbuff +=charwidth;
+                    }
+                    words.set(w + nonRTLBuffer.length() - 1 - b ,curr_word);
+                }
+                 */
+             /*
+
+
+                    //CRLog::error("nonrtlbuf1 , word = [%s]",LCSTR(lString16(curr.text_,curr.len_)));
+
+
+
+
+                        curr_rect.left = startx_nonrtlbuff - wordwidth;
+                        curr_rect.right = curr_rect.left + charwidth;
+                        curr_rect.bottom = curr_rect.top + height;
+
+                        currword.list_.set(i, curr);
+                        first_left += width;
+                        wordwidth += width;
+                    }
+                    result.add(currword);
+
+                    startx_nonrtlbuff += wordwidth;
+                }
+                buffwidth = 0;
+                */
+                nonRTLBuffer.clear();
+            }
+            else if (nonRTLBuffer.length() == 1)
+            {
+                /*
+                int startx_nonrtlbuff = first_left - buffwidth - buffwidth;
+
+                TextRectGroup word = nonRTLBuffer.get(0);
+                LVFont * font = word.list_[0].getNode()->getParentNode()->getFont().get();
+                int height = font->getHeight();
+
+                for (int i = word.list_.length()-1; i >=0 ; i--)
+                {
+                    TextRect curr = word.list_.get(i);
+                    lvRect curr_rect = curr.getRect();
+                    lString16 currwordtext = curr.getText();
+                    int charwidth = font->getCharWidth(currwordtext.firstChar());
+
+                    curr_rect.left = startx_nonrtlbuff;
+                    curr_rect.right = curr_rect.left + charwidth;
+                    curr_rect.bottom = curr_rect.top + height;
+
+                    int width = curr_rect.width();
+                    lvRect new_rect(first_left,curr_rect.top,first_left + width,curr_rect.bottom);
+                    curr.setRect(new_rect);
+                    currword.list_.set(i, curr);
+                    //first_left += width;
+                }
+*/
+                nonRTLBuffer.clear();
+            }
+
+
+            for (int c = 0; c < currword.list_.length(); c++)
+            {
+                TextRect curr = currword.list_.get(c);
+                lvRect curr_rect = curr.getRect();
+                lString16 currwordtext = curr.getText();
+                int charwidth = font->getCharWidth(currwordtext.firstChar());
+                int height = font->getHeight();
+
+                curr_rect.right = curr_rect.left + charwidth;
+                curr_rect.bottom = curr_rect.top + height;
+
+                int width = curr_rect.width();
+                lvRect new_rect(first_left, curr_rect.top, first_left + width, curr_rect.bottom);
+                curr.setRect(new_rect);
+                currword.list_.set(c, curr);
+                first_left += width;
+            }
+            result.add(currword);
+        }
+    }
+    return result;
+}
+
+
+
+LVArray<TextRect> reverseLine(TextRectGroup group)
+{
+    LVArray<TextRect> result;
+    LVArray<TextRect> line = group.list_;
+    LVArray<TextRectGroup> words;
+    words.reserve(line.length());
+
+        if(line.empty())
+        {
+            CRLog::error("AAAAAAAAAAAA");
+            return result;
+        }
+    CRLog::error("line length = %d",line.length());
+    bool last_state = char_isRTL(line.get(0).getText().firstChar());
+    lString16 last_text = line.get(0).getText();
+    CRLog::error("c");
+
+    int start = 0;
+    for (int c = 0; c < line.length(); c++)
+    {
+        TextRect curr = line.get(c);
+        lString16 curr_text = curr.getText();
+        bool curr_state = char_isRTL(curr_text.firstChar());
+
+        /*
+        lChar16 ch = curr_text.firstChar();
+        bool is_space = ch == ' ';
+
+        if((last_state && char_isPunct(ch)) || is_space)
+        {
+            continue;
+        }
+         */
+
+        //CRLog::error("letter = [%s]",LCSTR(curr_text));
+        if ((curr_text == " " ) || (last_text == " " ) || (curr_state != last_state))
+        {
+            TextRectGroup word;
+            word.list_.reserve(c-start + 1 );
+            for (int i = start; i < c; i++)
+            {
+                word.list_.add(line.get(i));
+            }
+            word.is_rtl_ = last_state;
+            words.add(word);
+            start = c;
+        }
+        last_state = curr_state;
+        last_text = curr_text;
+    }
+    TextRectGroup word;
+    word.list_.reserve(line.length() - start + 1);
+    for (int i = start; i < line.length(); i++)
+    {
+        word.list_.add(line.get(i));
+    }
+    word.is_rtl_ = last_state;
+    words.add(word);
+
+    CRLog::error("e");
+    words = reverseWordsOrder(words);
+    CRLog::error("e1");
+
+    for (int w = 0; w < words.length(); w++)
+    {
+        if(words[w].is_rtl_)// rtl word
+        {
+            words[w].list_ = reverseWord(words[w].list_);
+        }
+    }
+    CRLog::error("f");
+
+    for (int i = 0; i < words.length(); i++)
+    {
+        for (int j = 0; j < words.get(i).list_.length(); j++)
+        {
+            TextRect curr = words.get(i).list_.get(j);
+            result.add(curr);
+        }
+    }
+    CRLog::error("g");
+
+    return result;
+}
+/*
+        if(!lines_rtl_flag[l]) // non-RTL line
+        {
+            CRLog::error("__NONRTL__line %d", l);
+            for (int w = 0; w <= lines_length[l] ; w++)
+            {
+                CRLog::error("____word %d", w);
+                for (int c = 0; c < lines_words[l][w].length(); c++)
+                {
+                    TextRect curr = lines_words[l][w].get(c);
+                    lString16 curr_text = curr.getText();
+                    CRLog::error("letter = [%s]", LCSTR(curr_text));
+                    intermediate_list.add(curr);
+                }
+            }
+        }
+        else //RTL line
+        {
+*/
+
+LVArray<TextRect> RTL_mix(LVArray<TextRect> in_list)
+{
+    LVArray<TextRect> result_list;
+    if(in_list.empty())
+    {
+        return result_list;
+    }
+    LVArray<TextRectGroup> lines;
+    TextRect first = in_list.get(0);
+    lvRect first_rect = first.getRect();
+
+    TextRectGroup line;
+    for (int i = 0; i < in_list.length(); i++)
+    {
+        TextRect curr = in_list[i];
+        curr.setIndex(i);
+        lvRect curr_rect = curr.getRect();
+        if(char_isRTL(curr.getText().firstChar()))
+        {
+            line.is_rtl_ = true;
+        }
+        if(curr_rect.top > first_rect.top)
+        {
+            lines.add(line);
+            line = TextRectGroup();
+            first_rect = curr_rect;
+        }
+        line.addTextRect(curr);
+    }
+    lines.add(line);
+
+    //CRLog::trace("linecount = %d",linecount+1);
+    CRLog::error("lines.length = %d",lines.length());
+    for (int i = 0; i < lines.length(); i++)
+    {
+        lString16 word;
+        LVArray<TextRect> list = lines.get(i).list_;
+        for (int j = 0; j < list.length(); j++)
+        {
+            word += list.get(j).getText();
+        }
+        CRLog::error("line #%d = [%s]",i,LCSTR(word));
+    }
+
+
+
+    for (int l = 0; l < lines.length(); l++)
+    {
+        CRLog::trace("lines_length(%d) = %d rtl = %d",l,lines[l].list_.length(),(int)lines[l].is_rtl_);
+
+        if( lines[l].is_rtl_ )
+        {
+            CRLog::trace("reverse line %d",l);
+            lines[l].list_ = reverseLine(lines[l]);
+        }
+        for (int c = 0; c < lines[l].list_.length(); c++)
+        {
+            TextRect curr = lines[l].list_.get(c);
+            result_list.add(curr);
+        }
+    }
+    return result_list;
+}
 
 /// get all words from specified range
 void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
     class WordsCollector : public ldomNodeCallback {
-        LVArray<TextRect>& list_;
     public:
-        WordsCollector(LVArray<TextRect>& list) : list_(list) {}
+        LVArray<TextRect> list_;
+        bool contains_rtl = false;
+        WordsCollector() {}
         RectHelper* rectHelper_ = new RectHelper();
 
         bool AllowTextNodeShift(ldomNode* node)
@@ -5650,6 +6094,16 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
             }
             ldomNode* parent_node = node->getParentNode();
 
+            ldomNode* parent_temp= parent_node;
+            while (parent_temp != NULL)
+            {
+                if (parent_temp->getAttributeValue("dir") == "rtl")
+                {
+                    this->contains_rtl = true;
+                    break;
+                }
+                parent_temp = parent_temp->getParentNode();
+            }
             lString16 text = node->getText();
             //CRLog::error("node [%s]",LCSTR(node->getXPath()));
             //CRLog::error("Text[%s]",LCSTR(text));
@@ -5770,8 +6224,17 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
             return true;
         }
     };
-    WordsCollector collector(words_list);
-    return forEach2(&collector);
+    WordsCollector collector;
+    forEach2(&collector);
+    if(collector.contains_rtl)
+    {
+        words_list = RTL_mix(collector.list_);
+    }
+    else
+    {
+        words_list = collector.list_;
+    }
+    return;
 }
 
 /*ALPHACHECK*/
