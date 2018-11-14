@@ -32,6 +32,7 @@ extern int gTextLeftShift;
 #define DEBUG_DRAW_IMAGE_HITBOXES 0
 #define DEBUG_GETRECT_LOGS 0
 #define DEBUG_NOTES_HIDDEN_SHOW 0
+#define DEBUG_DRAW_CLIP_REGION 0
 #else
 #define DUMP_DOMTREE 0
 #define DEBUG_TREE_DRAW 0
@@ -39,6 +40,7 @@ extern int gTextLeftShift;
 #define DEBUG_DRAW_IMAGE_HITBOXES 0
 #define DEBUG_GETRECT_LOGS 0
 #define DEBUG_NOTES_HIDDEN_SHOW 0
+#define DEBUG_DRAW_CLIP_REGION 0
 #endif // TRDEBUG
 
 #endif //CRCONFIG_H

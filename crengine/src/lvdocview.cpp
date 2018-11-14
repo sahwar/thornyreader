@@ -797,6 +797,14 @@ void LVDocView::DrawPageTo(LVDrawBuf *drawbuf, LVRendPageInfo &page, lvRect *pag
 				fny + 1,
 				cl);
 	}
+    if (DEBUG_DRAW_CLIP_REGION == 1)
+    {
+        lUInt32 cl = drawbuf->GetTextColor();
+        cl = (cl & 0xFFFFFF) | (0x55000000);
+        drawbuf->FillRect(
+                clip,
+                cl);
+    }
 	drawbuf->SetClipRect(NULL);
 }
 
