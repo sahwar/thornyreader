@@ -12,6 +12,7 @@ void FootnotesPrinter::recurseNodesToPrint(ldomNode *node, LvDomWriter *writer)
         CRLog::error("node is null");
         return;
     }
+    //CRLog::error("node to recurse = %s",LCSTR(node->getXPath()));
 
     for (int i = 0; i < node->getChildCount(); i++)
     {
@@ -319,8 +320,10 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
             {
                 return NULL;
             }
+            //CRLog::error("found node = %s",LCSTR(found->getXPath()));
             writer_->OnTagOpen(L"", L"section");
             writer_->OnAttribute(L"", L"id", href.c_str());
+            writer_->OnTagOpen(L"", L"p");
 
             if(hidden_)
             {
@@ -334,11 +337,10 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
             if(found->isText())
             {
                 lString16 text = found->getText();
-                writer_->OnTagOpen(L"", L"p");
                 writer_->OnTagOpen(L"", L"span");
                 writer_->OnText(text.c_str(), text.length(),0);
                 writer_->OnTagClose(L"", L"span");
-                writer_->OnTagClose(L"", L"p");
+                CRLog::error("text1 = %s",LCSTR(text));
             }
             else
             {
@@ -350,16 +352,28 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
             for (int i = index + 1; i < parent->getChildCount(); i++)
             {
                 ldomNode *child = parent->getChildNode(i);
-                //CRLog::error("child path = %s",LCSTR(child->getXPath()));
                 if (NodeIsBreak(child,nextid))
                 {
+                    //CRLog::debug("CHILD IS BREAK = %s",LCSTR(child->getXPath()));
                     break;
                 }
+                //CRLog::error("child path = %s",LCSTR(child->getXPath()));
+                if(child->isText())
+                {
+                    lString16 text = child->getText();
+                    writer_->OnTagOpen(L"", L"span");
+                    writer_->OnText(text.c_str(), text.length(),0);
+                    writer_->OnTagClose(L"", L"span");
+                }
+                else
+                {
                 //text is not a number
-                writer_->OnTagClose(L"", child->getNodeName().c_str());
+                writer_->OnTagOpen(L"", child->getNodeName().c_str());
                 recurseNodesToPrint(child, writer_);
                 writer_->OnTagClose(L"", child->getNodeName().c_str());
+                }
             }
+            writer_->OnTagClose(L"", L"p");
             writer_->OnTagClose(L"", L"section");
         }
     }
