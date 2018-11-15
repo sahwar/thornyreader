@@ -1052,10 +1052,10 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 	}
 
     //CRLog::error("Linkslist length = %d",LinksList.length());
-    for (int i = 0; i < LinksList.length(); i++)
-    {
-    	//CRLog::error("LinksList %d = %s = %s",i,LCSTR(LinksList.get(i).id_),LCSTR(LinksList.get(i).href_));
-    }
+    //for (int i = 0; i < LinksList.length(); i++)
+    //{
+    //	CRLog::error("LinksList %d = #%d = %s = %s",i,LinksList.get(i).num_,LCSTR(LinksList.get(i).id_),LCSTR(LinksList.get(i).href_));
+    //}
     if(LinksList.length()>0)
     {
 	  //  writer.OnTagOpen(L"", L"NoteFragment");

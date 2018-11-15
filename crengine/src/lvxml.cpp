@@ -1881,6 +1881,7 @@ public:
             if ( !inLink ) {
                 postText();
                 callback->OnTagOpen(NULL, L"a");
+                callback->OnAttribute(L"",L"class",L"link_valid");
                 callback->OnAttribute(NULL, L"href", ref.c_str());
                 callback->OnTagBody();
                 styleTags << "a";
@@ -2881,6 +2882,10 @@ bool LvXmlParser::Parse()
                     }
                     else
                     {
+                        if(!link_href.empty())
+                        {
+                            callback_->OnAttribute(L"",L"class",L"link_valid");
+                        }
                         if(!buffer.empty())
                         {
                             bool flag1 = false;
@@ -2900,18 +2905,18 @@ bool LvXmlParser::Parse()
                             {
                                 if(link_id.empty())
                                 {
-                                    lString16 temp = lString16("back_") + lString16::itoa(LinksList_.length());
-                                    link_id = lString16("#") +temp; // + callback_->convertId(temp);
-                                    callback_->OnAttribute(L"", L"id", temp.c_str());
+                                    link_id = lString16("back_") + lString16::itoa(LinksList_.length());
+                                    callback_->OnAttribute(L"", L"id", link_id.c_str());
                                 }
 
-                                //CRLog::error("link_href = %s", LCSTR(link_href));
-                                callback_->OnAttribute(L"", L"nref", (link_href + lString16("_note")).c_str());
-                                callback_->OnAttribute(L"", L"type", L"note");
                                 lString16 tmp_href = callback_->convertHref(link_href);
-                                //lString16 tmp_id = callback_->convertId(link_id);
-                                lString16 tmp_id = link_id;
-                                LinksList_.add(LinkStruct(bufnum, tmp_id, tmp_href));
+                                lString16 tmp_search = L"#" + link_id;
+                                if (LinksMap_.find(tmp_search.getHash()) == LinksMap_.end())
+                                {
+                                    callback_->OnAttribute(L"", L"nref", (link_href + lString16("_note")).c_str());
+                                    callback_->OnAttribute(L"", L"type", L"note");
+                                    LinksList_.add(LinkStruct(bufnum, link_id, tmp_href));
+                                }
                                 LinksMap_[tmp_href.getHash()] = link_id;
                                 //CRLog::error("LIST added [%s] to [%s]",LCSTR(link_id),LCSTR(link_href));
                                 buffer = lString16::empty_str;
@@ -2964,6 +2969,7 @@ bool LvXmlParser::Parse()
                             callback_->OnTagOpen(L"",L"a");
                             lString16 href = LinksMap_.at(callback_->convertId(lString16("#") + section_id).getHash());
                             callback_->OnAttribute(L"",L"href",href.c_str());
+                            callback_->OnAttribute(L"",L"class",L"link_valid");
                         }
                         break;
                     }
@@ -3890,6 +3896,10 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
                     }
                     if(close_flag)
                     {
+                        if(!a_href.empty())
+                        {
+                            callback_->OnAttribute(L"",L"class",L"link_valid");
+                        }
                         if(a_href.pos("://")==-1 && str_buffer.pos("://")!=-1)
                         {
                             //trimming spaces in href
@@ -3914,6 +3924,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
                     in_sdt_a = true;
                     if(close_flag)
                     {
+                        callback_->OnAttribute(L"",L"class",L"link_valid");
                         save_text = false;
                     }
                 }
@@ -4080,6 +4091,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
                 //footnote handling
                 if(in_footnoteref)
                 {
+                    callback_->OnAttribute(L"",L"class",L"link_valid");
                     callback_->OnAttribute(attrns.c_str(), lString16("type").c_str(), lString16("note").c_str());
                     lString16 nref = lString16("#") + attrvalue + lString16("_note");
                     lString16 id   = attrvalue + lString16("_back");
@@ -4113,6 +4125,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
                             callback_->OnTagOpen(L"", L"title");
                             callback_->OnTagOpen(L"", L"p");
                             callback_->OnTagOpen(L"", L"a");
+                            callback_->OnAttribute(L"",L"class",L"link_valid");
                             callback_->OnAttribute(L"",L"href",(lString16("~") + currlink_id).c_str());
                             callback_->OnText(attrvalue.c_str(), attrvalue.length(), flags);
                             callback_->OnTagClose(L"", L"a");
@@ -4611,6 +4624,7 @@ bool LvXmlParser::ParseEpubFootnotes()
                             {
                                 callback_->OnTagOpen(L"", L"title");
                                 callback_->OnTagOpen(L"", L"a");
+                                callback_->OnAttribute(L"",L"class",L"link_valid");
                                 callback_->OnAttribute(L"",L"href",(lString16("~") + currlink_id).c_str());
                                 callback_->OnText(buffer.c_str(), buffer.length(), flags);
                                 callback_->OnTagClose(L"", L"a");
@@ -4651,6 +4665,7 @@ bool LvXmlParser::ParseEpubFootnotes()
                             callback_->OnAttribute(L"",
                                     L"href",
                                     (lString16("~") + currlink_id).c_str());
+                            callback_->OnAttribute(L"",L"class",L"link_valid");
                             callback_->OnText(buffer.c_str(), buffer.length(), flags);
                             callback_->OnTagClose(L"", L"a");
                             callback_->OnTagClose(L"", L"title");

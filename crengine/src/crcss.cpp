@@ -104,7 +104,7 @@ u {
   text-decoration: underline;
 }
 /* Mozilla: 0000EE Dark: 00569f Light: 4285f4 Lebedev: 008ACE */
-a {
+.link_valid {
   color: #00569f;
 }
 del, s, strike, strikethrough {

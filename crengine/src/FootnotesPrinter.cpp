@@ -228,6 +228,7 @@ void FootnotesPrinter::PrintLinkNum(lString16 num, lString16 id)
 
     writer_->OnTagOpen(L"", L"title");
     writer_->OnTagOpen(L"", L"a");
+    writer_->OnAttribute(L"",L"class",L"link_valid");
     writer_->OnAttribute(L"", L"href", ("#"+id).c_str());
     writer_->OnText(num.c_str(), num.length(), 0);
     writer_->OnTagClose(L"", L"a");

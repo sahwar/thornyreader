@@ -2071,6 +2071,7 @@ void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
         RectHelper rectHelper_;
 		void ProcessFinalNode(ldomNode *node)
         {
+        	//CRLog::error("final node = %s",LCSTR(node->getXPath()));
             ldomXRange nodeRange = ldomXRange(node);
             ldomNode *parent_node = node->getParentNode();
             if (parent_node == nullptr)
@@ -2087,6 +2088,10 @@ void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
                 len = end;
             }
             lString16 href = node->getHRef();
+            if(href.empty())
+            {
+	            return;
+            }
 	        LVFont *font = doc_view_->GetBaseFont().get();
             LVArray<TextRect> pre;
             for (; pos < len; pos++)
@@ -2165,6 +2170,10 @@ void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
             imgrect.bottom=imgrect.top+imgheight;
 
             lString16 href = node->getHRef();
+            if(href.empty())
+            {
+                return;
+            }
             list_.add(TextRect(node, imgrect, href));
         }
 
@@ -2177,10 +2186,10 @@ void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
 				{
 					ProcessFinalNode(child);
 				}
-                else if (child->isImage())
-                {
-                    ProcessImageNode(child);
-                }
+				else if (child->isImage())
+				{
+					ProcessImageNode(child);
+				}
 				else
 				{
 					ProcessLinkNode(child);
@@ -2188,16 +2197,10 @@ void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
 			}
 		}
 	public:
-		bool text_is_first_ = true;
 		LinkKeeper(LVArray<TextRect> &list, LVDocView* doc_view) : list_(list),doc_view_(doc_view) {}
 		// Called for each text fragment in range
 		virtual void onText(ldomXRange *node_range)
 		{
-			if (!text_is_first_)
-			{
-				return;
-			}
-			text_is_first_ = false;
 			ldomNode *node = node_range->getStart().getNode();
 			ldomNode *element_node = node->getParentNode();
 			if (element_node->isNull() || node->getHRef() == lString16::empty_str)
@@ -2235,6 +2238,39 @@ void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
 			ProcessLinkNode(node);
 			return true;
 		}
+
+
+		bool processElement(ldomNode* node, ldomXRange * range)
+		{
+			for (lUInt32 i = 0; i < node->getChildCount(); i++)
+			{
+				ldomNode *child = node->getChildNode(i);
+
+				//Text node is processed only when range includes, in processLinkNode
+				/*
+				if (child->isText())
+				{
+					//CRLog::error("_______TEXT nodepath = %s",LCSTR(child->getXPath()));
+					processText(child,range);
+				}
+				else
+				{*/
+
+				if (this->onElement(child))
+				{
+					if (processElement(child, range))
+					{
+						return true;
+					}
+				}
+				//}
+				if (child == range->getEndNode())
+				{
+					return true;
+				}
+			}
+			return false;
+		}
 	};
 	LinkKeeper callback(links_list,this);
     page_range->forEach2(&callback);
@@ -2245,7 +2281,6 @@ void LVDocView::GetCurrentPageLinks(LVArray<TextRect>& links_list)
 		page_range = GetPageDocRange(page_index + 1);
 		if (!page_range.isNull())
 		{
-			callback.text_is_first_ = true;
             page_range->forEach2(&callback);
 		}
 	}
