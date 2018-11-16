@@ -2905,8 +2905,9 @@ bool LvXmlParser::Parse()
                             {
                                 if(link_id.empty())
                                 {
-                                    link_id = lString16("back_") + lString16::itoa(LinksList_.length());
-                                    callback_->OnAttribute(L"", L"id", link_id.c_str());
+                                    lString16 temp = lString16("back_") + lString16::itoa(LinksList_.length());
+                                    callback_->OnAttribute(L"", L"id", temp.c_str());
+                                    link_id = lString16("#") + temp; // + callback_->convertId(temp);
                                 }
 
                                 lString16 tmp_href = callback_->convertHref(link_href);
