@@ -2705,6 +2705,16 @@ bool LvXmlParser::Parse()
                     tagns.lowercase();
                     tagname.lowercase();
                 }
+                if(in_body_notes && tagname == "empty-line")
+                {
+                    if (SkipTillChar('>'))
+                    {
+                        m_state = ps_text;
+                        ch = ReadCharFromBuffer();
+                    }
+                    break;
+                }
+
                 /*if(tagname=="style") //|| tagname=="table" || tagname=="tr" || tagname=="td") // skipping all <style> tags and <table> <tr> <td> tags
                 {
                     //if (attrname=="name")
