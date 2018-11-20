@@ -256,7 +256,7 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
         {
             nextid = (nextlink.href_.startsWith("#")) ? nextlink.href_.substr(1) : nextlink.href_;
         }
-        lString16 num = lString16::itoa(currlink.num_) + lString16("  ");
+        lString16 num = lString16::itoa(currlink.num_) + lString16(" ");
         lString16 href = (currlink.href_.startsWith("#")) ? currlink.href_.substr(1) : currlink.href_;
         if(map.find(href.getHash())!=map.end())
         {
@@ -320,13 +320,19 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
 
             this->PrintNum(num, currlink.id_);
             writer_->OnTagOpen(L"", L"p");
-
             if(found->isText())
             {
                 lString16 text = found->getText();
-                writer_->OnTagOpen(L"", L"span");
-                writer_->OnText(text.c_str(), text.length(),0);
-                writer_->OnTagClose(L"", L"span");
+                while (text.firstChar() == L' ')
+                {
+                    text = text.substr(1);
+                }
+                if (text.length() > 0)
+                {
+                    writer_->OnTagOpen(L"", L"span");
+                    writer_->OnText(text.c_str(), text.length(), 0);
+                    writer_->OnTagClose(L"", L"span");
+                }
             }
             else
             {
