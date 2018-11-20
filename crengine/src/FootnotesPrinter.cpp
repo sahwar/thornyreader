@@ -17,21 +17,21 @@ void FootnotesPrinter::recurseNodesToPrint(ldomNode *node, LvDomWriter *writer)
     for (int i = 0; i < node->getChildCount(); i++)
     {
         ldomNode *child = node->getChildNode(i);
-        lString16 nodename = child->getNodeName();
+        if (child->getText() == lString16::empty_str)
+        {
+            continue;
+        }
+        lString16 childname = child->getNodeName();
 
         if (child->isText())
         {
             lString16 text = child->getText();
-            //writer->OnTagOpen(L"", nodename.c_str());
             writer->OnTagOpen(L"", L"span");
             writer->OnText(text.c_str(), text.length(), 0);
             writer->OnTagClose(L"", L"span");
-            //writer->OnTagClose(L"", nodename.c_str());
 
-            //CRLog::error("<%s> text",LCSTR(child->getNodeName()));
-            //CRLog::error("[%s]",LCSTR(text));
-            //CRLog::error("</%s> text",LCSTR(child->getNodeName()));
-            //CRLog::error("TEXT nodepath = %s",LCSTR(node->getXPath()));
+            //CRLog::error("<text> [%s] </text>", LCSTR(text));
+            //CRLog::error("TEXT nodepath = %s", LCSTR(node->getXPath()));
         }
         else if (child->isNodeName("a"))
         {
@@ -55,10 +55,10 @@ void FootnotesPrinter::recurseNodesToPrint(ldomNode *node, LvDomWriter *writer)
                 lString16 href = child->getHRef();
                 if (href != lString16::empty_str)
                 {
-                    writer->OnTagOpen(L"", nodename.c_str());
+                    writer->OnTagOpen(L"", L"a");
                     writer->OnAttribute(L"", L"href", href.c_str());
                     recurseNodesToPrint(child, writer);
-                    writer->OnTagClose(L"", nodename.c_str());
+                    writer->OnTagClose(L"", L"a");
                 }
             }
             else
@@ -69,14 +69,13 @@ void FootnotesPrinter::recurseNodesToPrint(ldomNode *node, LvDomWriter *writer)
         else if (child->isNodeName("title"))
         {
             //skip all title tags including their content
-            continue;
         }
         else
         {
             //CRLog::error("<%s>",LCSTR(child->getNodeName()));
-            writer->OnTagOpen(L"", nodename.c_str());
+            writer->OnTagOpen(L"", childname.c_str());
             recurseNodesToPrint(child, writer);
-            writer->OnTagClose(L"", nodename.c_str());
+            writer->OnTagClose(L"", childname.c_str());
             //CRLog::error("ELEMENT nodepath = %s",LCSTR(node->getXPath()));
             //CRLog::error("</%s>",LCSTR(child->getNodeName()));
         }
@@ -154,7 +153,7 @@ ldomNode * FootnotesPrinter::FindTextInParents(ldomNode *node)
         int num;
         if (text.atoi(num))
         {
-            CRLog::error("num = %d",num);
+            //CRLog::error("num = %d",num);
             continue;
         }
         //text is not a number
@@ -217,14 +216,14 @@ bool FootnotesPrinter::NodeIsBreak(ldomNode *node, lString16 nextId)
     return false;
 }
 
-void FootnotesPrinter::PrintNum(lString16 num)
+void FootnotesPrinter::PrintNum(lString16 num, lString16 id)
 {
     writer_->OnTagOpen(L"", L"title");
     writer_->OnText(num.c_str(), num.length(), 0);
     writer_->OnTagClose(L"", L"title");
 }
 
-void FootnotesPrinter::PrintLinkNum(lString16 num, lString16 id)
+void Epub3NotesPrinter::PrintNum(lString16 num, lString16 id)
 {
 
     writer_->OnTagOpen(L"", L"title");
@@ -240,7 +239,7 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
 {
     //CRLog::error("PRINTER");
     StrMap map;
-    PrintHeader();
+    this->PrintHeader();
 
     for (int i = 0; i < LinksList.length(); i++)
     {
@@ -291,14 +290,7 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
             writer_->OnTagOpen(L"", L"section");
             writer_->OnAttribute(L"", L"id", href.c_str());
 
-            if(hidden_)
-            {
-                PrintNum(num);
-            }
-            else
-            {
-                PrintLinkNum(num, currlink.id_);
-            }
+            this->PrintNum(num, currlink.id_);
             recurseNodesToPrint(node, writer_);
 
             writer_->OnTagClose(L"", L"section");
@@ -323,16 +315,8 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
             //CRLog::error("found node = %s",LCSTR(found->getXPath()));
             writer_->OnTagOpen(L"", L"section");
             writer_->OnAttribute(L"", L"id", href.c_str());
-            writer_->OnTagOpen(L"", L"p");
 
-            if(hidden_)
-            {
-                PrintNum(num);
-            }
-            else
-            {
-                PrintLinkNum(num, currlink.id_);
-            }
+            this->PrintNum(num, currlink.id_);
 
             if(found->isText())
             {
@@ -340,7 +324,6 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
                 writer_->OnTagOpen(L"", L"span");
                 writer_->OnText(text.c_str(), text.length(),0);
                 writer_->OnTagClose(L"", L"span");
-                CRLog::error("text1 = %s",LCSTR(text));
             }
             else
             {
@@ -349,6 +332,7 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
                 writer_->OnTagClose(L"", found->getNodeName().c_str());
             }
 
+            //process next brothers of "found" node, until next link node
             for (int i = index + 1; i < parent->getChildCount(); i++)
             {
                 ldomNode *child = parent->getChildNode(i);
@@ -373,7 +357,6 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
                 writer_->OnTagClose(L"", child->getNodeName().c_str());
                 }
             }
-            writer_->OnTagClose(L"", L"p");
             writer_->OnTagClose(L"", L"section");
         }
     }
@@ -391,22 +374,29 @@ void FootnotesPrinter::PrintHeader()
     writer_->OnTagOpen(L"", L"body");
     lString16 space("\u200b");
 
-    if(hidden_)
-    {
-        writer_->OnAttribute(L"", L"name", L"notes_hidden");
-        writer_->OnAttribute(L"", L"id", NOTES_HIDDEN_ID); // used in LDocView::GetpagesCount() for hiding all the footnotes pages.
-        writer_->OnTagOpenNoAttr(L"", L"h1");
-        writer_->OnText(space.c_str(), space.length(), 0); // h1 adds new page break
-        writer_->OnTagClose(L"", L"h1");
+    writer_->OnAttribute(L"", L"name", L"notes_hidden");
+    writer_->OnAttribute(L"", L"id", NOTES_HIDDEN_ID); // used in LDocView::GetpagesCount() for hiding all the footnotes pages.
+    writer_->OnTagOpenNoAttr(L"", L"h1");
+    writer_->OnText(space.c_str(), space.length(), 0); // h1 adds new page break
+    writer_->OnTagClose(L"", L"h1");
 
-        writer_->OnTagOpenNoAttr(L"", L"div");
-        writer_->OnText(space.c_str(), space.length(), 0); // h1 adds new page break
-        writer_->OnTagClose(L"", L"div");
-    }
-    else
-    {
-        writer_->OnAttribute(L"", L"name", L"notes");
-    }
+    writer_->OnTagOpenNoAttr(L"", L"div");
+    writer_->OnText(space.c_str(), space.length(), 0); // h1 adds new page break
+    writer_->OnTagClose(L"", L"div");
+
+    writer_->OnTagOpenNoAttr(L"", L"h1");
+    writer_->OnText(title_.c_str(), title_.length(), 0); // footnotes header text
+    writer_->OnTagClose(L"", L"h1");
+}
+
+void Epub3NotesPrinter::PrintHeader()
+{
+    writer_->OnTagOpenNoAttr(L"", L"FictionBook");
+    writer_->OnTagOpenNoAttr(L"", L"FictionBook");
+    writer_->OnTagOpen(L"", L"body");
+    lString16 space("\u200b");
+
+    writer_->OnAttribute(L"", L"name", L"notes");
 
     writer_->OnTagOpenNoAttr(L"", L"h1");
     writer_->OnText(title_.c_str(), title_.length(), 0); // footnotes header text
@@ -421,3 +411,4 @@ bool Epub3NotesPrinter::PrintIsAllowed(lString16 href)
     }
     return false;
 }
+

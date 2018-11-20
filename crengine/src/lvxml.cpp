@@ -2623,7 +2623,6 @@ bool LvXmlParser::Parse()
     bool in_rearnote = false;
     bool in_rearnotes = false;
     bool in_div = false;
-    bool in_div_section = false;
 
     bool is_note= false;
     bool save_a_content= false;
@@ -2739,11 +2738,6 @@ bool LvXmlParser::Parse()
                     else
                     {
                         in_div = false;
-                        if(in_div_section)
-                        {
-                            callback_->OnTagClose(L"",L"p");
-                        }
-                        in_div_section = false;
                     }
                 }
 
@@ -2834,30 +2828,8 @@ bool LvXmlParser::Parse()
                     }
                 }
 
-                if(in_div_section &&(tagname =="h1"||
-                                  tagname =="h2"||
-                                  tagname =="h3"||
-                                  tagname =="h4"||
-                                  tagname =="h5"||
-                                  tagname =="h6"||
-                                  tagname =="title"))
-                {
-                    if(!close_flag)
-                    {
-                        callback_->OnAttribute(L"",L"class",L"nobreak");
-                    }
-                    else
-                    {
-                        callback_->OnText(L"   ", 3, flags);
-                    }
-                }
-                if(in_rearnotes && (tagname =="h1"||
-                                    tagname =="h2"||
-                                    tagname =="h3"||
-                                    tagname =="h4"||
-                                    tagname =="h5"||
-                                    tagname =="h6"||
-                                    tagname =="title"))
+                if(in_rearnotes && (tagname =="h1"|| tagname =="h2"|| tagname =="h3"||
+                                    tagname =="h4"|| tagname =="h5"|| tagname =="h6"|| tagname =="title"))
                 {
                     if(!close_flag)
                     {
@@ -3086,11 +3058,6 @@ bool LvXmlParser::Parse()
                     PreProcessXmlString(attrvalue, 0, m_conv_table);
                 }
 
-                if(in_div && attrname == "class" && attrvalue == "section")
-                {
-                    in_div_section = true;
-                    callback_->OnTagOpenNoAttr(L"",L"p");
-                }
                 //epub3
                 if(in_section && attrname == "type" && attrvalue == "rearnote")
                 {

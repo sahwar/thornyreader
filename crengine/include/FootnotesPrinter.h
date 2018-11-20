@@ -38,11 +38,9 @@ public:
 
     bool PrintLinksList(LVArray<LinkStruct> LinksList);
 
-    void PrintHeader();
+    virtual void PrintHeader();
 
-    void PrintNum(lString16 num);
-
-    void PrintLinkNum(lString16 num, lString16 id);
+    virtual void PrintNum(lString16 num , lString16 id);
 
     virtual bool PrintIsAllowed(lString16 href){ return true;};
 };
@@ -62,6 +60,10 @@ public:
         hidden_ = false;
     }
     bool PrintIsAllowed(lString16 href);
+
+    void PrintNum(lString16 num , lString16 id);
+
+    void PrintHeader();
 };
 
 #endif //CODE_THORNYREADER_PURE_FOOTNOTESPRINTER_H
