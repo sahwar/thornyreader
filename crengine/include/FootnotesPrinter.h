@@ -43,6 +43,8 @@ public:
     virtual void PrintNum(lString16 num , lString16 id);
 
     virtual bool PrintIsAllowed(lString16 href){ return true;};
+
+    void PrintLinkNode(ldomNode *node, LvDomWriter *writer);
 };
 
 class Epub3NotesPrinter : public  FootnotesPrinter

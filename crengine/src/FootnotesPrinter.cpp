@@ -4,6 +4,28 @@
 #include "crengine/include/crconfig.h"
 #include "crengine/include/FootnotesPrinter.h"
 
+void FootnotesPrinter::PrintLinkNode(ldomNode *node, LvDomWriter *writer)
+{
+    if (node->hasAttribute(attr_href))
+    {
+        lString16 href = node->getHRef();
+        if (href != lString16::empty_str)
+        {
+            CRLog::error("href = %s",LCSTR(href));
+            writer->OnTagOpen(L"", L"a");
+            writer->OnAttribute(L"", L"href", href.c_str());
+            writer->OnAttribute(L"", L"class", L"link_valid");
+            recurseNodesToPrint(node, writer);
+            writer->OnTagClose(L"", L"a");
+        }
+    }
+    else
+    {
+        writer->OnTagOpen(L"", L"a");
+        recurseNodesToPrint(node, writer);
+        writer->OnTagClose(L"", L"a");
+    }
+}
 
 void FootnotesPrinter::recurseNodesToPrint(ldomNode *node, LvDomWriter *writer)
 {
@@ -50,21 +72,7 @@ void FootnotesPrinter::recurseNodesToPrint(ldomNode *node, LvDomWriter *writer)
                 continue;
             }
 
-            if (child->hasAttribute(attr_href))
-            {
-                lString16 href = child->getHRef();
-                if (href != lString16::empty_str)
-                {
-                    writer->OnTagOpen(L"", L"a");
-                    writer->OnAttribute(L"", L"href", href.c_str());
-                    recurseNodesToPrint(child, writer);
-                    writer->OnTagClose(L"", L"a");
-                }
-            }
-            else
-            {
-                recurseNodesToPrint(child, writer);
-            }
+            PrintLinkNode(child, writer_);
         }
         else if (child->isNodeName("title"))
         {
@@ -314,7 +322,6 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
             {
                 return NULL;
             }
-            //CRLog::error("found node = %s",LCSTR(found->getXPath()));
             writer_->OnTagOpen(L"", L"section");
             writer_->OnAttribute(L"", L"id", href.c_str());
 
@@ -333,6 +340,10 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
                     writer_->OnText(text.c_str(), text.length(), 0);
                     writer_->OnTagClose(L"", L"span");
                 }
+            }
+            else if (found->isNodeName("a"))
+            {
+                PrintLinkNode(found, writer_);
             }
             else
             {
@@ -357,6 +368,10 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
                     writer_->OnTagOpen(L"", L"span");
                     writer_->OnText(text.c_str(), text.length(),0);
                     writer_->OnTagClose(L"", L"span");
+                }
+                else if(child->isNodeName("a"))
+                {
+                    PrintLinkNode(child, writer_);
                 }
                 else
                 {
