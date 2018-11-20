@@ -289,10 +289,12 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
             //fb2, epub structure
             writer_->OnTagOpen(L"", L"section");
             writer_->OnAttribute(L"", L"id", href.c_str());
+            writer_->OnTagOpen(L"", L"p");
 
             this->PrintNum(num, currlink.id_);
             recurseNodesToPrint(node, writer_);
 
+            writer_->OnTagClose(L"", L"p");
             writer_->OnTagClose(L"", L"section");
         }
         else
@@ -317,6 +319,7 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
             writer_->OnAttribute(L"", L"id", href.c_str());
 
             this->PrintNum(num, currlink.id_);
+            writer_->OnTagOpen(L"", L"p");
 
             if(found->isText())
             {
@@ -357,6 +360,7 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
                 writer_->OnTagClose(L"", child->getNodeName().c_str());
                 }
             }
+            writer_->OnTagClose(L"", L"p");
             writer_->OnTagClose(L"", L"section");
         }
     }
