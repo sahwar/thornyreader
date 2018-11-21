@@ -1553,27 +1553,19 @@ void LFormattedText::Draw( LVDrawBuf * buf, int x, int y, ldomMarkedRangeList * 
                         //CRLog::error("str = [%s]",LCSTR(lString16(str,word->t.len)));
                         int start = 0;
                         bool last_space = false;
-                        //bool last_punct = false;
+                        bool last_punct = false;
                         bool last_state = isRTL(str[0]);
                         for (int c = 0; c < word->t.len; c++)
                         {
                             lChar16 ch = str[c];
                             bool is_space = ch == ' ';
-                            //bool is_punct = isPunct(ch);
-                            if(last_state && isPunct(ch))// || is_space)
-                            {
-                                continue;
-                            }
-
+                            bool is_punct = isPunct(ch);
                             bool curr_state = (is_space)? last_state : isRTL(ch);
-                            //lString16(str,word->t.len);
-                            bool break_char = (is_space || last_space);// || is_punct || last_punct);
+
+                            bool break_char = (is_space || last_space || is_punct || last_punct);
                             if (curr_state != last_state || break_char)
                             {
-                                //CRLog::error("state_changed or space");
                                 int len = c-start;
-                                //CRLog::error("start = %d, len = %d , c = %d",start,len, c);
-                                //CRLog::error("frag1 = [%s]",LCSTR(lString16(str+start,len)));
                                 if(len>0)
                                 {
                                     WordItem wordItem(
@@ -1590,6 +1582,7 @@ void LFormattedText::Draw( LVDrawBuf * buf, int x, int y, ldomMarkedRangeList * 
                                 }
                                 last_state = curr_state;
                                 last_space = is_space;
+                                last_punct = is_punct;
                             }
                         }
 

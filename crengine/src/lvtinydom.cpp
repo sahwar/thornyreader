@@ -5750,6 +5750,13 @@ LVArray<TextRectGroup> reverseWordsOrder(LVArray<TextRectGroup> words)
         {
             if(nonRTLBuffer.length()>0)
             {
+                /*
+                CRLog::trace("nonrtlbuff start 1");
+                for (int i = 0; i < nonRTLBuffer.length(); i++)
+                {
+                    CRLog::error("nonrtlbuffer %d , [%s]",i, LCSTR(nonRTLBuffer.get(i).getText()));
+                }
+                 */
                 TextRectGroup firstitem = nonRTLBuffer.get(0);
                 TextRectGroup lastitem = nonRTLBuffer.get(nonRTLBuffer.length()-1);
 
@@ -5823,6 +5830,13 @@ LVArray<TextRectGroup> reverseWordsOrder(LVArray<TextRectGroup> words)
     }
     if(nonRTLBuffer.length()>0)
     {
+        /*
+        CRLog::trace("nonrtlbuff start 2");
+        for (int i = 0; i < nonRTLBuffer.length(); i++)
+        {
+            CRLog::error("nonrtlbuffer %d , [%s]",i, LCSTR(nonRTLBuffer.get(i).getText()));
+        }
+         */
         TextRectGroup firstitem = nonRTLBuffer.get(0);
         TextRectGroup lastitem = nonRTLBuffer.get(nonRTLBuffer.length()-1);
 
@@ -5890,6 +5904,7 @@ LVArray<TextRect> reverseLine(TextRectGroup group)
     //CRLog::error("WORDS BREAKUP START");
     int start = 0;
     bool last_space = false;
+    bool last_punct = false;
 
     lString16 last_text = line.get(0).getText();
     bool last_state = char_isRTL(last_text.firstChar());
@@ -5901,33 +5916,35 @@ LVArray<TextRect> reverseLine(TextRectGroup group)
 
         lChar16 ch = curr_text.firstChar();
         bool is_space = ch == ' ';
+        bool is_punct = char_isPunct(ch);
 
         bool curr_state = (is_space)? last_state : char_isRTL(ch);
 
-        if(last_state && char_isPunct(ch))
-        {
-            continue;
-        }
+        //curr_state = (is_punct && last_space)? : curr_state
+        bool break_char = (is_space || last_space || is_punct || last_punct);
 
         //CRLog::error("letter = [%s]",LCSTR(curr_text));
-        if ((curr_state != last_state) || is_space || last_space )
+        if (curr_state != last_state || break_char )
         {
-            TextRectGroup word;
-            word.list_.reserve(c - start + 1);
-            for (int i = start; i < c; i++)
+            int len = c-start;
+            if(len>0)
             {
-                word.list_.add(line.get(i));
-            }
-            if (!word.list_.empty())
-            {
+                TextRectGroup word;
+                word.list_.reserve(c - start + 1);
+                for (int i = start; i < c; i++)
+                {
+                    word.list_.add(line.get(i));
+                }
+
+                //word.is_rtl_ = (is_punct)? ( (last_space)? true : curr_state) : last_state;
                 word.is_rtl_ = last_state;
                 words.add(word);
                 start = c;
-                //CRLog::error("added word = [%s]  (%s)",LCSTR(word.getText()),(word.is_rtl_)?"RTL":"NOT RTL");
             }
         }
         last_state = curr_state;
         last_space = is_space;
+        last_punct = is_punct;
     }
     TextRectGroup word;
     word.list_.reserve(line.length() - start + 1);
@@ -5939,6 +5956,13 @@ LVArray<TextRect> reverseLine(TextRectGroup group)
     words.add(word);
     //CRLog::error("added word = [%s]  (%s)",LCSTR(word.getText()),(word.is_rtl_)?"RTL":"NOT RTL");
     //CRLog::error("WORDS BREAKUP END");
+
+    //to avoid first space problems with text formatter
+    if(words.get(0).getText() == " ")
+    {
+        words.add(words.get(0));
+        words.remove(0);
+    }
     words = reverseWordsOrder(words);
 
     for (int w = 0; w < words.length(); w++)
