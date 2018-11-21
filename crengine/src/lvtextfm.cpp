@@ -1545,80 +1545,65 @@ void LFormattedText::Draw( LVDrawBuf * buf, int x, int y, ldomMarkedRangeList * 
                                 srcline->letter_spacing,
                                 false);
                     }
-                    else
+                    else //rtl
                     {
                         printrtl = true;
 
                         //CRLog::error("word start = %d, len = %d",word->t.start,word->t.len);
                         //CRLog::error("str = [%s]",LCSTR(lString16(str,word->t.len)));
                         int start = 0;
-
-                        bool state = isRTL(str[0]);
-                        for (int i = 0; i < word->t.len; i++)
+                        bool last_space = false;
+                        //bool last_punct = false;
+                        bool last_state = isRTL(str[0]);
+                        for (int c = 0; c < word->t.len; c++)
                         {
-                            lChar16 ch = str[i];
+                            lChar16 ch = str[c];
                             bool is_space = ch == ' ';
-
-                            if((state && isPunct(ch)) || is_space)
+                            //bool is_punct = isPunct(ch);
+                            if(last_state && isPunct(ch))// || is_space)
                             {
                                 continue;
                             }
 
-                            bool is_rtl = isRTL(ch);
+                            bool curr_state = (is_space)? last_state : isRTL(ch);
                             //lString16(str,word->t.len);
-                            if (is_rtl != state )
+                            bool break_char = (is_space || last_space);// || is_punct || last_punct);
+                            if (curr_state != last_state || break_char)
                             {
                                 //CRLog::error("state_changed or space");
-                                int len = i-start;
-                                //CRLog::error("start = %d, len = %d , i = %d",start,len, i);
+                                int len = c-start;
+                                //CRLog::error("start = %d, len = %d , c = %d",start,len, c);
                                 //CRLog::error("frag1 = [%s]",LCSTR(lString16(str+start,len)));
+                                if(len>0)
+                                {
+                                    WordItem wordItem(
+                                            x + frmline->x + word->x,
+                                            line_y + (frmline->baseline - font->getBaseline()) + word->y,
+                                            str + start,
+                                            len,
+                                            flgHyphen,
+                                            srcline,
+                                            last_state);
 
-                                WordItem wordItem(
-                                        x + frmline->x + word->x,
-                                        line_y + (frmline->baseline - font->getBaseline()) + word->y,
-                                        str+start,
-                                        len,
-                                        flgHyphen,
-                                        srcline,
-                                        state);
-
-                                WordItems.add(wordItem);
-                                state = is_rtl;
-                                start = i;
+                                    WordItems.add(wordItem);
+                                    start = c;
+                                }
+                                last_state = curr_state;
+                                last_space = is_space;
                             }
                         }
-                        if (start == 0)
-                        {
-                            WordItem wordItem(
-                                    x + frmline->x + word->x,
-                                    line_y + (frmline->baseline - font->getBaseline()) + word->y,
-                                    str,
-                                    word->t.len,
-                                    flgHyphen,
-                                    srcline,
-                                    state);
-                            WordItems.add(wordItem);
-                            //CRLog::error("start = %d, len = %d",start,word->t.len);
-                            //CRLog::error("frag2 = [%s]",LCSTR(lString16(str,word->t.len)));
-                        }
-                        else
-                        {
-                            int len = word->t.len - start;
-                            //CRLog::error("start = %d, len = %d",start,len);
-                            //CRLog::error("frag3 = [%s]",LCSTR(lString16(str+start,len)));
 
-                            WordItem wordItem(
-                                    x + frmline->x + word->x,
-                                    line_y + (frmline->baseline - font->getBaseline()) + word->y,
-                                    str + start,
-                                    len,
-                                    flgHyphen,
-                                    srcline,
-                                    state);
-                            WordItems.add(wordItem);
+                        int len = word->t.len - start;
 
-                        }
-                        //WordItems.add(wordItem);
+                        WordItem wordItem(
+                                x + frmline->x + word->x,
+                                line_y + (frmline->baseline - font->getBaseline()) + word->y,
+                                str + start,
+                                len,
+                                flgHyphen,
+                                srcline,
+                                last_state);
+                        WordItems.add(wordItem);
                     }
                     if ( cl!=0xFFFFFFFF )
                         buf->SetTextColor( oldColor );
@@ -1654,15 +1639,28 @@ void LFormattedText::Draw( LVDrawBuf * buf, int x, int y, ldomMarkedRangeList * 
 
                     if( curr.is_rtl_ || (curr.hasPunct() && prev_state))
                     {
-                        if(nonRTLBuffer.length()>1)
+                        if(nonRTLBuffer.length()>0)
                         {
+                            WordItem firstitem = nonRTLBuffer.get(0);
+                            WordItem lastitem = nonRTLBuffer.get(nonRTLBuffer.length()-1);
+
+                            if(firstitem.getText() == " ")
+                            {
+                                nonRTLBuffer.remove(0);
+                                nonRTLBuffer.add(firstitem);
+                            }
+                            if(lastitem.getText() == " ")
+                            {
+                                nonRTLBuffer.remove(nonRTLBuffer.length()-1);
+                                nonRTLBuffer.insert(0,lastitem);
+                            }
                             int startx_nonrtlbuff = startx - buffwidth;
                             for (int k =nonRTLBuffer.length()-1; k >=0 ; k--)
                             {
                                 WordItem curr = nonRTLBuffer.get(k);
                                 LVFont *font = (LVFont *) curr.srcline_->t.font;
 
-                                //CRLog::error("nonrtlbuf1 , word = [%s]",LCSTR(lString16(curr.text_,curr.len_)));
+                                CRLog::error("nonrtlbuf1 , word = [%s]",LCSTR(lString16(curr.text_,curr.len_)));
 
                                 font->DrawTextString(buf,
                                         startx_nonrtlbuff,
@@ -1681,28 +1679,7 @@ void LFormattedText::Draw( LVDrawBuf * buf, int x, int y, ldomMarkedRangeList * 
                             buffwidth = 0;
                             nonRTLBuffer.clear();
                         }
-                        else if (nonRTLBuffer.length() == 1)
-                        {
 
-                            WordItem curr = nonRTLBuffer.get(0);
-                            LVFont *font = (LVFont *) curr.srcline_->t.font;
-
-                            //CRLog::error("nonrtlbuf2 ,word = [%s]",LCSTR(lString16(curr.text_,curr.len_)));
-
-                            font->DrawTextString(buf,
-                                    curr.x_,
-                                    curr.y_,
-                                    curr.text_,
-                                    curr.len_,
-                                    '?',
-                                    NULL,
-                                    curr.flgHyphen_,
-                                    curr.srcline_->flags & 0x0F00,
-                                    curr.srcline_->letter_spacing,
-                                    false);
-                            buffwidth = 0;
-                            nonRTLBuffer.clear();
-                        }
                         //CRLog::error("rtl after buf, word = [%s]",LCSTR(lString16(curr.text_,curr.len_)));
 
                         font->DrawTextString(buf,
@@ -1734,12 +1711,25 @@ void LFormattedText::Draw( LVDrawBuf * buf, int x, int y, ldomMarkedRangeList * 
                 }
                 if(nonRTLBuffer.length()>0)
                 {
+                    WordItem firstitem = nonRTLBuffer.get(0);
+                    WordItem lastitem = nonRTLBuffer.get(nonRTLBuffer.length()-1);
+
+                    if(firstitem.getText() == " ")
+                    {
+                        nonRTLBuffer.remove(0);
+                        nonRTLBuffer.add(firstitem);
+                    }
+                    if(lastitem.getText() == " ")
+                    {
+                        nonRTLBuffer.remove(nonRTLBuffer.length()-1);
+                        nonRTLBuffer.insert(0,lastitem);
+                    }
                     int startx_nonrtlbuff = startx - buffwidth;
                     for (int k =nonRTLBuffer.length()-1; k >=0 ; k--)
                     {
 
                         WordItem curr = nonRTLBuffer.get(k);
-                        //CRLog::error("5 nonrtl no rtl in front , word = [%s]",LCSTR(lString16(curr.text_,curr.len_)));
+                        //CRLog::error(" nonrtl no rtl in front , word = [%s]",LCSTR(lString16(curr.text_,curr.len_)));
                         LVFont *font = (LVFont *) curr.srcline_->t.font;
                         font->DrawTextString(buf,
                                 startx_nonrtlbuff,
