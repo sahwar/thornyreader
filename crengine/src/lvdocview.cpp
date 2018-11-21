@@ -2013,30 +2013,28 @@ LVArray<TextRect> LVDocView::GetPageFootnotesLinks(int page, bool rightpage)
 		return result;
 	}
 
-	LVFont *font = this->GetBaseFont().get();
-	TextRect word = link_list.get(0);
-	lvRect rect = word.getRect();
-	lvRect last = rect;
-	lString16 href = word.getText();
+	TextRect  lastword = link_list.get(0);
+	lvRect    lastrect = lastword.getRect();
+	lString16 lasthref = lastword.getText();
 
 	for (int i = 0; i < link_list.length(); i++)
 	{
-		TextRect word = link_list.get(i);
-		lvRect raw_rect = word.getRect();
-		if (raw_rect.top == rect.top && raw_rect.bottom == rect.bottom)
+		TextRect  currword = link_list.get(i);
+		lvRect    currrect = currword.getRect();
+		lString16 currhref = currword.getText();
+        if (currrect.top == lastrect.top && currrect.bottom == lastrect.bottom && currhref == lasthref )
 		{
-			rect.right = raw_rect.right;
+			lastrect.right = currrect.right;
 		}
 		else
 		{
-			result.add(TextRect(NULL, rect, href));
-			rect = word.getRect();
+			result.add(TextRect(NULL, lastrect, lasthref));
+			lastrect = currword.getRect();
 		}
-		href = word.getText();
-		last = raw_rect;
+		lasthref = currhref;
 	}
 	//last link
-	result.add(TextRect(NULL, rect, href));
+	result.add(TextRect(NULL, lastrect, lasthref));
 	return result;
 }
 
