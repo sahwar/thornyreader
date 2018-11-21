@@ -34,7 +34,7 @@ public:
 
     bool NodeIsBreak(ldomNode *node, lString16 nextId);
 
-    void recurseNodesToPrint(ldomNode *node, LvDomWriter *writer);
+    void recurseNodesToPrint(ldomNode *node);
 
     bool PrintLinksList(LVArray<LinkStruct> LinksList);
 
@@ -44,7 +44,7 @@ public:
 
     virtual bool PrintIsAllowed(lString16 href){ return true;};
 
-    void PrintLinkNode(ldomNode *node, LvDomWriter *writer);
+    void PrintLinkNode(ldomNode *node);
 };
 
 class Epub3NotesPrinter : public  FootnotesPrinter

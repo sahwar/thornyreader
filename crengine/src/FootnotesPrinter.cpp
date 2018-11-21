@@ -4,30 +4,29 @@
 #include "crengine/include/crconfig.h"
 #include "crengine/include/FootnotesPrinter.h"
 
-void FootnotesPrinter::PrintLinkNode(ldomNode *node, LvDomWriter *writer)
+void FootnotesPrinter::PrintLinkNode(ldomNode *node)
 {
     if (node->hasAttribute(attr_href))
     {
         lString16 href = node->getHRef();
         if (href != lString16::empty_str)
         {
-            CRLog::error("href = %s",LCSTR(href));
-            writer->OnTagOpen(L"", L"a");
-            writer->OnAttribute(L"", L"href", href.c_str());
-            writer->OnAttribute(L"", L"class", L"link_valid");
-            recurseNodesToPrint(node, writer);
-            writer->OnTagClose(L"", L"a");
+            writer_->OnTagOpen(L"", L"a");
+            writer_->OnAttribute(L"", L"href", href.c_str());
+            writer_->OnAttribute(L"", L"class", L"link_valid");
+            recurseNodesToPrint(node);
+            writer_->OnTagClose(L"", L"a");
         }
     }
     else
     {
-        writer->OnTagOpen(L"", L"a");
-        recurseNodesToPrint(node, writer);
-        writer->OnTagClose(L"", L"a");
+        writer_->OnTagOpen(L"", L"a");
+        recurseNodesToPrint(node);
+        writer_->OnTagClose(L"", L"a");
     }
 }
 
-void FootnotesPrinter::recurseNodesToPrint(ldomNode *node, LvDomWriter *writer)
+void FootnotesPrinter::recurseNodesToPrint(ldomNode *node)
 {
     if (node->isNull())
     {
@@ -48,9 +47,9 @@ void FootnotesPrinter::recurseNodesToPrint(ldomNode *node, LvDomWriter *writer)
         if (child->isText())
         {
             lString16 text = child->getText();
-            writer->OnTagOpen(L"", L"span");
-            writer->OnText(text.c_str(), text.length(), 0);
-            writer->OnTagClose(L"", L"span");
+            writer_->OnTagOpen(L"", L"span");
+            writer_->OnText(text.c_str(), text.length(), 0);
+            writer_->OnTagClose(L"", L"span");
 
             //CRLog::error("<text> [%s] </text>", LCSTR(text));
             //CRLog::error("TEXT nodepath = %s", LCSTR(node->getXPath()));
@@ -72,7 +71,7 @@ void FootnotesPrinter::recurseNodesToPrint(ldomNode *node, LvDomWriter *writer)
                 continue;
             }
 
-            PrintLinkNode(child, writer_);
+            PrintLinkNode(child);
         }
         else if (child->isNodeName("title"))
         {
@@ -81,9 +80,9 @@ void FootnotesPrinter::recurseNodesToPrint(ldomNode *node, LvDomWriter *writer)
         else
         {
             //CRLog::error("<%s>",LCSTR(child->getNodeName()));
-            writer->OnTagOpen(L"", childname.c_str());
-            recurseNodesToPrint(child, writer);
-            writer->OnTagClose(L"", childname.c_str());
+            writer_->OnTagOpen(L"", childname.c_str());
+            recurseNodesToPrint(child);
+            writer_->OnTagClose(L"", childname.c_str());
             //CRLog::error("ELEMENT nodepath = %s",LCSTR(node->getXPath()));
             //CRLog::error("</%s>",LCSTR(child->getNodeName()));
         }
@@ -300,7 +299,7 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
             writer_->OnTagOpen(L"", L"p");
 
             this->PrintNum(num, currlink.id_);
-            recurseNodesToPrint(node, writer_);
+            recurseNodesToPrint(node);
 
             writer_->OnTagClose(L"", L"p");
             writer_->OnTagClose(L"", L"section");
@@ -343,12 +342,12 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
             }
             else if (found->isNodeName("a"))
             {
-                PrintLinkNode(found, writer_);
+                PrintLinkNode(found);
             }
             else
             {
                 writer_->OnTagOpen(L"", found->getNodeName().c_str());
-                recurseNodesToPrint(found, writer_);
+                recurseNodesToPrint(found);
                 writer_->OnTagClose(L"", found->getNodeName().c_str());
             }
 
@@ -371,13 +370,13 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
                 }
                 else if(child->isNodeName("a"))
                 {
-                    PrintLinkNode(child, writer_);
+                    PrintLinkNode(child);
                 }
                 else
                 {
                 //text is not a number
                 writer_->OnTagOpen(L"", child->getNodeName().c_str());
-                recurseNodesToPrint(child, writer_);
+                recurseNodesToPrint(child);
                 writer_->OnTagClose(L"", child->getNodeName().c_str());
                 }
             }
@@ -387,7 +386,7 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
     }
 
     writer_->OnTagClose(L"", L"body");
-    //writer.OnTagOpen(L"", L"NoteFragment");
+    //writer_.OnTagOpen(L"", L"NoteFragment");
 
     return true;
 }
