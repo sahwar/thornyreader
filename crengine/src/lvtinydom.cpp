@@ -6129,7 +6129,7 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
             ldomNode* parent_temp= parent_node;
             while (parent_temp != NULL)
             {
-                if (parent_temp->getAttributeValue("dir") == "rtl")
+                if (parent_temp->getAttributeValue("dir") == "rtl" || parent_temp->getAttributeValue("class") == "rtl")
                 {
                     this->contains_rtl = true;
                     break;
