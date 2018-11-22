@@ -669,6 +669,8 @@ public:
     lString16 getMainParentName();
     //returns specified parent node from ancestor nodes. Returns NULL if not found.
     ldomNode *getParentNode(const char *name);
+
+    bool isRTL();
 };
 
 /**

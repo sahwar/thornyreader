@@ -5626,7 +5626,7 @@ class TextRectGroup{
 public:
     TextRectGroup(){};
     LVArray<TextRect> list_;
-    bool is_rtl_;
+    bool is_rtl_ = false;
 
     int getWidth(LVFont *font)
     {
@@ -5667,6 +5667,25 @@ public:
     void addTextRect(TextRect textRect)
     {
         list_.add(textRect);
+    }
+
+    bool checkLineRTL()
+    {
+        if (list_.empty())
+        {
+            return false;
+        }
+        //CRLog::error("line length = %d",line.length());
+
+        for (int i = 0; i < list_.length(); i++)
+        {
+            lChar16 ch = list_.get(i).getText().firstChar();
+            if(char_isRTL(ch))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 };
 
@@ -5730,7 +5749,18 @@ LVArray<TextRectGroup> reverseWordsOrder(LVArray<TextRectGroup> words)
 
     TextRectGroup last_word = words.get(words.length()-1);
     TextRect last = last_word.list_.get(last_word.list_.length()-1);
-    if(last.getText().lastChar() == ' ')
+
+    bool line_isRTL = false;
+    for (int i = 0; i < words.length(); i++)
+    {
+        if(words.get(i).is_rtl_)
+        {
+            line_isRTL = true;
+            break;
+        }
+    }
+
+    if(line_isRTL && last.getText().lastChar() == ' ')
     {
         startx -= font->getCharWidth(' ');
     }
@@ -5840,12 +5870,12 @@ LVArray<TextRectGroup> reverseWordsOrder(LVArray<TextRectGroup> words)
         TextRectGroup firstitem = nonRTLBuffer.get(0);
         TextRectGroup lastitem = nonRTLBuffer.get(nonRTLBuffer.length()-1);
 
-        if(firstitem.getText() == " ")
+        if(line_isRTL && firstitem.getText() == " ")
         {
             nonRTLBuffer.remove(0);
             nonRTLBuffer.add(firstitem);
         }
-        if(lastitem.getText() == " ")
+        if(line_isRTL && lastitem.getText() == " ")
         {
             nonRTLBuffer.remove(nonRTLBuffer.length()-1);
             nonRTLBuffer.insert(0,lastitem);
@@ -6009,15 +6039,19 @@ LVArray<TextRect> RTL_mix(LVArray<TextRect> in_list)
     lvRect first_rect = first.getRect();
 
     TextRectGroup line;
+    ldomNode * last_node = first.getNode();
+    bool last_state = last_node->isRTL();
+    bool curr_state;
+
     for (int i = 0; i < in_list.length(); i++)
     {
         TextRect curr = in_list[i];
         curr.setIndex(i);
         lvRect curr_rect = curr.getRect();
-        if(char_isRTL(curr.getText().firstChar()))
-        {
-            line.is_rtl_ = true;
-        }
+        ldomNode * curr_node = curr.getNode();
+
+        curr_state = ( curr_node != last_node)? curr_node->isRTL() : last_state;
+
         if(curr_rect.top > first_rect.top)
         {
             lines.add(line);
@@ -6025,16 +6059,20 @@ LVArray<TextRect> RTL_mix(LVArray<TextRect> in_list)
             first_rect = curr_rect;
         }
         line.addTextRect(curr);
+        last_node = curr_node;
+        last_state = curr_state;
+        if(curr_state)
+        {
+            line.is_rtl_ = true;
+        }
     }
     lines.add(line);
 
     for (int l = 0; l < lines.length(); l++)
     {
-        //CRLog::trace("line_length(%d) = %d rtl = %d",l,lines[l].list_.length(),(int)lines[l].is_rtl_);
-
-        if( lines[l].is_rtl_ )
+        if(lines[l].is_rtl_)// && lines[l].checkLineRTL())
         {
-            //CRLog::trace("reverse line %d",l);
+            //CRLog::trace("reverse line(%d) = rtl = %d text = [%s]",l,(int)lines[l].is_rtl_,LCSTR(lines[l].getText()));
             lines[l].list_ = reverseLine(lines[l]);
         }
         for (int c = 0; c < lines[l].list_.length(); c++)
@@ -7918,6 +7956,24 @@ int ldomNode::getAttrCount() const
             return me->attrCount;
         }
     }
+}
+
+bool ldomNode::isRTL()
+{
+    if (this == NULL)
+    {
+        return false;
+    }
+    ldomNode* node = this;
+    while (node->getParentNode() != NULL)
+    {
+        if (node->getAttributeValue("dir") == "rtl" || node->getAttributeValue("class") == "rtl")
+        {
+            return true;
+        }
+        node = node->getParentNode();
+    }
+    return false;
 }
 
 /// returns attribute value by attribute name id and namespace id

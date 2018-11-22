@@ -705,8 +705,7 @@ public:
             {
                 while (node->getParentNode() != NULL)
                 {
-                    if (node->getParentNode()->getAttributeValue("dir") == "rtl" || node->getAttributeValue(
-                            "class") == "rtl")
+                    if (node->getAttributeValue("dir") == "rtl" || node->getAttributeValue("class") == "rtl")
                     {
                         frmline->rtl = true;
                         //align = LTEXT_ALIGN_RIGHT;
@@ -1621,9 +1620,17 @@ void LFormattedText::Draw( LVDrawBuf * buf, int x, int y, ldomMarkedRangeList * 
             if (printrtl)
             {
                 int startx = WordItems.get(0).x_;
-
+                bool line_isRTL = false;
+                for (int i = 0; i < WordItems.length(); i++)
+                {
+                    if(WordItems.get(i).is_rtl_)
+                    {
+                        line_isRTL = true;
+                        break;
+                    }
+                }
                 WordItem last = WordItems.get(WordItems.length()-1);
-                if(last.getText().lastChar() == ' ')
+                if(line_isRTL && last.getText().lastChar() == ' ')
                 {
                     startx -= font->getCharWidth(' ');
                 }
@@ -1719,12 +1726,12 @@ void LFormattedText::Draw( LVDrawBuf * buf, int x, int y, ldomMarkedRangeList * 
                     WordItem firstitem = nonRTLBuffer.get(0);
                     WordItem lastitem = nonRTLBuffer.get(nonRTLBuffer.length()-1);
 
-                    if(firstitem.getText() == " ")
+                    if(line_isRTL && firstitem.getText() == " ")
                     {
                         nonRTLBuffer.remove(0);
                         nonRTLBuffer.add(firstitem);
                     }
-                    if(lastitem.getText() == " ")
+                    if(line_isRTL && lastitem.getText() == " ")
                     {
                         nonRTLBuffer.remove(nonRTLBuffer.length()-1);
                         nonRTLBuffer.insert(0,lastitem);
