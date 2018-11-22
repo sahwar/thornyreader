@@ -1211,38 +1211,6 @@ public:
     virtual bool processElement(ldomNode* node, ldomXRange* range);
 };
 
-class TextRect
-{
-private:
-    ldomNode* node_;
-    lvRect rect_;
-    lString16 string_;
-public:
-    TextRect() :  node_(nullptr),rect_(lvRect(0,0,0,0)),string_(lString16::empty_str) {}
-    TextRect(ldomNode* node,lvRect rect, lString16 string) :node_(node),rect_(rect){
-        string_ = string.ReplaceUnusualSpaces();
-    }
-
-    lString16 getText(){ return string_;};
-    lvRect getRect(){ return rect_;};
-    ldomNode* getNode(){ return node_;};
-    void setRect(lvRect rect){ rect_ = rect;};
-    void setString(lString16 string){ string_ = string;};
-};
-
-class ImgRect
-{
-private:
-    ldomNode* node_;
-    lvRect rect_;
-public:
-    ImgRect() :  node_(nullptr),rect_(lvRect(0,0,0,0)) {}
-    ImgRect(ldomNode* node,lvRect rect ) :node_(node),rect_(rect){}
-
-    lvRect getRect(){ return rect_;};
-    ldomNode* getNode(){ return node_;};
-};
-
 /// range for word inside text node
 class ldomWord
 {
@@ -1290,6 +1258,7 @@ private:
     ldomWord word_;
     lvRect rect_;
     lString16 string_;
+    int index_ = 0;
 public:
     TextRect() :  word_(),node_(nullptr),rect_(lvRect(0,0,0,0)),string_(lString16::empty_str) {}
     TextRect(ldomNode* node,lvRect rect, lString16 string) :node_(node),rect_(rect)
@@ -1308,6 +1277,8 @@ public:
     ldomNode* getNode(){ return node_;};
     ldomWord getWord(){return word_;};
     void setRect(lvRect rect){ rect_ = rect;};
+    void setString(lString16 string){ string_ = string;};
+    void setIndex(int index){ index_ = index;};
 };
 
 class ImgRect
