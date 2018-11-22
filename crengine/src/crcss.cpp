@@ -67,7 +67,7 @@ img, image, .section_image, .coverpage, coverpage {
   padding-bottom: 1em;
 }
 
-p image, li image , p img, li img {
+p image, li image /*, p img, li img*/ {
   display: inline;
   padding-left: 1em;
   padding-right: 1em;
@@ -86,6 +86,7 @@ a, b, strong, q, u, del, s, strike, small, big, sub, sup, acronym, span, font {
 display: none;
 }
 
+
 b, strong {
   font-weight: bold;
 }
@@ -97,7 +98,7 @@ u {
   text-decoration: underline;
 }
 /* Mozilla: 0000EE Dark: 00569f Light: 4285f4 Lebedev: 008ACE */
-a {
+.link_valid {
   color: #00569f;
 }
 del, s, strike, strikethrough {
@@ -137,14 +138,18 @@ h3, .title3 {
   font-size: 130%;
 }
 
-h1, h2, h3, title,
-h1 > p, h2 > p, h3 > p, title > p,
-.title, .title0, .title1, .title2, .title3,
-.title > p, .title0 > p, .title1 > p, .title2 > p, .title3 > p {
-  display: block;
+h1, h2, h3, title{
   page-break-before: always;
   page-break-inside: avoid;
   page-break-after: avoid;
+}
+
+h1, h2, h3, title,
+h1 > p, h2 > p, h3 > p, title > p,
+.title, .title0, .title1, .title2, .title3,
+.title > p, .title0 > p, .title1 > p, .title2 > p, .title3 > p
+h1 > span, h2 > span, h3 > span, title > span{
+  display: block;
   hyphenate: none;
   adobe-hyphenate: none;
   text-align: center;
@@ -313,17 +318,22 @@ text-author, .epigraph_author, .citation_author {
 }
 
 
-body[name="notes"] title {
+NoteFragment title ,
+body[name="notes"] > title ,
+body[name="notes_hidden"] > title {
   page-break-before: avoid;
   page-break-inside: avoid;
   page-break-after : avoid;
 }
 
-body[name="notes"] section {
+body[name="notes"] > section {
   margin-bottom: 0.5em;
 }
 
-body[name="notes"] section title {
+body[name="notes"] > section title,
+body[name="notes"] > section title > a ,
+body[name="notes_hidden"] > section title,
+body[name="comments"] > section > title {
   font-size: 100%;
   display: run-in;
   text-align: left;
@@ -332,49 +342,12 @@ body[name="notes"] section title {
   page-break-after : avoid;
 }
 
-body[name="notes"] section title a {
-  font-size: 100%;
-  display: run-in;
-  text-align: left;
-  page-break-before: avoid;
-  page-break-inside: avoid;
-  page-break-after : avoid;
-}
-
-body[name="notes"] section title p {
-  display: inline;
-}
-
-body[name="notes_hidden"], body[name="comments"] {
+body[name="notes_hidden"] {
   font-size: 70%;
 }
 
-body[name="notes_hidden"] title {
-  page-break-before: avoid;
-  page-break-inside: avoid;
-  page-break-after : avoid;
-}
-
-body[name="notes_hidden"] section title {
-  font-size: 100%;
-  display: run-in;
-  text-align: left;
-  page-break-before: avoid;
-  page-break-inside: avoid;
-  page-break-after : avoid;
-}
-body[name="notes_hidden"] section title p {
-  display: inline;
-}
-
-body[name="comments"] section title {
-  display: run-in;
-  text-align: left;
-  page-break-before: avoid;
-  page-break-inside: avoid;
-  page-break-after : avoid;
-}
-body[name="comments"] section title p {
+body[name="comments"] > section > title > p ,
+body[name="notes"] > section > title > p {
   display: inline;
 }
 

@@ -389,7 +389,8 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 
         writer.OnTagOpen(L"", L"body");
         writer.OnAttribute(L"", L"name", L"notes_hidden");
-        FootnotesPrinter::AppendLinksToDoc(m_doc, LinksList);
+        FootnotesPrinter printer(m_doc);
+        printer.PrintLinksList(LinksList);
         writer.OnTagClose(L"", L"body");
     }
     writer.OnTagClose(L"", L"body"); //main body closed

@@ -2650,7 +2650,7 @@ void LvDomWriter::OnTagClose(const lChar16*, const lChar16* tagname) {
             _currNode->getElement()->getAttributeValue("type") == "text/css") {
             lString16 href = _currNode->getElement()->getAttributeValue("href");
             lString16 stylesheetFile = LVCombinePaths(doc_->getCodeBase(), href);
-            CRLog::trace("Internal stylesheet file: %s", LCSTR(stylesheetFile));
+            //CRLog::trace("Internal stylesheet file: %s", LCSTR(stylesheetFile));
             doc_->stylesheet_file_name_ = stylesheetFile;
             doc_->applyDocStylesheet();
         }
@@ -5601,9 +5601,17 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
                 {
                     return false;
                 }
+                if(name == "span")
+                {
+                    return false;
+                }
                 if(name == "p" && index == 0)
                 {
                     return true;
+                }
+                if(name == "p" && index == 1 )
+                {
+                    if(parentnode->getChildNode(0)->getText().empty()) return true;
                 }
                 if(name == "blockquote" && index == 0)
                 {
@@ -6178,6 +6186,10 @@ lString16 LvDocFragmentWriter::convertHref( lString16 href )
         p = codeBasePrefix;
     } else {
         lString16 replacement = pathSubstitutions.get(p);
+        if(replacement.empty())
+        {
+            replacement =  pathSubstitutions.get(DecodeHTMLUrlString(p));
+        }
         //CRLog::trace("href %s -> %s", LCSTR(p), LCSTR(replacement));
         if ( !replacement.empty() )
             p = replacement;
@@ -6504,7 +6516,7 @@ void LvDomAutocloseWriter::OnTagClose(const lChar16* /*nsname*/, const lChar16* 
 
             lString16 href = _currNode->getElement()->getAttributeValue("href");
             lString16 stylesheetFile = LVCombinePaths(doc_->getCodeBase(), href);
-            CRLog::trace("Internal stylesheet file: %s", LCSTR(stylesheetFile));
+            //CRLog::trace("Internal stylesheet file: %s", LCSTR(stylesheetFile));
             doc_->stylesheet_file_name_ = stylesheetFile;
             doc_->applyDocStylesheet();
         }

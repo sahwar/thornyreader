@@ -332,6 +332,7 @@ private:
     EpubItems * EpubNotes_;
     LVArray<LinkStruct> LinksList_;
     LinksMap LinksMap_;
+    Epub3Notes Epub3Notes_;
     bool Notes_exists = false;
 protected:
     bool possible_capitalized_tags_;
@@ -352,6 +353,7 @@ public:
     void setLinksList(LVArray<LinkStruct> LinksList);
 
     LVArray<LinkStruct> getLinksList();
+
     /// sets charset by name
     virtual void SetCharset(const lChar16* name);
     /// resets parsing, moves to beginning of stream
@@ -377,6 +379,10 @@ public:
     void setLinksMap(LinksMap LinksMap);
 
     LinksMap getLinksMap();
+
+    void setEpub3Notes(Epub3Notes Epub3Notes);
+
+    Epub3Notes getEpub3Notes();
 };
 
 extern const char * * HTML_AUTOCLOSE_TABLE[];
