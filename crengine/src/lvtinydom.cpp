@@ -5656,11 +5656,11 @@ public:
         {
             return false;
         }
-        if(list_.length()!=2)
+        if(list_.length()>1)
         {
             return false;
         }
-        lChar16 ch = (list_[0].getText().firstChar() == ' ') ? list_[1].getText().firstChar() : list_[0].getText().firstChar();
+        lChar16 ch = list_[0].getText().firstChar();
         return char_isPunct(ch);
     }
 
@@ -5918,8 +5918,20 @@ LVArray<TextRect> reverseLine(TextRectGroup group)
         bool is_space = ch == ' ';
         bool is_punct = char_isPunct(ch);
 
-        bool curr_state = (is_space)? last_state : char_isRTL(ch);
-
+        //bool curr_state = (is_space)? last_state : char_isRTL(ch);
+        bool curr_state;
+        if(is_space)
+        {
+            curr_state = last_state;
+        }
+        else if(is_punct)
+        {
+            curr_state = (last_space)? false : last_state ;
+        }
+        else
+        {
+            curr_state = char_isRTL(ch);
+        }
         //curr_state = (is_punct && last_space)? : curr_state
         bool break_char = (is_space || last_space || is_punct || last_punct);
 

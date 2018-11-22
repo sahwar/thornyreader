@@ -1377,11 +1377,11 @@ public:
             is_rtl_ (is_rtl){}
 
     bool hasPunct(){
-        if(this->len_>2)
+        if(this->len_>1)
         {
             return false;
         }
-        lChar16 ch = (this->text_[0] == ' ')?this->text_[1]:this->text_[0];
+        lChar16 ch = this->text_[0];
         return isPunct(ch);
     }
 
@@ -1560,7 +1560,19 @@ void LFormattedText::Draw( LVDrawBuf * buf, int x, int y, ldomMarkedRangeList * 
                             lChar16 ch = str[c];
                             bool is_space = ch == ' ';
                             bool is_punct = isPunct(ch);
-                            bool curr_state = (is_space)? last_state : isRTL(ch);
+                            bool curr_state;
+                            if(is_space)
+                            {
+                                curr_state = last_state;
+                            }
+                            else if(is_punct)
+                            {
+                                curr_state = (last_space)? false : last_state ;
+                            }
+                            else
+                            {
+                                curr_state = isRTL(ch);
+                            }
 
                             bool break_char = (is_space || last_space || is_punct || last_punct);
                             if (curr_state != last_state || break_char)
@@ -1653,7 +1665,7 @@ void LFormattedText::Draw( LVDrawBuf * buf, int x, int y, ldomMarkedRangeList * 
                                 WordItem curr = nonRTLBuffer.get(k);
                                 LVFont *font = (LVFont *) curr.srcline_->t.font;
 
-                                CRLog::error("nonrtlbuf1 , word = [%s]",LCSTR(lString16(curr.text_,curr.len_)));
+                                //CRLog::error("nonrtlbuf1 , word = [%s]",LCSTR(lString16(curr.text_,curr.len_)));
 
                                 font->DrawTextString(buf,
                                         startx_nonrtlbuff,
