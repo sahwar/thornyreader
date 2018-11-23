@@ -541,7 +541,7 @@ LVArray<TextRect> RTL_mix(LVArray<TextRect> in_list)
         if(lines[l].is_rtl_)// && lines[l].checkLineRTL())
         {
             zero = trimFirstSpace(&lines[l]);
-            CRLog::trace("reverse line text = [%s]",LCSTR(lines[l].getText()));
+            //CRLog::trace("reverse line text = [%s]",LCSTR(lines[l].getText()));
             lines[l].list_ = reverseLine(lines[l]);
         }
 
@@ -588,15 +588,14 @@ void PrintRTL(LVArray<WordItem> WordItems, LVDrawBuf * buf, LVFont * font)
     int buffwidth = 0;
     bool prev_state = WordItems.get(WordItems.length() - 1).is_rtl_;
 
-    lString16 text;
-//    for (int w = WordItems.length() - 1; w >= 0; w--)
+    /* lString16 text;
     for (int w = 0 ; w <  WordItems.length(); w++)
     {
         WordItem curr = WordItems.get(w);
         text += lString16(curr.text_,curr.len_);
     }
     CRLog::error("fmt line = [%s]",LCSTR(text));
-
+    */
 
     for (int w = WordItems.length() - 1; w >= 0; w--)
     {
