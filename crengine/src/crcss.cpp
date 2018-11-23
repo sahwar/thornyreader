@@ -370,14 +370,14 @@ sup a[type="note"] {
   text-decoration: none;
 }
 
-p[dir="rtl"], html[dir="rtl"], body[dir="rtl"] {
+p[dir="rtl"], html[dir="rtl"], body[dir="rtl"], div[dir="rtl"], .rtl  {
   text-align: right;
   display: block;
+  hyphenate: none;
 }
 
-.rtl {
-  text-align: right;
-  display: block;
+.center{
+text-align: center;
 }
 
 annotation {
