@@ -1258,7 +1258,7 @@ private:
     ldomWord word_;
     lvRect rect_;
     lString16 string_;
-    int index_ = 0;
+    int index_ = -1;
 public:
     TextRect() :  word_(),node_(nullptr),rect_(lvRect(0,0,0,0)),string_(lString16::empty_str) {}
     TextRect(ldomNode* node,lvRect rect, lString16 string) :node_(node),rect_(rect)
@@ -1276,6 +1276,7 @@ public:
     lvRect getRect(){ return rect_;};
     ldomNode* getNode(){ return node_;};
     ldomWord getWord(){return word_;};
+    int getIndex(){return index_;};
     void setRect(lvRect rect){ rect_ = rect;};
     void setString(lString16 string){ string_ = string;};
     void setIndex(int index){ index_ = index;};

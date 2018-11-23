@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <crengine/include/lvtextfm.h>
 #include <crengine/include/crconfig.h>
+#include "include/rtlhandler.h"
 #include "include/lvfnt.h"
 #include "include/lvtextfm.h"
 
@@ -1102,12 +1103,12 @@ public:
                CRLog::trace("up skip left punctuation %s, at index %d", LCSTR(lString16(m_text+endp, 1)), endp);
             } else if (endp > 1 && isCJKPunctuation(*(m_text + endp))) {
                 for (int epos = endp; epos>=start; epos++, downSkipCount++) {
-                    if ( !isCJKPunctuation(*(m_text + epos)) ) 
+                    if ( !isCJKPunctuation(*(m_text + epos)) )
 						break;
                    //CRLog::trace("down skip punctuation %s, at index %d", LCSTR(lString16(m_text + epos, 1)), epos);
                 }
                 for (int epos = endp; epos>=start; epos--, upSkipCount++) {
-                    if ( !isCJKPunctuation(*(m_text + epos)) ) 
+                    if ( !isCJKPunctuation(*(m_text + epos)) )
 						break;
                    //CRLog::trace("up skip punctuation %s, at index %d", LCSTR(lString16(m_text + epos, 1)), epos);
 				}
@@ -1294,102 +1295,6 @@ void DrawBookmarkTextUnderline(LVDrawBuf & drawbuf, int x0, int y0, int x1, int 
         }
     }
 }
-bool isRTL(const lChar16 c){
-/*
-    if(c==0x00A6) // BROKEN BAR
-        return false;
-    if((c>=0x0030)&&(c<=0x0039)) // digits
-    {
-        return false;
-    }
-    return true;
-*/
-    return ( //(c==0x00A6) ||  // UNICODE "BROKEN BAR"
-                   (c>=0x0590)&&(c<=0x05FF)) ||
-           (c == 0x05BE) || (c == 0x05C0) || (c == 0x05C3) || (c == 0x05C6) ||
-           ((c>=0x05D0)&&(c<=0x05F4)) ||
-           (c==0x0608) || (c==0x060B) ||
-           (c==0x060D) ||
-           ((c>=0x061B)&&(c<=0x064A)) ||
-           ((c>=0x066D)&&(c<=0x066F)) ||
-           ((c>=0x0671)&&(c<=0x06D5)) ||
-           ((c>=0x06E5)&&(c<=0x06E6)) ||
-           ((c>=0x06EE)&&(c<=0x06EF)) ||
-           ((c>=0x06FA)&&(c<=0x0710)) ||
-           ((c>=0x0712)&&(c<=0x072F)) ||
-           ((c>=0x074D)&&(c<=0x07A5)) ||
-           ((c>=0x07B1)&&(c<=0x07EA)) ||
-           ((c>=0x07F4)&&(c<=0x07F5)) ||
-           ((c>=0x07FA)&&(c<=0x0815)) ||
-           (c==0x081A) || (c==0x0824) ||
-           (c==0x0828) ||
-           ((c>=0x0830)&&(c<=0x0858)) ||
-           ((c>=0x085E)&&(c<=0x08AC)) ||
-           (c==0x200F) || (c==0xFB1D) ||
-           ((c>=0xFB1F)&&(c<=0xFB28)) ||
-           ((c>=0xFB2A)&&(c<=0xFD3D)) ||
-           ((c>=0xFD50)&&(c<=0xFDFC)) ||
-           ((c>=0xFE70)&&(c<=0xFEFC)) ||
-           ((c>=0x10800)&&(c<=0x1091B)) ||
-           ((c>=0x10920)&&(c<=0x10A00)) ||
-           ((c>=0x10A10)&&(c<=0x10A33)) ||
-           ((c>=0x10A40)&&(c<=0x10B35)) ||
-           ((c>=0x10B40)&&(c<=0x10C48)) ||
-           ((c>=0x1EE00)&&(c<=0x1EEBB));
-}
-
-bool isPunct(const lChar16 c)
-{
-    return ((c>=33) && (c<=47)) ||
-           ((c>=58) && (c<=64)) ||
-           ((c>=91) && (c<=96)) ||
-           ((c>=123)&& (c<=126))||
-           (c == 0x00A6);
-}
-
-class WordItem
-{
-public:
-    int x_;
-    int y_;
-    const lChar16* text_=0;
-    int len_;
-    bool flgHyphen_;
-    src_text_fragment_t * srcline_;
-    bool is_rtl_ = false;
-    WordItem(){}
-    WordItem(int x, int y, const lChar16* text, int len,bool flgHyphen,src_text_fragment_t * srcline ):
-            x_(x),
-            y_(y),
-            text_(text),
-            len_(len),
-            flgHyphen_(flgHyphen),
-            srcline_(srcline) {}
-
-    WordItem(int x, int y, const lChar16* text, int len,bool flgHyphen,src_text_fragment_t * srcline, bool is_rtl ):
-            x_(x),
-            y_(y),
-            text_(text),
-            len_(len),
-            flgHyphen_(flgHyphen),
-            srcline_(srcline),
-            is_rtl_ (is_rtl){}
-
-    bool hasPunct(){
-        if(this->len_>1)
-        {
-            return false;
-        }
-        lChar16 ch = this->text_[0];
-        return isPunct(ch);
-    }
-
-    lString16 getText()
-    {
-        return lString16(text_,len_);
-    }
-
-};
 
 
 void LFormattedText::Draw( LVDrawBuf * buf, int x, int y, ldomMarkedRangeList * marks, ldomMarkedRangeList *bookmarks )
@@ -1619,146 +1524,11 @@ void LFormattedText::Draw( LVDrawBuf * buf, int x, int y, ldomMarkedRangeList * 
 
             if (printrtl)
             {
-                int startx = WordItems.get(0).x_;
-                bool line_isRTL = false;
-                for (int i = 0; i < WordItems.length(); i++)
+                if (WordItems.get(WordItems.length() - 1).getText().lastChar() == ' ')
                 {
-                    if(WordItems.get(i).is_rtl_)
-                    {
-                        line_isRTL = true;
-                        break;
-                    }
+                    WordItems.remove(WordItems.length() - 1);
                 }
-                WordItem last = WordItems.get(WordItems.length()-1);
-                if(line_isRTL && last.getText().lastChar() == ' ')
-                {
-                    startx -= font->getCharWidth(' ');
-                }
-                LVArray<WordItem> nonRTLBuffer;
-                int buffwidth = 0;
-                bool prev_state = WordItems.get(WordItems.length() - 1).is_rtl_;
-
-                for (int w = WordItems.length() - 1; w >= 0; w--)
-                {
-                    //WordItem prev = WordItems.get((w>0)?w-1:0);
-                    WordItem curr = WordItems.get(w);
-                    //WordItem next = WordItems.get((w<WordItems.length()-1)?w+1:(w<WordItems.length()-1));
-
-                    LVFont *font = (LVFont *) curr.srcline_->t.font;
-                    lUInt32 width = font->getTextWidth(curr.text_, curr.len_);
-                    //CRLog::error("curr = %d , isrtl = %d",w, (int)curr.is_rtl_);
-                    //CRLog::error("word = %s",LCSTR(lString16(curr.text_,curr.len_)));
-
-                    if( curr.is_rtl_ || (curr.hasPunct() && prev_state))
-                    {
-                        if(nonRTLBuffer.length()>0)
-                        {
-                            WordItem firstitem = nonRTLBuffer.get(0);
-                            WordItem lastitem = nonRTLBuffer.get(nonRTLBuffer.length()-1);
-
-                            if(firstitem.getText() == " ")
-                            {
-                                nonRTLBuffer.remove(0);
-                                nonRTLBuffer.add(firstitem);
-                            }
-                            if(lastitem.getText() == " ")
-                            {
-                                nonRTLBuffer.remove(nonRTLBuffer.length()-1);
-                                nonRTLBuffer.insert(0,lastitem);
-                            }
-                            int startx_nonrtlbuff = startx - buffwidth;
-                            for (int k =nonRTLBuffer.length()-1; k >=0 ; k--)
-                            {
-                                WordItem curr = nonRTLBuffer.get(k);
-                                LVFont *font = (LVFont *) curr.srcline_->t.font;
-
-                                //CRLog::error("nonrtlbuf1 , word = [%s]",LCSTR(lString16(curr.text_,curr.len_)));
-
-                                font->DrawTextString(buf,
-                                        startx_nonrtlbuff,
-                                        curr.y_,
-                                        curr.text_,
-                                        curr.len_,
-                                        '?',
-                                        NULL,
-                                        curr.flgHyphen_,
-                                        curr.srcline_->flags & 0x0F00,
-                                        curr.srcline_->letter_spacing,
-                                        false);
-                                lUInt32 width = font->getTextWidth(curr.text_, curr.len_);
-                                startx_nonrtlbuff += width;
-                            }
-                            buffwidth = 0;
-                            nonRTLBuffer.clear();
-                        }
-
-                        //CRLog::error("rtl after buf, word = [%s]",LCSTR(lString16(curr.text_,curr.len_)));
-
-                        font->DrawTextString(buf,
-                                startx,
-                                curr.y_,
-                                curr.text_,
-                                curr.len_,
-                                '?',
-                                NULL,
-                                curr.flgHyphen_,
-                                curr.srcline_->flags & 0x0F00,
-                                curr.srcline_->letter_spacing,
-                                true);
-
-                        startx += width;
-                    }
-                    else
-                    {
-                        nonRTLBuffer.add(WordItem(startx,
-                                                  curr.y_,
-                                                  curr.text_,
-                                                  curr.len_,
-                                                  curr.flgHyphen_,
-                                                  curr.srcline_));
-                        startx += width;
-                        buffwidth +=width;
-                    }
-                        prev_state = curr.is_rtl_;
-                }
-                if(nonRTLBuffer.length()>0)
-                {
-                    WordItem firstitem = nonRTLBuffer.get(0);
-                    WordItem lastitem = nonRTLBuffer.get(nonRTLBuffer.length()-1);
-
-                    if(line_isRTL && firstitem.getText() == " ")
-                    {
-                        nonRTLBuffer.remove(0);
-                        nonRTLBuffer.add(firstitem);
-                    }
-                    if(line_isRTL && lastitem.getText() == " ")
-                    {
-                        nonRTLBuffer.remove(nonRTLBuffer.length()-1);
-                        nonRTLBuffer.insert(0,lastitem);
-                    }
-                    int startx_nonrtlbuff = startx - buffwidth;
-                    for (int k =nonRTLBuffer.length()-1; k >=0 ; k--)
-                    {
-
-                        WordItem curr = nonRTLBuffer.get(k);
-                        //CRLog::error(" nonrtl no rtl in front , word = [%s]",LCSTR(lString16(curr.text_,curr.len_)));
-                        LVFont *font = (LVFont *) curr.srcline_->t.font;
-                        font->DrawTextString(buf,
-                                startx_nonrtlbuff,
-                                curr.y_,
-                                curr.text_,
-                                curr.len_,
-                                '?',
-                                NULL,
-                                curr.flgHyphen_,
-                                curr.srcline_->flags & 0x0F00,
-                                curr.srcline_->letter_spacing,
-                                false);
-                        lUInt32 width = font->getTextWidth(curr.text_, curr.len_);
-                        startx_nonrtlbuff += width;
-                    }
-                    nonRTLBuffer.clear();
-                }
+                PrintRTL(WordItems, buf, font);
             }
 
 #ifdef CR_USE_INVERT_FOR_SELECTION_MARKS
