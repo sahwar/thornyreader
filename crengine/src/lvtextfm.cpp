@@ -1458,12 +1458,12 @@ void LFormattedText::Draw( LVDrawBuf * buf, int x, int y, ldomMarkedRangeList * 
                         int start = 0;
                         bool last_space = false;
                         bool last_punct = false;
-                        bool last_state = isRTL(str[0]);
+                        bool last_state = char_isRTL(str[0]);
                         for (int c = 0; c < word->t.len; c++)
                         {
                             lChar16 ch = str[c];
                             bool is_space = ch == ' ';
-                            bool is_punct = isPunct(ch);
+                            bool is_punct = char_isPunct(ch);
                             bool curr_state;
                             if(is_space)
                             {
@@ -1475,7 +1475,7 @@ void LFormattedText::Draw( LVDrawBuf * buf, int x, int y, ldomMarkedRangeList * 
                             }
                             else
                             {
-                                curr_state = isRTL(ch);
+                                curr_state = char_isRTL(ch);
                             }
 
                             bool break_char = (is_space || last_space || is_punct || last_punct);
