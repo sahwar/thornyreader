@@ -2884,8 +2884,8 @@ bool LvXmlParser::Parse()
                                 flag2 = true;
                             }
                             int bufnum = buffer.atoi();
-                            if((!in_rearnote && !in_aside && bufnum>0 && ((flag1 && flag2) || in_sup || in_a_sup))
-                            || a_is_fb2_note)
+                            if(!in_rearnote && !in_aside && bufnum>0
+                            && ((flag1 && flag2) || in_sup || in_a_sup || a_is_fb2_note))
                             {
                                 if(link_id.empty())
                                 {
