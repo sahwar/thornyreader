@@ -355,6 +355,7 @@ a[type="note"] {
   vertical-align: super;
   font-size: 70%;
   text-decoration: none;
+  font-style: normal;
 }
 
 a[type="note"] sup {

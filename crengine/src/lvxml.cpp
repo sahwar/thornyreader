@@ -2623,6 +2623,7 @@ bool LvXmlParser::Parse()
     bool in_rearnote = false;
     bool in_rearnotes = false;
     bool in_div = false;
+    bool a_is_fb2_note = false;
 
     bool is_note= false;
     bool save_a_content= false;
@@ -2883,7 +2884,8 @@ bool LvXmlParser::Parse()
                                 flag2 = true;
                             }
                             int bufnum = buffer.atoi();
-                            if(!in_rearnote && !in_aside && bufnum>0 && ((flag1 && flag2) || in_sup || in_a_sup))
+                            if(!in_rearnote && !in_aside && bufnum>0
+                            && ((flag1 && flag2) || in_sup || in_a_sup || a_is_fb2_note))
                             {
                                 if(link_id.empty())
                                 {
@@ -2911,6 +2913,7 @@ bool LvXmlParser::Parse()
                         link_id = lString16::empty_str;
                         in_a = false;
                         in_a_sup = false;
+                        a_is_fb2_note = false;
                     }
                 }
 
@@ -3106,6 +3109,13 @@ bool LvXmlParser::Parse()
                 }
                 if (in_a)// && is_note)
                 {
+                    if(attrname == "type")
+                    {
+                        if (attrvalue == "note")
+                        {
+                            a_is_fb2_note = true;
+                        }
+                    }
                     if (attrname == "href")
                     {
                         link_href = attrvalue;
