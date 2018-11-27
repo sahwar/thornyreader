@@ -121,6 +121,20 @@ ldomNode * FootnotesPrinter::FindTextInNode(ldomNode *node)
             //CRLog::error("num = %d",num);
             continue;
         }
+        text = text.ReplaceUnusualSpaces();
+        while(text.startsWith(" "))
+        {
+            text = text.substr(1);
+        }
+        while(text.endsWith(" "))
+        {
+            text = text.substr(0,text.length()-1);
+        }
+        if(text.length()==0)
+        {
+            continue;
+        }
+
         //text is not a number
         return child;
     }
@@ -161,6 +175,19 @@ ldomNode * FootnotesPrinter::FindTextInParents(ldomNode *node)
         if (text.atoi(num))
         {
             //CRLog::error("num = %d",num);
+            continue;
+        }
+        text = text.ReplaceUnusualSpaces();
+        while(text.startsWith(" "))
+        {
+            text = text.substr(1);
+        }
+        while(text.endsWith(" "))
+        {
+            text = text.substr(0,text.length()-1);
+        }
+        if(text.length()==0)
+        {
             continue;
         }
         //text is not a number
