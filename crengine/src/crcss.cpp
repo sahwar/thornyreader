@@ -371,7 +371,7 @@ sup a[type="note"] {
 }
 
 p[dir="rtl"], html[dir="rtl"], body[dir="rtl"], div[dir="rtl"], .rtl  {
-  text-align: right;
+  /*text-align: right;*/
   display: block;
   hyphenate: none;
 }

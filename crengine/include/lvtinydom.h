@@ -1280,6 +1280,7 @@ public:
     void setRect(lvRect rect){ rect_ = rect;};
     void setString(lString16 string){ string_ = string;};
     void setIndex(int index){ index_ = index;};
+    int getWidthRTL(LVFont * font);
 };
 
 class ImgRect

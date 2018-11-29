@@ -3505,6 +3505,12 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes(ldomXRange* in_range)
 	        float r = pre_r / page_width;
 	        float t = rect.top / page_height;
 	        float b = (rect.top + strheight_last) / page_height;
+
+	        //l = rect.left    / page_width;
+	        //r = rect.right   / page_width;
+	        //t = rect.top     / page_height;
+	        //b = rect.bottom  / page_height;
+
 	        //text=text+lString16("+00");
             // на случай второго переноса в stanza
 	        int rightzone = (this->GetColumns()==1)? (GetWidth()*3/4) : (GetWidth()*7/8);

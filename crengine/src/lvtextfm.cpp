@@ -1390,10 +1390,22 @@ void LFormattedText::Draw( LVDrawBuf * buf, int x, int y, ldomMarkedRangeList * 
 #endif
             bool printrtl = false;
             LVArray<WordItem> WordItems;
+            //CRLog::trace(" new line");
+            int space_count=0;
+            int words_spaces=0;
+            int word_offset = 0;
+            int words_gaps = 0;
 
+            CRLog::error("1");
+            if(frmline->word_count>0)
+            {
+                formatted_word_t *first_word = &frmline->words[0];
+                word_offset = x + frmline->x + first_word->x;
+            }
             for (j=0; j<frmline->word_count; j++)
             {
                 word = &frmline->words[j];
+                int word_x = x + frmline->x + word->x;
                 //CRLog::trace("word = [%s]",LCSTR(lString16( srcline->t.text + word->t.start,word->t.len)));
                 if (word->flags & LTEXT_WORD_IS_OBJECT)
                 {
@@ -1435,6 +1447,7 @@ void LFormattedText::Draw( LVDrawBuf * buf, int x, int y, ldomMarkedRangeList * 
                         buf->SetTextColor( cl );
                     if ( bgcl!=0xFFFFFFFF )
                         buf->SetBackgroundColor( bgcl );
+                    //CRLog::error("x = %d, word->width = %d, ++ = %d",x + frmline->x + word->x,word->width,x + frmline->x + word->x+word->width);
                     if (!frmline->rtl)
                     {
                         font->DrawTextString(buf,
@@ -1452,19 +1465,22 @@ void LFormattedText::Draw( LVDrawBuf * buf, int x, int y, ldomMarkedRangeList * 
                     else //rtl
                     {
                         printrtl = true;
-
                         //CRLog::error("word start = %d, len = %d",word->t.start,word->t.len);
                         //CRLog::error("str = [%s]",LCSTR(lString16(str,word->t.len)));
                         int start = 0;
                         bool last_space = false;
                         bool last_punct = false;
                         bool last_state = char_isRTL(str[0]);
+                        int width = 0;
+                        int fullwidth = 0;
                         for (int c = 0; c < word->t.len; c++)
                         {
                             lChar16 ch = str[c];
                             bool is_space = ch == ' ';
                             bool is_punct = char_isPunct(ch);
                             bool curr_state;
+                            int ch_width = font->getCharWidth(ch);
+
                             if(is_space)
                             {
                                 curr_state = last_state;
@@ -1491,19 +1507,31 @@ void LFormattedText::Draw( LVDrawBuf * buf, int x, int y, ldomMarkedRangeList * 
                                             len,
                                             flgHyphen,
                                             srcline,
-                                            last_state);
+                                            last_state,
+                                            width);
 
                                     WordItems.add(wordItem);
                                     start = c;
+                                    fullwidth += width;
+                                    width = 0;
                                 }
                                 last_state = curr_state;
                                 last_space = is_space;
                                 last_punct = is_punct;
                             }
+                            width += ch_width;
                         }
 
                         int len = word->t.len - start;
-
+                        //CRLog::error("word->width = %d, fullwidth = %d, width = %d, last_space = %d",word->width,fullwidth,width,(int)last_space);
+                        lString16(str+start,len);
+                        width = (last_space)? word->width - fullwidth : width ;
+                        if(last_space && width>0)
+                        {
+                            space_count ++;
+                            words_spaces += width;
+                        }
+                        //CRLog::error("width after = %d",width);
                         WordItem wordItem(
                                 x + frmline->x + word->x,
                                 line_y + (frmline->baseline - font->getBaseline()) + word->y,
@@ -1511,8 +1539,13 @@ void LFormattedText::Draw( LVDrawBuf * buf, int x, int y, ldomMarkedRangeList * 
                                 len,
                                 flgHyphen,
                                 srcline,
-                                last_state);
+                                last_state,
+                                width);
                         WordItems.add(wordItem);
+                        int word_gap = word_x - word_offset;
+                        word_offset += word->width + word_gap ;
+                        words_gaps += word_gap;
+                        //CRLog::error("word_gap = %d, word_offset = %d, words_gaps = %d",word_gap,word_offset,words_gaps);
                     }
                     if ( cl!=0xFFFFFFFF )
                         buf->SetTextColor( oldColor );
@@ -1524,11 +1557,12 @@ void LFormattedText::Draw( LVDrawBuf * buf, int x, int y, ldomMarkedRangeList * 
 
             if (printrtl)
             {
+                int space_width = (space_count > 0) ? (words_spaces + words_gaps) / space_count : font->getCharWidth(' ');
                 if (WordItems.get(WordItems.length() - 1).getText().lastChar() == ' ')
                 {
                     WordItems.remove(WordItems.length() - 1);
                 }
-                PrintRTL(WordItems, buf, font);
+                PrintRTL(WordItems, buf, font, space_width);
             }
 
 #ifdef CR_USE_INVERT_FOR_SELECTION_MARKS

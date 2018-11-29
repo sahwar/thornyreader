@@ -26,6 +26,7 @@ public:
     bool flgHyphen_;
     src_text_fragment_t * srcline_;
     bool is_rtl_ = false;
+    int width_ = 0;
     WordItem(){}
     WordItem(int x, int y, const lChar16* text, int len,bool flgHyphen,src_text_fragment_t * srcline ):
             x_(x),
@@ -35,14 +36,15 @@ public:
             flgHyphen_(flgHyphen),
             srcline_(srcline) {}
 
-    WordItem(int x, int y, const lChar16* text, int len,bool flgHyphen,src_text_fragment_t * srcline, bool is_rtl ):
+    WordItem(int x, int y, const lChar16* text, int len,bool flgHyphen,src_text_fragment_t * srcline, bool is_rtl , int width ):
             x_(x),
             y_(y),
             text_(text),
             len_(len),
             flgHyphen_(flgHyphen),
             srcline_(srcline),
-            is_rtl_ (is_rtl){}
+            is_rtl_ (is_rtl),
+            width_(width){}
 
     bool hasPunct(){
         if(this->len_>1)
@@ -60,6 +62,7 @@ public:
 
 };
 
-void PrintRTL(LVArray<WordItem> WordItems, LVDrawBuf * buf, LVFont* font);
+void PrintRTL(LVArray<WordItem> WordItems, LVDrawBuf * buf, LVFont* font , int spacewidth);
+
 
 #endif //CODE_THORNYREADER_PURE_RTLHANDLER_H
