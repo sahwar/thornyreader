@@ -101,7 +101,7 @@ void FootnotesPrinter::recurseNodesToPrint(ldomNode *node)
                 text = text.substr(0,text.length()-1);
             }
             int num;
-            if (text.atoi(num))
+            if (text.DigitsOnly() && text.atoi(num))
             {
                 continue;
             }
@@ -155,7 +155,7 @@ ldomNode * FootnotesPrinter::FindTextInNode(ldomNode *node)
             text = text.substr(0,text.length()-1);
         }
         int num;
-        if (text.atoi(num))
+        if (text.DigitsOnly() && text.atoi(num))
         {
             //CRLog::error("num = %d",num);
             continue;
@@ -211,7 +211,7 @@ ldomNode * FootnotesPrinter::FindTextInParents(ldomNode *node)
             text = text.substr(0,text.length()-1);
         }
         int num;
-        if (text.atoi(num))
+        if (text.DigitsOnly() && text.atoi(num))
         {
             //CRLog::error("num = %d",num);
             continue;
@@ -274,7 +274,7 @@ bool FootnotesPrinter::NodeIsBreak(ldomNode *node, lString16 nextId)
         return true;
     }
     int num;
-    if (text.atoi(num))
+    if (text.DigitsOnly() && text.atoi(num))
     {
         return true;
     }

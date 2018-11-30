@@ -684,6 +684,8 @@ public:
     lString16 TrimEndQuestionChar(lString16 & str);
     //converting all different spaces to one type space
     lString16 ReplaceUnusualSpaces();
+    //check lString16 if it contains only digits. True if yes.
+    bool DigitsOnly();
 };
 
 /// calculates hash for wide string
