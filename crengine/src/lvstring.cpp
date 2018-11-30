@@ -4228,7 +4228,7 @@ lString16 lString16::ReplaceUnusualSpaces()
 bool lString16::DigitsOnly() {
     for (int i = 0; i < this->length(); ++i) {
         lChar16 ch = this->at(i);
-        if ( ch < 48 && ch != 45 )
+        if ( ch < 48 && ch != 45 && ch != 32 )
         {
             return false;
         }

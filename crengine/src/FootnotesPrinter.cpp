@@ -146,26 +146,12 @@ ldomNode * FootnotesPrinter::FindTextInNode(ldomNode *node)
         {
             continue;
         }
-        if(text.startsWith("["))
-        {
-            text = text.substr(1);
-        }
-        if( text.endsWith("]"))
-        {
-            text = text.substr(0,text.length()-1);
-        }
-        int num;
-        if (text.DigitsOnly() && text.atoi(num))
-        {
-            //CRLog::error("num = %d",num);
-            continue;
-        }
         text = text.ReplaceUnusualSpaces();
-        while(text.startsWith(" "))
+        if(text.startsWith("[") || text.startsWith(" "))
         {
             text = text.substr(1);
         }
-        while(text.endsWith(" "))
+        if( text.endsWith("]") || text.endsWith(" "))
         {
             text = text.substr(0,text.length()-1);
         }
@@ -173,7 +159,12 @@ ldomNode * FootnotesPrinter::FindTextInNode(ldomNode *node)
         {
             continue;
         }
-
+        int num;
+        if (text.DigitsOnly() && text.atoi(num))
+        {
+            //CRLog::error("num = %d",num);
+            continue;
+        }
         //text is not a number
         return child;
     }
@@ -202,31 +193,23 @@ ldomNode * FootnotesPrinter::FindTextInParents(ldomNode *node)
         {
             continue;
         }
-        if(text.startsWith("["))
-        {
-            text = text.substr(1);
-        }
-        if( text.endsWith("]"))
-        {
-            text = text.substr(0,text.length()-1);
-        }
-        int num;
-        if (text.DigitsOnly() && text.atoi(num))
-        {
-            //CRLog::error("num = %d",num);
-            continue;
-        }
         text = text.ReplaceUnusualSpaces();
-        while(text.startsWith(" "))
+        if(text.startsWith("[") || text.startsWith(" "))
         {
             text = text.substr(1);
         }
-        while(text.endsWith(" "))
+        if( text.endsWith("]") || text.endsWith(" "))
         {
             text = text.substr(0,text.length()-1);
         }
         if(text.length()==0)
         {
+            continue;
+        }
+        int num;
+        if (text.DigitsOnly() && text.atoi(num))
+        {
+            //CRLog::error("num = %d",num);
             continue;
         }
         //text is not a number
