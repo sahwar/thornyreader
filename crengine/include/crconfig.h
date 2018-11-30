@@ -19,6 +19,7 @@
 #define CHAR_HEIGHT_MIN 5
 #define PARAEND_REPEAT_MAX 2
 #define NOTES_HIDDEN_ID L"__notes_hidden__"
+#define NOTES_HIDDEN_MAX_LEN 1000
 
 extern int gTextLeftShift;
 
