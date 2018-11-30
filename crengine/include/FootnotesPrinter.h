@@ -18,7 +18,8 @@ protected:
     lString16 title_ = lString16("Footnotes");
     bool hidden_ = true;
 public:
-
+    int textcounter_ = 0;
+    lString16 main_href_;
     FootnotesPrinter(){}
 
     FootnotesPrinter(CrDom *m_doc){
@@ -45,6 +46,8 @@ public:
     virtual bool PrintIsAllowed(lString16 href){ return true;};
 
     void PrintLinkNode(ldomNode *node);
+
+    void PrintTextNode(ldomNode *node);
 };
 
 class Epub3NotesPrinter : public  FootnotesPrinter

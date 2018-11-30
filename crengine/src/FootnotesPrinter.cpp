@@ -26,8 +26,49 @@ void FootnotesPrinter::PrintLinkNode(ldomNode *node)
     }
 }
 
+void FootnotesPrinter::PrintTextNode(ldomNode *node)
+{
+    if(this->textcounter_ >= NOTES_HIDDEN_MAX_LEN)
+    {
+        return;
+    }
+    lString16 text = node->getText();
+    int txtlen = text.length();
+    writer_->OnTagOpen(L"", L"span");
+
+    if(this->textcounter_ + txtlen >= NOTES_HIDDEN_MAX_LEN)
+    {
+        txtlen = NOTES_HIDDEN_MAX_LEN - this->textcounter_;
+        writer_->OnText(text.c_str(), txtlen, 0);
+        writer_->OnText(L"...", 3, 0);
+
+        lString16 href = main_href_;
+        if (href != lString16::empty_str)
+        {
+            writer_->OnTagOpen(L"", L"a");
+            writer_->OnAttribute(L"", L"href", href.c_str());
+            writer_->OnAttribute(L"", L"class", L"link_valid");
+            writer_->OnText(L">>>", 3, 0);
+            writer_->OnTagClose(L"", L"a");
+        }
+    }
+    else
+    {
+        writer_->OnText(text.c_str(), txtlen, 0);
+    }
+    writer_->OnTagClose(L"", L"span");
+    this->textcounter_ += txtlen ;
+    //CRLog::error("<text> [%s] </text>", LCSTR(text));
+    //CRLog::error("TEXT nodepath = %s", LCSTR(node->getXPath()));
+    return;
+}
+
 void FootnotesPrinter::recurseNodesToPrint(ldomNode *node)
 {
+    if (this->textcounter_>NOTES_HIDDEN_MAX_LEN)
+    {
+        return;
+    }
     if (node->isNull())
     {
         CRLog::error("node is null");
@@ -46,13 +87,7 @@ void FootnotesPrinter::recurseNodesToPrint(ldomNode *node)
 
         if (child->isText())
         {
-            lString16 text = child->getText();
-            writer_->OnTagOpen(L"", L"span");
-            writer_->OnText(text.c_str(), text.length(), 0);
-            writer_->OnTagClose(L"", L"span");
-
-            //CRLog::error("<text> [%s] </text>", LCSTR(text));
-            //CRLog::error("TEXT nodepath = %s", LCSTR(node->getXPath()));
+            this->PrintTextNode(child);
         }
         else if (child->isNodeName("a"))
         {
@@ -85,6 +120,10 @@ void FootnotesPrinter::recurseNodesToPrint(ldomNode *node)
             writer_->OnTagClose(L"", childname.c_str());
             //CRLog::error("ELEMENT nodepath = %s",LCSTR(node->getXPath()));
             //CRLog::error("</%s>",LCSTR(child->getNodeName()));
+        }
+        if (this->textcounter_>NOTES_HIDDEN_MAX_LEN)
+        {
+            return;
         }
     }
 }
@@ -277,6 +316,7 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
 
     for (int i = 0; i < LinksList.length(); i++)
     {
+        this->textcounter_ = 0;
         //CRLog::error("New node to print");
         LinkStruct currlink = LinksList.get(i);
         LinkStruct nextlink = (i+1<LinksList.length())? LinksList.get(i+1) : LinkStruct();
@@ -292,6 +332,7 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
         }
         lString16 num = lString16::itoa(currlink.num_) + lString16(" ");
         lString16 href = (currlink.href_.startsWith("#")) ? currlink.href_.substr(1) : currlink.href_;
+        this->main_href_ = lString16("#") + href;
         if(map.find(href.getHash())!=map.end())
         {
             continue;
@@ -356,6 +397,7 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
             if(found->isText())
             {
                 lString16 text = found->getText();
+                this->textcounter_ += text.length();
                 while (text.firstChar() == L' ')
                 {
                     text = text.substr(1);
@@ -391,6 +433,8 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
                 if(child->isText())
                 {
                     lString16 text = child->getText();
+                    this->textcounter_ += text.length();
+
                     writer_->OnTagOpen(L"", L"span");
                     writer_->OnText(text.c_str(), text.length(),0);
                     writer_->OnTagClose(L"", L"span");
