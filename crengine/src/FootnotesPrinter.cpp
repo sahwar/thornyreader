@@ -74,6 +74,13 @@ void FootnotesPrinter::recurseNodesToPrint(ldomNode *node)
         CRLog::error("node is null");
         return;
     }
+    if(node->hasAttribute(attr_id))
+    {
+        if(node->getAttributeValue(attr_id) == NOTES_HIDDEN_ID)
+        {
+            return;
+        }
+    }
     //CRLog::error("node to recurse = %s",LCSTR(node->getXPath()));
 
     for (int i = 0; i < node->getChildCount(); i++)
@@ -177,10 +184,6 @@ ldomNode * FootnotesPrinter::FindTextInParents(ldomNode *node)
     {
         return NULL;
     }
-    if (node->isNodeName("body") || node->isNodeName("FictionBook") || node->isNodeName("DocFragment"))
-    {
-        return NULL;
-    }
     //CRLog::error("node path = %s",LCSTR(node->getXPath()));
 
     int index = node->getNodeIndex();
@@ -265,16 +268,9 @@ bool FootnotesPrinter::NodeIsBreak(ldomNode *node, lString16 nextId)
     {
         return true;
     }
-    if(node->getParentNode("body")->hasAttribute(attr_name))
+    if(node->hasAttribute(attr_id))
     {
-        if(node->getParentNode("body")->getAttributeValue(attr_name)=="notes_hidden")
-        {
-            return true;
-        }
-    }
-    if(node->hasAttribute(attr_name))
-    {
-        if(node->getAttributeValue(attr_name)=="notes_hidden")
+        if(node->getAttributeValue(attr_id) == NOTES_HIDDEN_ID)
         {
             return true;
         }
