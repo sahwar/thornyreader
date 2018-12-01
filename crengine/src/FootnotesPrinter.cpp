@@ -177,6 +177,10 @@ ldomNode * FootnotesPrinter::FindTextInParents(ldomNode *node)
     {
         return NULL;
     }
+    if (node->isNodeName("body") || node->isNodeName("FictionBook") || node->isNodeName("DocFragment"))
+    {
+        return NULL;
+    }
     //CRLog::error("node path = %s",LCSTR(node->getXPath()));
 
     int index = node->getNodeIndex();
@@ -260,6 +264,20 @@ bool FootnotesPrinter::NodeIsBreak(ldomNode *node, lString16 nextId)
     if (text.DigitsOnly() && text.atoi(num))
     {
         return true;
+    }
+    if(node->getParentNode("body")->hasAttribute(attr_name))
+    {
+        if(node->getParentNode("body")->getAttributeValue(attr_name)=="notes_hidden")
+        {
+            return true;
+        }
+    }
+    if(node->hasAttribute(attr_name))
+    {
+        if(node->getAttributeValue(attr_name)=="notes_hidden")
+        {
+            return true;
+        }
     }
     if (node->isNodeName("pagebreak"))
     {
