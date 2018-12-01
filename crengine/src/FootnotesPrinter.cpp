@@ -185,7 +185,10 @@ ldomNode * FootnotesPrinter::FindTextInParents(ldomNode *node)
         return NULL;
     }
     //CRLog::error("node path = %s",LCSTR(node->getXPath()));
-
+    if (node->isNodeName("FictionBook") || node->isNodeName("DocFragment"))
+    {
+        return NULL;
+    }
     int index = node->getNodeIndex();
     ldomNode *parent = node->getParentNode();
     if (parent == NULL)
