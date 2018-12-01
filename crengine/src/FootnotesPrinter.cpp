@@ -74,6 +74,13 @@ void FootnotesPrinter::recurseNodesToPrint(ldomNode *node)
         CRLog::error("node is null");
         return;
     }
+    if(node->hasAttribute(attr_id))
+    {
+        if(node->getAttributeValue(attr_id) == NOTES_HIDDEN_ID)
+        {
+            return;
+        }
+    }
     //CRLog::error("node to recurse = %s",LCSTR(node->getXPath()));
 
     for (int i = 0; i < node->getChildCount(); i++)
@@ -101,7 +108,7 @@ void FootnotesPrinter::recurseNodesToPrint(ldomNode *node)
                 text = text.substr(0,text.length()-1);
             }
             int num;
-            if (text.atoi(num))
+            if (text.DigitsOnly() && text.atoi(num))
             {
                 continue;
             }
@@ -146,26 +153,12 @@ ldomNode * FootnotesPrinter::FindTextInNode(ldomNode *node)
         {
             continue;
         }
-        if(text.startsWith("["))
-        {
-            text = text.substr(1);
-        }
-        if( text.endsWith("]"))
-        {
-            text = text.substr(0,text.length()-1);
-        }
-        int num;
-        if (text.atoi(num))
-        {
-            //CRLog::error("num = %d",num);
-            continue;
-        }
         text = text.ReplaceUnusualSpaces();
-        while(text.startsWith(" "))
+        if(text.startsWith("[") || text.startsWith(" "))
         {
             text = text.substr(1);
         }
-        while(text.endsWith(" "))
+        if( text.endsWith("]") || text.endsWith(" "))
         {
             text = text.substr(0,text.length()-1);
         }
@@ -173,7 +166,12 @@ ldomNode * FootnotesPrinter::FindTextInNode(ldomNode *node)
         {
             continue;
         }
-
+        int num;
+        if (text.DigitsOnly() && text.atoi(num))
+        {
+            //CRLog::error("num = %d",num);
+            continue;
+        }
         //text is not a number
         return child;
     }
@@ -187,7 +185,10 @@ ldomNode * FootnotesPrinter::FindTextInParents(ldomNode *node)
         return NULL;
     }
     //CRLog::error("node path = %s",LCSTR(node->getXPath()));
-
+    if (node->isNodeName("FictionBook") || node->isNodeName("DocFragment"))
+    {
+        return NULL;
+    }
     int index = node->getNodeIndex();
     ldomNode *parent = node->getParentNode();
     if (parent == NULL)
@@ -202,31 +203,23 @@ ldomNode * FootnotesPrinter::FindTextInParents(ldomNode *node)
         {
             continue;
         }
-        if(text.startsWith("["))
-        {
-            text = text.substr(1);
-        }
-        if( text.endsWith("]"))
-        {
-            text = text.substr(0,text.length()-1);
-        }
-        int num;
-        if (text.atoi(num))
-        {
-            //CRLog::error("num = %d",num);
-            continue;
-        }
         text = text.ReplaceUnusualSpaces();
-        while(text.startsWith(" "))
+        if(text.startsWith("[") || text.startsWith(" "))
         {
             text = text.substr(1);
         }
-        while(text.endsWith(" "))
+        if( text.endsWith("]") || text.endsWith(" "))
         {
             text = text.substr(0,text.length()-1);
         }
         if(text.length()==0)
         {
+            continue;
+        }
+        int num;
+        if (text.DigitsOnly() && text.atoi(num))
+        {
+            //CRLog::error("num = %d",num);
             continue;
         }
         //text is not a number
@@ -274,9 +267,16 @@ bool FootnotesPrinter::NodeIsBreak(ldomNode *node, lString16 nextId)
         return true;
     }
     int num;
-    if (text.atoi(num))
+    if (text.DigitsOnly() && text.atoi(num))
     {
         return true;
+    }
+    if(node->hasAttribute(attr_id))
+    {
+        if(node->getAttributeValue(attr_id) == NOTES_HIDDEN_ID)
+        {
+            return true;
+        }
     }
     if (node->isNodeName("pagebreak"))
     {
