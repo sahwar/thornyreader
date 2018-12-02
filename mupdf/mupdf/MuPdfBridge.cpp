@@ -25,6 +25,7 @@
 #include "thornyreader.h"
 #include "debug_generate_crash.h"
 #include "bitmaputils.h"
+#include "thornyreader_version.h"
 
 #define LCTX "MuPdfBridge"
 #define L_DEBUG false

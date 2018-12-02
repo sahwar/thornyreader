@@ -23,6 +23,7 @@
 #include "DjvuBridge.h"
 #include "thornyreader.h"
 #include "bitmaputils.h"
+#include "thornyreader_version.h"
 
 #define LCTX "DjvuBridge"
 #define L_DEBUG false

@@ -11,6 +11,7 @@ bool DetectEpubFormat(LVStreamRef stream)
 	LVContainerRef m_arc = LVOpenArchive(stream);
 	if (m_arc.isNull())
 	{
+	    CRLog::error("failed to open stream %s",LCSTR(stream.get()->GetName()));
 		// Not a ZIP archive
 		return false;
 	}
@@ -665,12 +666,16 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 	// check root media type
 	lString16 rootfilePath = EpubGetRootFilePath(arc);
 	if (rootfilePath.empty())
-		return false;
+    {
+        CRLog::error("ImportEpubDocument failed to obtain rootfile path. Trying to use hardcoded one");
+        //return false;
+	    rootfilePath = lString16("OEBPS/content.opf");
+    }
 
 	EncryptedDataContainer *decryptor = new EncryptedDataContainer(arc);
 	if (decryptor->open())
 	{
-		CRLog::debug("EPUB: encrypted items detected");
+		CRLog::debug("ImportEpubDocument: encrypted items detected");
 	}
 
 	LVContainerRef m_arc = LVContainerRef(decryptor);
@@ -689,6 +694,7 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 	EpubItems NotesItems;
 	LVArray<LinkStruct> LinksList;
 	LinksMap LinksMap;
+	Epub3Notes Epub3Notes;
 	//EpubItem * epubToc = NULL; //TODO
 	LVArray<EpubItem *> spineItems;
 	lString16 codeBase;
@@ -702,6 +708,7 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 
 	if (content_stream.isNull())
 	{
+		CRLog::error("ImportEpubDocument : failed to open rootfile %s",LCSTR(rootfilePath));
 		return false;
 	}
 
@@ -967,6 +974,7 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 					parser.setEpubNotes(NotesItems);
 					parser.setLinksList(LinksList);
 					parser.setLinksMap(LinksMap);
+					parser.setEpub3Notes(Epub3Notes);
 					if (parser.CheckFormat() && parser.Parse())
 					{
 						// valid
@@ -981,15 +989,26 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 					}
                     LinksList = parser.getLinksList();
                     LinksMap = parser.getLinksMap();
+					Epub3Notes = parser.getEpub3Notes();
                 }
             }
         }
     }
-	//CRLog::error("Linkslist length = %d",LinksList.length());
-	//for (int i = 0; i < LinksList.length(); i++)
-	//{
-	//	CRLog::error("LinksList %d = %s = %s",i,LCSTR(LinksList.get(i).id_),LCSTR(LinksList.get(i).href_));
-	//}
+
+	if(LinksList.length()>0 && Epub3Notes.size() > 0)
+	{
+		//CRLog::error("FnotesTitle = %s",LCSTR(FnotesTitle));
+		/*
+		for (int i = 0; i < LinksList.length(); i++)
+		{
+		    LinkStruct link = LinksList.get(i);
+			CRLog::error("List item #%d = %s , %s",i,LCSTR(link.id_),LCSTR(link.href_));
+		}
+		*/
+        Epub3NotesPrinter printer(m_doc,Epub3Notes);
+		printer.PrintLinksList(LinksList);
+	}
+
 	if(NotesItems.length()>0)
 	{
 		writer.OnTagOpen(L"", L"DocFragment");
@@ -1031,13 +1050,20 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 
 		writer.OnTagClose(L"", L"DocFragment");
 	}
+
+    //CRLog::error("Linkslist length = %d",LinksList.length());
+    //for (int i = 0; i < LinksList.length(); i++)
+    //{
+    //	CRLog::error("LinksList %d = #%d = %s = %s",i,LinksList.get(i).num_,LCSTR(LinksList.get(i).id_),LCSTR(LinksList.get(i).href_));
+    //}
     if(LinksList.length()>0)
     {
 	  //  writer.OnTagOpen(L"", L"NoteFragment");
 	  //  writer.OnText(L"\u200B", 1, TXTFLG_KEEP_SPACES | TXTFLG_TRIM_ALLOW_END_SPACE | TXTFLG_TRIM_ALLOW_START_SPACE);
 	  //  writer.OnTagClose(L"", L"NoteFragment");
-
-	    FootnotesPrinter::AppendLinksToDoc(m_doc, LinksList);
+        //CRLog::error("printing footnotes");
+        FootnotesPrinter printer(m_doc);
+	    printer.PrintLinksList(LinksList);
     }
     //writer.OnTagClose(L"", L"DocFragment");
     writer.OnTagClose(L"", L"body");

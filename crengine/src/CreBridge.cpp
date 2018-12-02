@@ -6,6 +6,7 @@
 #include "thornyreader/include/StSocket.h"
 #include "include/CreBridge.h"
 #include "include/mobihandler.h"
+#include "thornyreader_version.h"
 
 static int CeilToEvenInt(int n)
 {
@@ -533,6 +534,7 @@ void CreBridge::processPageLinks(CmdRequest& request, CmdResponse& response)
 
     for (int i = 0; i < fnoteslist.length(); i++)
     {
+        uint16_t target_page = 0;
         TextRect curr_link = fnoteslist.get(i);
         float l = curr_link.getRect().left   / width  ;
         float t = curr_link.getRect().top    / height ;
@@ -540,12 +542,35 @@ void CreBridge::processPageLinks(CmdRequest& request, CmdResponse& response)
         float b = curr_link.getRect().bottom / height ;
         lString16 href = curr_link.getText();
 
-        response.addWords(LINK_TARGET_URI, 0);
-        responseAddString(response, href);
-        response.addFloat(l);
-        response.addFloat(t);
-        response.addFloat(r);
-        response.addFloat(b);
+        if (href.length() > 1 && href[0] == '#')
+        {
+            lString16 ref = href.substr(1, href.length() - 1);
+            lUInt16 id = doc_view_->GetCrDom()->getAttrValueIndex(ref.c_str());
+            ldomNode* node = doc_view_->GetCrDom()->getNodeById(id);
+            if (node) {
+                ldomXPointer position(node, 0);
+                target_page = (uint16_t) doc_view_->GetPageForBookmark(position);
+                target_page = (uint16_t) ExportPage(doc_view_->GetColumns(), target_page);
+                response.addWords(LINK_TARGET_PAGE, target_page);
+                response.addFloat(l);
+                response.addFloat(t);
+                response.addFloat(r);
+                response.addFloat(b);
+                response.addFloat(.0F);
+                response.addFloat(.0F);
+            } else {
+                responseAddLinkUnknown(response, href, l, t, r, b);
+            }
+        } else if (href.startsWith("http:") || href.startsWith("https:")) {
+            response.addWords(LINK_TARGET_URI, 0);
+            responseAddString(response, href);
+            response.addFloat(l);
+            response.addFloat(t);
+            response.addFloat(r);
+            response.addFloat(b);
+        } else {
+            responseAddLinkUnknown(response, href, l, t, r, b);
+        }
         //CRLog::error("ltrb = %f, %f, %f, %f , %s", l,t,r,b,LCSTR(href));
     }
 

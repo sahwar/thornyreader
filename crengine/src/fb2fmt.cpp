@@ -16,7 +16,7 @@ bool ImportFb2Document(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
     if (!parser.CheckFormat())
     {
         CRLog::trace("!parser->CheckFormat()");
-       // delete parser;
+        // delete parser;
         return false;
     }
     parser.setLinksList(LinksList);
@@ -24,7 +24,7 @@ bool ImportFb2Document(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
     if (!parser.Parse())
     {
         CRLog::trace("!parser->Parse()");
-       // delete parser;
+        // delete parser;
         return false;
     }
     LinksList = parser.getLinksList();
@@ -32,10 +32,14 @@ bool ImportFb2Document(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
     //for (int i = 0; i < LinksList.length(); i++)
     //{
     //	CRLog::error("LinksList %d = %s = %s",LinksList.get(i).num_,LCSTR(LinksList.get(i).id_),LCSTR(LinksList.get(i).href_));
-    writer.OnStart(&parser);
-    FootnotesPrinter::AppendLinksToDoc(m_doc,LinksList);
-    writer.OnStop();
-
+    //}
+    if (LinksList.length() > 0)
+    {
+        writer.OnStart(&parser);
+        FootnotesPrinter printer(m_doc);
+        printer.PrintLinksList(LinksList);
+        writer.OnStop();
+    }
     return true;
 }
 

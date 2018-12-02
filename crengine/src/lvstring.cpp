@@ -4207,19 +4207,38 @@ lString16 lString16::TrimEndQuestionChar(lString16 & str){
 //converting all different spaces to one type space
 lString16 lString16::ReplaceUnusualSpaces()
 {
-    if ((this->firstChar() == L'\u00A0')
-     || (this->firstChar() == L'\u180E')
-     || ((this->firstChar() >= L'\u2000') && (this->firstChar() <= L'\u200B'))
-     || (this->firstChar() == L'\u202F')
-     || (this->firstChar() == L'\u205F')
-     || (this->firstChar() == L'\u3000')
-     || (this->firstChar() == L'\uFEFF'))
+    lString16 buffer = *this;
+    for (int i = 0; i <buffer.length() ; ++i)
     {
-        return lString16(" ");
+        lChar16 ch = buffer.at(i);
+        if ((ch == L'\u00A0')
+            || (ch == L'\u180E')
+            || (ch >= L'\u2000') && (ch <= L'\u200B')
+            || (ch == L'\u202F')
+            || (ch == L'\u205F')
+            || (ch == L'\u3000')
+            || (ch == L'\uFEFF'))
+        {
+            buffer.at(i) = L' ';
+        }
     }
-    return* this;
+    return buffer;
 }
 
+bool lString16::DigitsOnly() {
+    for (int i = 0; i < this->length(); ++i) {
+        lChar16 ch = this->at(i);
+        if ( ch < 48 && ch != 45 && ch != 32 )
+        {
+            return false;
+        }
+        else if(ch > 57)
+        {
+            return false;
+        }
+    }
+    return true;
+}
 
 /// serialization/deserialization buffer
 
