@@ -728,13 +728,18 @@ public:
     }
 
     /// get fallback font for this font
-    LVFont * getFallbackFont() {
+    LVFont * getFallbackFont(int size,int weight, bool italic)
+    {
+        if(this->is_fallback_)
+        {
+            return  NULL;
+        }
         if (_fallbackFontIsSet)
         {
             return _fallbackFont.get();
         }
 
-        _fallbackFont = fontMan->GetFallbackFont(_size);
+        _fallbackFont = fontMan->GetFallbackFont(size,weight,italic);
         LVFont * result = _fallbackFont.get();
         if  (result)
         {
@@ -749,7 +754,7 @@ public:
         {
             fontMan->InitFallbackFonts();
             _fallbackSystemInit = true;
-            _fallbackFont = fontMan->GetFallbackFont(_size);
+            _fallbackFont = fontMan->GetFallbackFont(size,weight,italic);
             result = _fallbackFont.get();
             if  (result)
             {
@@ -759,13 +764,13 @@ public:
         }
     }
 
-    LVFont *nextFallbackFont(int size)
+    LVFont *nextFallbackFont(int size,int weight, bool italic)
     {
         _size = size;
         fontMan->FallbackFontFaceNext();
 
         _fallbackFontIsSet = false;
-        return getFallbackFont();
+        return getFallbackFont(size,weight,italic);
     }
 
     /// returns font weight
@@ -1004,7 +1009,7 @@ public:
             return getGlyphInfoItem(glyph_index, glyph);
         }
 
-        LVFont *fallback = getFallbackFont();
+        LVFont *fallback = getFallbackFont(this->getSize(),this->getWeight(),this->getItalic());
         if (!fallback) // Fallback not initialized
         {
             glyph_index = getCharIndex(code, def_char);
@@ -1030,7 +1035,7 @@ public:
         {
             //CRLog::error("Cycle!");
 
-            fallback = nextFallbackFont(this->getSize());
+            fallback = nextFallbackFont(this->getSize(),this->getWeight(),this->getItalic());
             nextface = fontMan->GetFallbackFontFace();
 
             //CRLog::error("Now it's : %s", nextface.c_str());
@@ -1252,19 +1257,19 @@ public:
         FT_UInt ch_glyph_index = getCharIndex(ch, 0);
         if (ch_glyph_index != 0)
         {
-            return GetGlyphItem(ch, ch_glyph_index);
+            return getGlyphItem(ch, ch_glyph_index);
         }
-        LVFont *fallback = getFallbackFont();
+        LVFont *fallback = getFallbackFont(this->getSize(),this->_weight,this->_italic);
         if (!fallback) // Fallback not initialized
         {
             ch_glyph_index = getCharIndex(ch, def_char);
-            return GetGlyphItem(ch, ch_glyph_index);
+            return getGlyphItem(ch, ch_glyph_index);
         }
         ch_glyph_index = fallback->getCharIndex(ch, 0);
 
         if (ch_glyph_index != 0)
         {
-            return fallback->GetGlyphItem(ch, ch_glyph_index);
+            return fallback->getGlyphItem(ch, ch_glyph_index);
         }
         lString8 nextface;
         lString8 curface = fontMan->GetFallbackFontFace();
@@ -1273,7 +1278,7 @@ public:
         {
             //CRLog::error("Cycle!");
 
-            fallback = nextFallbackFont(this->getSize());
+            fallback = nextFallbackFont(this->getSize(),this->_weight,this->_italic);
             nextface = fontMan->GetFallbackFontFace();
 
             //CRLog::error("Now it's : %s", nextface.c_str());
@@ -1286,14 +1291,14 @@ public:
             if (ch_glyph_index != 0)
             {
                 CRLog::trace("Fallback face: %s", nextface.c_str());
-                return fallback->GetGlyphItem(ch, ch_glyph_index);
+                return fallback->getGlyphItem(ch, ch_glyph_index);
             }
         }
         ch_glyph_index = fallback->getCharIndex(ch, def_char);
-        return fallback->GetGlyphItem(ch, ch_glyph_index);
+        return fallback->getGlyphItem(ch, ch_glyph_index);
     }
 
-    virtual LVFontGlyphCacheItem * GetGlyphItem(lUInt16 ch,unsigned int ch_glyph_index ){
+    virtual LVFontGlyphCacheItem * getGlyphItem(lUInt16 ch, unsigned int ch_glyph_index){
         LVFontGlyphCacheItem * item = _glyph_cache.get( ch );
         if ( !item ) {
 
@@ -1577,11 +1582,33 @@ public:
         bool res = _baseFont->getGlyphInfo( code, glyph, def_char );
         if ( !res )
             return res;
+        transformInfo(glyph);
+        return true;
+    }
+
+    void transformInfo(glyph_info_t * glyph)
+    {
         glyph->blackBoxX += glyph->blackBoxX>0 ? _hShift : 0;
         glyph->blackBoxY += _vShift;
         glyph->width += _hShift;
+    }
 
-        return true;
+    FT_UInt getCharIndex( lChar16 code, lChar16 def_char )
+    {
+        return _baseFont->getCharIndex(code,def_char);
+    }
+
+    LVFontGlyphCacheItem * getGlyphItem(lUInt16 ch, unsigned int ch_glyph_index)
+    {
+        LVFontGlyphCacheItem * item = _baseFont->getGlyphItem(ch,ch_glyph_index);
+        return transformItem(ch,item);
+    }
+
+    virtual bool getGlyphInfoItem(int glyph_index, glyph_info_t * glyph)
+    {
+        bool a = _baseFont->getGlyphInfoItem(glyph_index, glyph);
+        transformInfo(glyph);
+        return a;
     }
 
     /** \brief measure text
@@ -1647,26 +1674,14 @@ public:
         return 0;
     }
 
-    /** \brief get glyph item
-        \param code is unicode character
-        \return glyph pointer if glyph was found, NULL otherwise
-    */
-    virtual LVFontGlyphCacheItem * getGlyph(lUInt16 ch, lChar16 def_char=0) {
-
-        LVFontGlyphCacheItem * item = _glyph_cache.get( ch );
-        if ( item )
-            return item;
-
-        LVFontGlyphCacheItem * olditem = _baseFont->getGlyph( ch, def_char );
-        if ( !olditem )
-            return NULL;
-
+    LVFontGlyphCacheItem * transformItem(lUInt16 ch, LVFontGlyphCacheItem * olditem)
+    {
         int oldx = olditem->bmp_width;
         int oldy = olditem->bmp_height;
         int dx = oldx ? oldx + _hShift : 0;
         int dy = oldy ? oldy + _vShift : 0;
 
-        item = LVFontGlyphCacheItem::newItem( &_glyph_cache, ch, dx, dy ); //, _drawMonochrome
+        LVFontGlyphCacheItem * item = LVFontGlyphCacheItem::newItem( &_glyph_cache, ch, dx, dy ); //, _drawMonochrome
         item->advance = olditem->advance + _hShift;
         item->origin_x = olditem->origin_x;
         item->origin_y = olditem->origin_y;
@@ -1693,6 +1708,23 @@ public:
         }
         _glyph_cache.put( item );
         return item;
+    }
+
+    /** \brief get glyph item
+        \param code is unicode character
+        \return glyph pointer if glyph was found, NULL otherwise
+    */
+    virtual LVFontGlyphCacheItem * getGlyph(lUInt16 ch, lChar16 def_char=0) {
+
+        LVFontGlyphCacheItem * item = _glyph_cache.get( ch );
+        if ( item )
+            return item;
+
+        LVFontGlyphCacheItem * olditem = _baseFont->getGlyph( ch, def_char );
+        if ( !olditem )
+            return NULL;
+
+        return transformItem(ch, olditem);
     }
 
     /** \brief get glyph image in 1 byte per pixel format
@@ -2047,8 +2079,9 @@ public:
         }
         return true;
     }
-    /// returns fallback font for specified size
-    virtual LVFontRef GetFallbackFont(int size) {
+
+    /// returns fallback font for specified size, weight and italic-style
+    virtual LVFontRef GetFallbackFont(int size, int weight, bool italic) {
         if ( _fallbackFontFace.empty() )
             return LVFontRef();
         // reduce number of possible distinct sizes for fallback font
@@ -2058,10 +2091,12 @@ public:
             size &= 0xFFFC;
         else if ( size>16 )
             size &= 0xFFFE;
-        LVFontCacheItem * item = _cache.findFallback( _fallbackFontFace, size );
-        if ( !item->getFont().isNull() )
-            return item->getFont();
-        return GetFont(size, 400, false, css_ff_sans_serif, _fallbackFontFace, -1);
+        //LVFontCacheItem * item = _cache.findFallback( _fallbackFontFace, size );
+        //if ( !item->getFont().isNull() )
+        //    return item->getFont();
+        LVFontRef ref = GetFont(size, weight, italic, css_ff_sans_serif, _fallbackFontFace, -1);
+        ref.get()->is_fallback_ = true;
+        return ref;
     }
 
     virtual void GetSystemFallbackFontsList(lString8Collection& list)
@@ -2092,6 +2127,8 @@ public:
             if (temp.pos("UI")!=-1)
             {continue;}
             if (temp.pos("Emoji")!=-1)
+            {continue;}
+            if (temp.pos("AndroidClock")!=-1)
             {continue;}
             /*if (temp.pos("Noto")!=-1)  // Noto family is preferred
             {
