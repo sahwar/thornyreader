@@ -759,9 +759,9 @@ public:
         }
     }
 
-    LVFont *nextFallbackFont()
+    LVFont *nextFallbackFont(int size)
     {
-        _size = fontMan->font_size_;
+        _size = size;
         fontMan->FallbackFontFaceNext();
 
         _fallbackFontIsSet = false;
@@ -1030,7 +1030,7 @@ public:
         {
             //CRLog::error("Cycle!");
 
-            fallback = nextFallbackFont();
+            fallback = nextFallbackFont(this->getSize());
             nextface = fontMan->GetFallbackFontFace();
 
             //CRLog::error("Now it's : %s", nextface.c_str());
@@ -1273,7 +1273,7 @@ public:
         {
             //CRLog::error("Cycle!");
 
-            fallback = nextFallbackFont();
+            fallback = nextFallbackFont(this->getSize());
             nextface = fontMan->GetFallbackFontFace();
 
             //CRLog::error("Now it's : %s", nextface.c_str());
