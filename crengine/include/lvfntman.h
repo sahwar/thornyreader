@@ -128,6 +128,7 @@ protected:
     lString8 _typeface;
     css_font_family_t _family;
 public:
+    bool is_fallback_ = false;
     lUInt32 _hash;
     /// glyph properties structure
     struct glyph_info_t {
@@ -138,8 +139,9 @@ public:
         lUInt8  width;       ///< 4: full width of glyph
     };
 
-    virtual unsigned int getCharIndex( lChar16 code, lChar16 def_char ) { return 0;};
-    virtual LVFontGlyphCacheItem * GetGlyphItem(lUInt16 ch,unsigned int ch_glyph_index ) {return NULL;};
+    virtual unsigned int getCharIndex( lChar16 code, lChar16 def_char ) =0;// { return 0;};
+
+    virtual LVFontGlyphCacheItem * getGlyphItem(lUInt16 ch, unsigned int ch_glyph_index) = 0 ;// {return NULL;};
     /// hyphenation character
     virtual lChar16 getHyphChar() { return UNICODE_SOFT_HYPHEN_CODE; }
 
@@ -157,7 +159,7 @@ public:
     */
     virtual bool getGlyphInfo(lUInt16 code, glyph_info_t* glyph, lChar16 def_char=0) = 0;
 
-    virtual bool getGlyphInfoItem(int glyph_index, glyph_info_t * glyph) { return false;};
+    virtual bool getGlyphInfoItem(int glyph_index, glyph_info_t * glyph) = 0 ;// { return false;};
 
 
     /** \brief measure text
@@ -244,7 +246,7 @@ public:
     void setFallbackFont( LVProtectedFastRef<LVFont> font ) { CR_UNUSED(font); }
     /// get fallback font for this font
     LVFont * getFallbackFont() { return NULL; }
-    LVFont * getFallbackFont(int i) { return NULL; }
+    LVFont * getFallbackFont(int size,int weight, bool italic) { return NULL; }
 };
 
 typedef LVProtectedFastRef<LVFont> LVFontRef;
@@ -331,7 +333,7 @@ public:
     virtual void InitFallbackFontDefault() =0;
 
     /// returns fallback font for specified size
-    virtual LVFontRef GetFallbackFont(int /*size*/) { return LVFontRef(); }
+    virtual LVFontRef GetFallbackFont(int size,int weight, bool italic) { return LVFontRef(); }
     /// registers font by name
     virtual lString8Collection RegisterFont( lString8 name ) = 0;
     /// registers font by name and face
