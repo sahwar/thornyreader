@@ -149,11 +149,12 @@ public:
     lString16 styleId_;
     int fontSize_ = -1;
     bool isDefault_ = false;
+    lString16 name_;
 
     DocxStyle() {}
 
-    DocxStyle(const DocxStyle &v)                                           : type_(v.type_), fontSize_(v.fontSize_), styleId_(v.styleId_),isDefault_(v.isDefault_) {}
-    DocxStyle(lString16 type,int fontSize,lString16 styleId,bool isDefault) : type_(type)   , fontSize_(fontSize)   , styleId_(styleId)   ,isDefault_(isDefault) {}
+    DocxStyle(const DocxStyle &v) : type_(v.type_), fontSize_(v.fontSize_), styleId_(v.styleId_),isDefault_(v.isDefault_),name_(v.name_) {}
+    DocxStyle(lString16 type,int fontSize,lString16 styleId,bool isDefault,lString16 name) : type_(type)   , fontSize_(fontSize)   , styleId_(styleId)   ,isDefault_(isDefault),name_(name) {}
 
     DocxStyle &operator=(const DocxStyle &v)
     {
@@ -184,6 +185,13 @@ private:
         return !(this->min_ == 500 || this->max_ == -1);
     };
 
+    bool h1isset = false;
+    bool h2isset = false;
+    bool h3isset = false;
+    bool h4isset = false;
+    bool h5isset = false;
+    bool h6isset = false;
+
 public:
     int min_ = 500;
     int max_ = -1;
@@ -195,8 +203,51 @@ public:
     int h2min_ = -1;
     int h1min_ = -1;
 
+    lString16 h1id_;
+    lString16 h2id_;
+    lString16 h3id_;
+    lString16 h4id_;
+    lString16 h5id_;
+    lString16 h6id_;
+
+    void checkForHeaders()
+    {
+        for (int i = 0; i < this->length(); i++)
+        {
+            DocxStyle* curr = this->get(i);
+            lString16 curr_name = curr->name_;
+            if(curr_name.pos("head")!=-1)
+            {
+                //CRLog::error("curr name = [%s]",LCSTR(curr_name));
+                lString16Collection namefrags;
+                namefrags.parse(curr_name,' ', false);
+                for (int i = 0; i < namefrags.length(); i++)
+                {
+                    lString16 namefrag  = namefrags.at(i);
+                    if(namefrag.DigitsOnly())
+                    {
+                        int headnum = namefrag.atoi();
+                        switch (headnum)
+                        {
+                            case 1: h1id_ = (h1isset)? h1id_: curr->styleId_; break;
+                            case 2: h2id_ = (h2isset)? h2id_: curr->styleId_; break;
+                            case 3: h3id_ = (h3isset)? h3id_: curr->styleId_; break;
+                            case 4: h4id_ = (h4isset)? h4id_: curr->styleId_; break;
+                            case 5: h5id_ = (h5isset)? h5id_: curr->styleId_; break;
+                            case 6: h6id_ = (h6isset)? h6id_: curr->styleId_; break;
+                            default:
+                                CRLog::error("Error: Unknown header style found! [%s]",LCSTR(curr_name));
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     bool generateHeaderFontSizes()
     {
+        checkForHeaders();
         updateMiniMax();
         if (this->default_size_ < 0 )
         {

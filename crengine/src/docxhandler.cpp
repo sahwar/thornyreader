@@ -160,6 +160,29 @@ int DocxGetStyleNodeFontSize(ldomNode * node)
     return -1;
 }
 
+lString16 DocxGetStyleName(ldomNode * node)
+{
+    if(node->isNodeName("name"))
+    {
+        lString16 name = node->getAttributeValue("val");
+        if(name!=lString16::empty_str)
+        {
+            return name;
+        }
+    }
+
+    for (int i = 0; i < node->getChildCount(); i++)
+    {
+        ldomNode * child = node->getChildNode(i);
+        lString16 name = DocxGetStyleName(child);
+        if(!name.empty())
+        {
+            return name;
+        }
+    }
+    return lString16::empty_str;
+}
+
 DocxStyles DocxParseStyles(LVContainerRef m_arc)
 {
     LVStreamRef container_stream = m_arc->OpenStream(L"word/styles.xml", LVOM_READ);
@@ -186,22 +209,31 @@ DocxStyles DocxParseStyles(LVContainerRef m_arc)
                     lString16 isDefault = item->getAttributeValue("default");
 
                     int size = DocxGetStyleNodeFontSize(item);
+                    lString16 name = DocxGetStyleName(item);
                     if (size != -1)
                     {
                         if (isDefault == "1" && DocxStyles.default_size_ == -1)
                         {
-                            DocxStyle *style = new DocxStyle(type, size, styleId, true);
+                            DocxStyle *style = new DocxStyle(type, size, styleId, true, name);
                             DocxStyles.default_size_ = size;
                             DocxStyles.add(style);
                         }
                         else if (isDefault != "1")
                         {
-                            DocxStyle *style = new DocxStyle(type, size, styleId, false);
+                            DocxStyle *style = new DocxStyle(type, size, styleId, false, name);
                             DocxStyles.add(style);
                         }
                     }
                 }
                 i++;
+            }
+            if(DocxStyles.default_size_<0)
+            {
+                ldomNode *item = doc->nodeFromXPath(lString16("styles/docDefaults"));
+                if(item!=NULL)
+                {
+                    DocxStyles.default_size_ = DocxGetStyleNodeFontSize(item);
+                }
             }
             if (DocxStyles.generateHeaderFontSizes())
             {
