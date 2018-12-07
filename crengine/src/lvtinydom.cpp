@@ -9091,6 +9091,10 @@ void RecurseTOC(ldomNode * node,LvTocItem * toc)
     {
         return;
     }
+    if(node->isNodeName("img") || node->isNodeName("image") )
+    {
+        return;
+    }
     for (int i = 0; i < node->getChildCount(); i++)
     {
         ldomNode * child = node->getChildNode(i);
@@ -9140,6 +9144,10 @@ void GetTOC(CrDom * crDom, LvTocItem * toc)
     {
         ldomNode * child = root->getChildNode(i);
         if(child->isNodeName("body") && child->hasAttribute(attr_name) && child->getAttributeValue(attr_name)=="notes_hidden")
+        {
+            continue;
+        }
+        if(child->isNodeName("img") || child->isNodeName("image") )
         {
             continue;
         }
