@@ -2699,12 +2699,6 @@ static void UpdateOutline(LVDocView *doc_view,
 
 void LVDocView::GetOutline(LVPtrVector<LvTocItem, false> &outline)
 {
-    if(this->doc_format_==DOC_FORMAT_DOCX)
-    {
-        CRLog::trace("No outline for docx format yet.");
-        return;
-        //todo (possibly) implement docx outline
-    }
 	outline.clear();
 	if (cr_dom_)
 	{
@@ -2718,7 +2712,11 @@ void LVDocView::GetOutline(LVPtrVector<LvTocItem, false> &outline)
 			// First item its just dummy container, so we skip it
 			for (int i = 0; i < outline_root->getChildCount(); i++)
 			{
-				UpdateOutline(this, outline, outline_root->getChild(i));
+			    LvTocItem * child = outline_root->getChild(i);
+			    if(!child->getName().DigitsOnly())
+                {
+                    UpdateOutline(this, outline, child);
+                }
 			}
 		}
 	}

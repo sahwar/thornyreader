@@ -3661,6 +3661,25 @@ lString16 ldomNode::getXPathSegment()
     return lString16::empty_str;
 }
 
+lString16 ldomNode::getPath()
+{
+    if(this==NULL)
+    {
+        return lString16("NULL_NODE");
+    }
+    lString16 result;
+    ldomNode * node = this;
+    result = node->getXPathSegment();
+    node = node->getParentNode();
+    while (node!=NULL)
+    {
+        result = node->getXPathSegment() + "/" + result;
+        node = node->getParentNode();
+    }
+    return result;
+}
+
+
 lString16 ldomNode::getXPath()
 {
 if(this==NULL)
@@ -9064,4 +9083,69 @@ lvRect ldomWord::getRect()
     range.getRect(result);
     //CRLog::error("ldomWord getrect end");
     return result;
+}
+
+void RecurseTOC(ldomNode * node,LvTocItem * toc)
+{
+    if(node->isNodeName("body") && node->hasAttribute(attr_name) && node->getAttributeValue(attr_name)=="notes_hidden")
+    {
+        return;
+    }
+    for (int i = 0; i < node->getChildCount(); i++)
+    {
+        ldomNode * child = node->getChildNode(i);
+        if(child->isNodeName("h1") || child->isNodeName("h2") || child->isNodeName("h3")
+           || child->isNodeName("h4") || child->isNodeName("h5") || child->isNodeName("h6"))
+        {
+            lString16 text = child->getText();
+            if(text.empty() || text == "-" || text.DigitsOnly())
+            {
+                continue;
+            }
+            if( text.length() > TOC_ITEM_LENGTH_MAX )
+            {
+                text = text.substr(0, TOC_ITEM_LENGTH_MAX);
+                text = text + lString16("...");
+            }
+
+            int lvl = 1;
+            if(child->isNodeName("h1"))
+            { lvl = 1; }
+            else if(child->isNodeName("h2"))
+            { lvl = 2; }
+            else if(child->isNodeName("h3"))
+            { lvl = 3; }
+            else if(child->isNodeName("h4"))
+            { lvl = 4; }
+            else if(child->isNodeName("h5"))
+            { lvl = 5; }
+            else if(child->isNodeName("h6"))
+            { lvl = 6; }
+
+            LvTocItem * item = new LvTocItem( ldomXPointer(child,0), child->getPath(), text );
+            toc->addItem( item , lvl);
+            //CRLog::error("added toc [%s], path = [%s]",LCSTR(child->getText()),LCSTR(child->getXPath()));
+        }
+        else if (child->isElement())
+        {
+            RecurseTOC(child,toc);
+        }
+    }
+}
+
+void GetTOC(CrDom * crDom, LvTocItem * toc)
+{
+    ldomNode * root = crDom->getRootNode();
+    for (int i = 0; i < root->getChildCount(); i++)
+    {
+        ldomNode * child = root->getChildNode(i);
+        if(child->isNodeName("body") && child->hasAttribute(attr_name) && child->getAttributeValue(attr_name)=="notes_hidden")
+        {
+            continue;
+        }
+        if (child->isElement())
+        {
+            RecurseTOC(child,toc);
+        }
+    }
 }

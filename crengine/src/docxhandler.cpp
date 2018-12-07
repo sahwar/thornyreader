@@ -428,6 +428,7 @@ bool ImportDocxDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
     writer.OnTagClose(L"", L"body"); //main body closed
     writer.OnStop();
 
+    GetTOC(m_doc,m_doc->getToc());
 #if 0 // set stylesheet
     //m_doc->getStylesheet()->clear();
 	m_doc->setStylesheet( NULL, true );
