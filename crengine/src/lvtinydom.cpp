@@ -9098,8 +9098,7 @@ void RecurseTOC(ldomNode * node,LvTocItem * toc)
     for (int i = 0; i < node->getChildCount(); i++)
     {
         ldomNode * child = node->getChildNode(i);
-        if(child->isNodeName("h1") || child->isNodeName("h2") || child->isNodeName("h3")
-           || child->isNodeName("h4") || child->isNodeName("h5") || child->isNodeName("h6"))
+        if(child->isNodeName("h1") || child->isNodeName("h2") || child->isNodeName("h3"))
         {
             lString16 text = child->getText();
             if(text.empty() || text == "-" || text.DigitsOnly())
@@ -9119,12 +9118,6 @@ void RecurseTOC(ldomNode * node,LvTocItem * toc)
             { lvl = 2; }
             else if(child->isNodeName("h3"))
             { lvl = 3; }
-            else if(child->isNodeName("h4"))
-            { lvl = 4; }
-            else if(child->isNodeName("h5"))
-            { lvl = 5; }
-            else if(child->isNodeName("h6"))
-            { lvl = 6; }
 
             LvTocItem * item = new LvTocItem( ldomXPointer(child,0), child->getPath(), text );
             toc->addItem( item , lvl);
