@@ -23,12 +23,8 @@ bool char_isRTL(const lChar16 c){
            ((c>=0x05D0)&&(c<=0x05F4)) ||
            (c==0x0608) || (c==0x060B) ||
            (c==0x060D) ||
-           ((c>=0x061B)&&(c<=0x064A)) ||
-           ((c>=0x066D)&&(c<=0x066F)) ||
-           ((c>=0x0671)&&(c<=0x06D5)) ||
-           ((c>=0x06E5)&&(c<=0x06E6)) ||
-           ((c>=0x06EE)&&(c<=0x06EF)) ||
-           ((c>=0x06FA)&&(c<=0x0710)) ||
+           ((c>=0x0600)&&(c<=0x06FF)) ||
+           ((c>=0x06FF)&&(c<=0x0710)) ||
            ((c>=0x0712)&&(c<=0x072F)) ||
            ((c>=0x074D)&&(c<=0x07A5)) ||
            ((c>=0x07B1)&&(c<=0x07EA)) ||
@@ -68,12 +64,6 @@ int TextRect::getWidthRTL(LVFont * font)
     int font_width = font->getCharWidth(this_text.firstChar());
     int font_height = font->getHeight();
     int width = (rect_width > 0 && rect_height <= font_height) ? rect_width : font_width;
-    if(rect_width < 0 || rect_height > font_height )
-    {
-        CRLog::error("symbol caught  = [%s],rectwidth = %d, fontwidth = %d",LCSTR(this_text),rect_width,font_width);
-        CRLog::error("rect [%d:%d][%d:%d] ",this_rect.left, this_rect.right, this_rect.top, this_rect.bottom);
-        CRLog::error("height = %d ,width = %d",this_rect.height(),width);
-    }
     return width;
 }
 
@@ -83,6 +73,37 @@ public:
     TextRectGroup(){};
     LVArray<TextRect> list_;
     bool is_rtl_ = false;
+    int getRectWidth()
+    {
+        int result = 0;
+        if(this->list_.empty())
+        {
+            return result;
+        }
+        for (int i = 0; i < list_.length(); i++)
+        {
+            TextRect curr = list_.get(i);
+            int rect_width = curr.getRect().width();
+            result += rect_width;
+        }
+        return result;
+    }
+
+    int getFontWidth(LVFont *font)
+    {
+        int result = 0;
+        if(this->list_.empty())
+        {
+            return result;
+        }
+        for (int i = 0; i < list_.length(); i++)
+        {
+            TextRect curr = list_.get(i);
+            int font_width = font->getCharWidth(curr.getText().firstChar());
+            result += font_width;
+        }
+        return result;
+    }
 
     int getWidth(LVFont *font)
     {
@@ -150,6 +171,81 @@ public:
     }
 };
 
+int getSpaceWidth(LVArray<TextRectGroup> words)
+{
+    if(words.empty())
+    {
+        return -1;
+    }
+    int words_len = words.length();
+    if(words.get(words_len-1).getText() == " ")
+    {
+        words_len --;
+    }
+    LVFont * font = words.get(0).list_.get(0).getNode()->getParentNode()->getFont().get();
+
+    int gaps = 0;
+    int space_counter = 0;
+    int offset = words.get(0).list_.get(0).getRect().left;
+    int start = 0;
+    if(words.get(0).getText() == " ")
+    {
+        start ++;
+    }
+    int gapfix = 0;
+    int orig_line_left = words.get(0).list_.get(0).getRect().left;
+    int orig_line_right = words.get(words_len-1).list_.get(0).getRect().left + words.get(words_len-1).getRectWidth();
+    int orig_line_width = orig_line_right-orig_line_left;
+    //CRLog::error("orig width = %d",orig_line_width);
+    for (int i = start; i < words_len; i++)
+    {
+        TextRectGroup curr = words.get(i);
+        if(curr.getText().firstChar() == ' ' )
+        {
+            //CRLog::trace("SPACE COUNTER ++");
+            space_counter ++;
+            int rect_width = curr.getRectWidth();
+            int font_width = curr.getFontWidth(font);
+            //CRLog::error("space counter = %d",space_counter);
+            //CRLog::error("space rect width = %d",curr.getRectWidth());
+            //CRLog::error("space font width = %d",curr.getFontWidth(font));
+            if(rect_width < font_width)
+            {
+                gapfix += font_width;
+            }
+            continue;
+        }
+        int width = curr.getFontWidth(font);
+        int fontheight = font->getHeight();
+        int rectheight = curr.list_.get(0).getRect().height();
+        int len =   curr.list_.length();
+        int left =  curr.list_.get(0).getRect().left;
+        int right = curr.list_.get(len-1).getRect().right;
+        //CRLog::error("curr = [%s]",LCSTR(curr.getText()));
+        //CRLog::error("real left = %d , real right = %d",left,right);
+        //CRLog::error("width = %d, rectwidth %d",width,curr.list_.get(0).getRect().width());
+        //CRLog::error("l/r1 = [%d:%d], width = %d, offset = %d gaps = %d",left,right,width, offset, gaps);
+
+        left = (rectheight > fontheight)? right : left;
+        int gap = left - offset;
+        //CRLog::error("hitbox word left = %d, text = [%s]",left+100,LCSTR(curr.getText()));
+        //CRLog::error("gap = left - offset = %d = %d - %d",left-offset,left,offset);
+        offset += width + gap;
+        gaps += gap;
+        //CRLog::error("l/r2 = [%d:%d], width = %d, gap = %d , offset = %d gaps = %d",left,right,width,gap, offset, gaps);
+    }
+
+    if (space_counter > 0)
+    {
+        int spacewidth = (gaps + gapfix) / space_counter;
+        //CRLog::info("gaps = %d,gapfix = %d, space_counter = %d , spacewidth = %d",gaps, gapfix,space_counter, spacewidth);
+        return spacewidth;
+    }
+    //CRLog::error("gaps = %d, space_counter = %d , spacewidth = -1",gaps,space_counter);
+    //CRLog::error("space_counter = %d , spacewidth = -1",space_counter);
+    return -1;
+}
+
 LVArray<TextRect> reverseWord(LVArray<TextRect> in_word)
 {
     LVArray<TextRect> result;
@@ -175,7 +271,7 @@ LVArray<TextRect> reverseWord(LVArray<TextRect> in_word)
     return result;
 }
 
-LVArray<TextRectGroup> reverseWordsOrder(LVArray<TextRectGroup> words)
+LVArray<TextRectGroup> reverseWordsOrder(LVArray<TextRectGroup> words, int spacewidth)
 {
     LVArray<TextRectGroup> result;
     if(words.empty())
@@ -203,8 +299,7 @@ LVArray<TextRectGroup> reverseWordsOrder(LVArray<TextRectGroup> words)
 
     LVFont * font = firstword_txrect.getNode()->getParentNode()->getFont().get();
 
-    int startx = first_rect.right;
-    startx -= first_rect.width();
+    int startx = first_rect.left;
 
     TextRectGroup last_word = words.get(words.length()-1);
     TextRect last = last_word.list_.get(last_word.list_.length()-1);
@@ -237,6 +332,7 @@ LVArray<TextRectGroup> reverseWordsOrder(LVArray<TextRectGroup> words)
 
         if(currword.is_rtl_ || (currword.hasPunct() && prev_state ))
         {
+            int startx_nonrtlbuff=0;
             if(nonRTLBuffer.length()>0)
             {
                 /*
@@ -259,26 +355,31 @@ LVArray<TextRectGroup> reverseWordsOrder(LVArray<TextRectGroup> words)
                     nonRTLBuffer.remove(nonRTLBuffer.length()-1);
                     nonRTLBuffer.insert(0,lastitem);
                 }
-                int startx_nonrtlbuff = startx - buffwidth;
+                startx_nonrtlbuff = startx - buffwidth;
                 for (int b = nonRTLBuffer.length()-1; b >=0  ; b--)
                 {
                     TextRectGroup buff_word = nonRTLBuffer.get(b);
-                    //CRLog::error("word from buff = [%s], is rtl = %d, startx = %d", LCSTR(buff_word.getText()), (int) buff_word.is_rtl_, startx_nonrtlbuff);
+                    CRLog::error("word from buff = [%s], is rtl = %d, startx_nonrtlbuff = %d", LCSTR(buff_word.getText()), (int) buff_word.is_rtl_, startx_nonrtlbuff);
                     LVFont * font = buff_word.list_[0].getNode()->getParentNode()->getFont().get();
-                    int wordwidth = 0;
                     for (int c = 0; c < buff_word.list_.length(); c++)
                     {
                         TextRect  curr = buff_word.list_.get(c);
                         lvRect    curr_rect = curr.getRect();
+                        lString16 curr_text = curr.getText();
 
-                        int width = curr.getWidthRTL(font);
                         int height = font->getHeight();
-
+                        int width = curr_rect.width();
+                        if(height<=font->getHeight())
+                        {
+                            width =  font->getCharWidth(curr.getText().firstChar());
+                        }
                         lvRect new_rect(startx_nonrtlbuff,curr_rect.top,startx_nonrtlbuff + width,curr_rect.top+height);
-
+                        if(curr_text == " ")
+                        {
+                            width = spacewidth;
+                        }
                         curr.setRect(new_rect);
                         buff_word.list_.set(c, curr);
-                        wordwidth += width;
                         startx_nonrtlbuff += width;
                     }
                     result.add(buff_word);
@@ -286,15 +387,29 @@ LVArray<TextRectGroup> reverseWordsOrder(LVArray<TextRectGroup> words)
                 buffwidth = 0;
                 nonRTLBuffer.clear();
             }
-            //CRLog::error("rtl word after buff = [%s], is rtl = %d, startx = %d", LCSTR(currword.getText()), (int) currword.is_rtl_, startx);
+            CRLog::error("rtl word after buff = [%s], is rtl = %d, startx = %d, startx nonrtlbuff = %d", LCSTR(currword.getText()), (int) currword.is_rtl_, startx, startx_nonrtlbuff);
+            if(startx<startx_nonrtlbuff)
+            {
+                //CRLog::trace("moving startx right by %d pixels",startx_nonrtlbuff-startx);
+                startx = startx_nonrtlbuff;
+            }
 
             for (int c = 0; c < currword.list_.length(); c++)
             {
                 TextRect curr = currword.list_.get(c);
                 lvRect curr_rect = curr.getRect();
-                int width = curr.getWidthRTL(font);
+                lString16 curr_text = curr.getText();
                 int height = font->getHeight();
-
+                int width = curr_rect.width();
+                //int width = 0;
+                if(height<=font->getHeight())
+                {
+                    width =  font->getCharWidth(curr.getText().firstChar());
+                }
+                if(curr_text == " ")
+                {
+                    width = spacewidth;
+                }
                 lvRect new_rect(startx, curr_rect.top, startx + width, curr_rect.top + height);
                 curr.setRect(new_rect);
                 currword.list_.set(c, curr);
@@ -337,22 +452,27 @@ LVArray<TextRectGroup> reverseWordsOrder(LVArray<TextRectGroup> words)
         for (int b = nonRTLBuffer.length()-1; b >=0  ; b--)
         {
             TextRectGroup buff_word = nonRTLBuffer.get(b);
-            //CRLog::error("nonrtl word in end from buff = [%s], is rtl = %d, startx = %d", LCSTR(buff_word.getText()), (int) buff_word.is_rtl_, startx_nonrtlbuff);
-
-            int wordwidth = 0;
+            CRLog::error("nonrtl word in end from buff = [%s], is rtl = %d, startx = %d", LCSTR(buff_word.getText()), (int) buff_word.is_rtl_, startx_nonrtlbuff);
 
             for (int c = 0; c < buff_word.list_.length(); c++)
             {
                 TextRect  curr = buff_word.list_.get(c);
                 lvRect    curr_rect = curr.getRect();
-                int width = curr.getWidthRTL(font);
+                lString16 curr_text = curr.getText();
                 int height = font->getHeight();
-
+                int width = curr_rect.width();
+                if(height<=font->getHeight())
+                {
+                    width =  font->getCharWidth(curr.getText().firstChar());
+                }
                 lvRect new_rect(startx_nonrtlbuff,curr_rect.top,startx_nonrtlbuff + width,curr_rect.top+height);
 
+                if(curr_text == " " )
+                {
+                    width = spacewidth;
+                }
                 curr.setRect(new_rect);
                 buff_word.list_.set(c, curr);
-                wordwidth += width;
                 startx_nonrtlbuff += width;
             }
             result.add(buff_word);
@@ -448,13 +568,20 @@ LVArray<TextRect> reverseLine(TextRectGroup group)
     //CRLog::error("added word = [%s]  (%s)",LCSTR(word.getText()),(word.is_rtl_)?"RTL":"NOT RTL");
     //CRLog::error("WORDS BREAKUP END");
 
+    //for (int i = 0; i < words.length(); i++)
+    //{
+    //    TextRectGroup curr = words.get(i);
+    //    int left =  curr.list_.get(0).getRect().left;
+    //    CRLog::error("IN hitbox word left = %d, text = [%s]",left,LCSTR(curr.getText()));
+    //}
+    int space_width = getSpaceWidth(words);
     //to avoid first space problems with text formatter
     if(words.get(0).getText() == " ")
     {
         words.add(words.get(0));
         words.remove(0);
     }
-    words = reverseWordsOrder(words);
+    words = reverseWordsOrder(words, space_width);
 
     for (int w = 0; w < words.length(); w++)
     {
@@ -476,15 +603,17 @@ LVArray<TextRect> reverseLine(TextRectGroup group)
     return result;
 }
 
-TextRect trimFirstSpace(TextRectGroup *line)
+void trimFirstSpace(TextRectGroup *line)
 {
-    TextRect zero;
-    TextRect first = line->list_.get(0);
-    if( (first.getText().firstChar() == ' ') && line->checkLineRTL())
+    for (int i = 0; i < line->list_.length(); i++)
     {
-        int spacewidth = first.getRect().width();
-        zero = first;
-        line->list_.remove(0);
+        TextRect curr = line->list_.get(i);
+        if (curr.getText().firstChar() != ' ')
+        {
+            return;
+        }
+        int spacewidth = curr.getRect().width();
+        line->list_.remove(i);
         for (int c = 0; c < line->list_.length(); c++)
         {
             lvRect newrect = line->list_.get(c).getRect();
@@ -493,18 +622,38 @@ TextRect trimFirstSpace(TextRectGroup *line)
             line->list_[c].setRect(newrect);
         }
     }
-    return zero;
 }
 
-TextRect fixFirstSpace(TextRectGroup *line,TextRect zero)
+void trimLastSpace(TextRectGroup *line)
 {
-    int firstleft = line->list_.get(0).getRect().left;
-    lvRect zerorect = zero.getRect();
-    int width = zerorect.width();
-    zerorect.right = firstleft;
-    zerorect.left = firstleft - width;
-    zero.setRect(zerorect);
-    return zero;
+    for (int i = line->list_.length()-1; i >= 0 ; i--)
+    {
+        TextRect curr = line->list_.get(i);
+        if (curr.getText().firstChar() != ' ')
+        {
+            return;
+        }
+        line->list_.remove(i);
+    }
+}
+
+TextRect getZeroTxRect(TextRectGroup *line)
+{
+    TextRect result;
+    TextRect first = line->list_.get(0);
+    int firstleft = first.getRect().left;
+    LVFont * font = first.getNode()->getParentNode()->getFont().get();
+    int spacewidth = font->getCharWidth(' ');
+    lvRect firstrect = first.getRect();
+    firstrect.right = firstleft;
+    firstrect.left = firstleft - spacewidth;
+    firstrect.top = firstrect.top;
+    firstrect.bottom = firstrect.top + font->getHeight();
+    result=first;
+    result.setRect(firstrect);
+    result.setString(lString16(" "));
+    //CRLog::error("zero l/r = %d / %d, height = %d fontheight = %d",zerorect.left,zerorect.right,zerorect.height(),font->getHeight());
+    return result;
 }
 
 LVArray<TextRect> RTL_mix(LVArray<TextRect> in_list)
@@ -532,7 +681,7 @@ LVArray<TextRect> RTL_mix(LVArray<TextRect> in_list)
 
         curr_state = ( curr_node != last_node)? curr_node->isRTL() : last_state;
 
-        if(curr_rect.top > first_rect.top)
+        if(curr_rect.top > first_rect.top && curr_rect.bottom > first_rect.bottom)
         {
             lines.add(line);
             line = TextRectGroup();
@@ -550,19 +699,17 @@ LVArray<TextRect> RTL_mix(LVArray<TextRect> in_list)
 
     for (int l = 0; l < lines.length(); l++)
     {
-        TextRect zero;
-        if(lines[l].is_rtl_)// && lines[l].checkLineRTL())
+        if(lines[l].is_rtl_ && lines[l].checkLineRTL())
         {
-            zero = trimFirstSpace(&lines[l]);
+            trimFirstSpace(&lines[l]);
+            trimLastSpace(&lines[l]);
             //CRLog::trace("reverse line text = [%s]",LCSTR(lines[l].getText()));
             CRLog::trace("reversing line # %d",l);
             lines[l].list_ = reverseLine(lines[l]);
-        }
 
-        if(zero.getIndex() >= 0 ) //zero is initialized
-        {
-            zero = fixFirstSpace(&lines[l],zero);
-            result_list.add(zero);
+            TextRect space;
+            space = getZeroTxRect(&lines[l]);
+            result_list.add(space);
         }
         for (int c = 0; c < lines[l].list_.length(); c++)
         {
