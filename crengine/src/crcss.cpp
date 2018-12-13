@@ -10,10 +10,6 @@ const char* CR_CSS_ALIGN_LEFT = R"delimiter(
 body, p, .justindent {
   text-align: left;
 }
-
-p[dir="rtl"], html[dir="rtl"], body[dir="rtl"], div[dir="rtl"], .rtl  {
-  text-align: right;
-}
 )delimiter";
 
 const char* CR_CSS_ALIGN_CENTER = R"delimiter(
@@ -377,7 +373,6 @@ sup a[type="note"] {
 p[dir="rtl"], html[dir="rtl"], body[dir="rtl"], div[dir="rtl"], .rtl  {
   display: block;
   hyphenate: none;
-  text-indent: 0em;
 }
 
 .center{

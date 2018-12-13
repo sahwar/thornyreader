@@ -1939,7 +1939,8 @@ LVArray<TextRect> LVDocView::GetPageFootnotesText(int page, bool rightpage)
     //CRLog::error("xp2 node = %s",LCSTR(xp2.getNode()->getXPath()));
 	ldomXRange range = ldomXRange(xp1, xp2);
 	LVArray<TextRect> word_chars;
-	range.getRangeChars(word_chars);
+    int line_width =  this->GetWidth() - this->cfg_margins_.left - this->cfg_margins_.right;
+	range.getRangeChars(word_chars,line_width);
 
 
 	if (word_chars.empty())
@@ -3411,7 +3412,9 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes(ldomXRange* in_range)
 
     LVArray<TextRect> word_chars;
     //CRLog::trace("RANGECHARS start");
-    pagerange.getRangeChars(word_chars);
+    int line_width =  page_width - margins.left - margins.right;
+    pagerange.getRangeChars(word_chars,line_width);
+
     //CRLog::trace("RANGECHARS end");
     for (int i = 0; i < word_chars.length(); ++i)
     {

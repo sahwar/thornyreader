@@ -271,7 +271,7 @@ LVArray<TextRect> reverseWord(LVArray<TextRect> in_word)
     return result;
 }
 
-LVArray<TextRectGroup> reverseWordsOrder(LVArray<TextRectGroup> words, int spacewidth)
+LVArray<TextRectGroup> reverseWordsOrder(LVArray<TextRectGroup> words, int spacewidth, int clip_width)
 {
     LVArray<TextRectGroup> result;
     if(words.empty())
@@ -299,8 +299,24 @@ LVArray<TextRectGroup> reverseWordsOrder(LVArray<TextRectGroup> words, int space
 
     LVFont * font = firstword_txrect.getNode()->getParentNode()->getFont().get();
 
+    int linewidth = 0;
+    for (int i = 0; i < words.length(); i++)
+    {
+        TextRectGroup curr = words.get(i);
+        if(curr.getText().firstChar() == ' ')
+        {
+            linewidth += spacewidth;
+        }
+        else
+        {
+            linewidth += curr.getFontWidth(font);
+        }
+    }
     int startx = first_rect.left;
 
+    int leftspace = startx ; // startx - margin.left = startx - 0 = startx
+    int rightspace = clip_width - (startx + linewidth);
+    startx = startx - leftspace + rightspace;
     TextRectGroup last_word = words.get(words.length()-1);
     TextRect last = last_word.list_.get(last_word.list_.length()-1);
 
@@ -359,7 +375,7 @@ LVArray<TextRectGroup> reverseWordsOrder(LVArray<TextRectGroup> words, int space
                 for (int b = nonRTLBuffer.length()-1; b >=0  ; b--)
                 {
                     TextRectGroup buff_word = nonRTLBuffer.get(b);
-                    CRLog::error("word from buff = [%s], is rtl = %d, startx_nonrtlbuff = %d", LCSTR(buff_word.getText()), (int) buff_word.is_rtl_, startx_nonrtlbuff);
+                    //CRLog::error("word from buff = [%s], is rtl = %d, startx_nonrtlbuff = %d", LCSTR(buff_word.getText()), (int) buff_word.is_rtl_, startx_nonrtlbuff);
                     LVFont * font = buff_word.list_[0].getNode()->getParentNode()->getFont().get();
                     for (int c = 0; c < buff_word.list_.length(); c++)
                     {
@@ -387,7 +403,7 @@ LVArray<TextRectGroup> reverseWordsOrder(LVArray<TextRectGroup> words, int space
                 buffwidth = 0;
                 nonRTLBuffer.clear();
             }
-            CRLog::error("rtl word after buff = [%s], is rtl = %d, startx = %d, startx nonrtlbuff = %d", LCSTR(currword.getText()), (int) currword.is_rtl_, startx, startx_nonrtlbuff);
+            //CRLog::error("rtl word after buff = [%s], is rtl = %d, startx = %d, startx nonrtlbuff = %d", LCSTR(currword.getText()), (int) currword.is_rtl_, startx, startx_nonrtlbuff);
             if(startx<startx_nonrtlbuff)
             {
                 //CRLog::trace("moving startx right by %d pixels",startx_nonrtlbuff-startx);
@@ -452,7 +468,7 @@ LVArray<TextRectGroup> reverseWordsOrder(LVArray<TextRectGroup> words, int space
         for (int b = nonRTLBuffer.length()-1; b >=0  ; b--)
         {
             TextRectGroup buff_word = nonRTLBuffer.get(b);
-            CRLog::error("nonrtl word in end from buff = [%s], is rtl = %d, startx = %d", LCSTR(buff_word.getText()), (int) buff_word.is_rtl_, startx_nonrtlbuff);
+            //CRLog::error("nonrtl word in end from buff = [%s], is rtl = %d, startx = %d", LCSTR(buff_word.getText()), (int) buff_word.is_rtl_, startx_nonrtlbuff);
 
             for (int c = 0; c < buff_word.list_.length(); c++)
             {
@@ -485,7 +501,7 @@ LVArray<TextRectGroup> reverseWordsOrder(LVArray<TextRectGroup> words, int space
     return result;
 }
 
-LVArray<TextRect> reverseLine(TextRectGroup group)
+LVArray<TextRect> reverseLine(TextRectGroup group, int clip_width)
 {
     LVArray<TextRect> result;
     LVArray<TextRect> line = group.list_;
@@ -581,7 +597,7 @@ LVArray<TextRect> reverseLine(TextRectGroup group)
         words.add(words.get(0));
         words.remove(0);
     }
-    words = reverseWordsOrder(words, space_width);
+    words = reverseWordsOrder(words, space_width, clip_width);
 
     for (int w = 0; w < words.length(); w++)
     {
@@ -656,7 +672,7 @@ TextRect getZeroTxRect(TextRectGroup *line)
     return result;
 }
 
-LVArray<TextRect> RTL_mix(LVArray<TextRect> in_list)
+LVArray<TextRect> RTL_mix(LVArray<TextRect> in_list,int clip_width)
 {
     LVArray<TextRect> result_list;
     if(in_list.empty())
@@ -705,7 +721,7 @@ LVArray<TextRect> RTL_mix(LVArray<TextRect> in_list)
             trimLastSpace(&lines[l]);
             //CRLog::trace("reverse line text = [%s]",LCSTR(lines[l].getText()));
             CRLog::trace("reversing line # %d",l);
-            lines[l].list_ = reverseLine(lines[l]);
+            lines[l].list_ = reverseLine(lines[l],clip_width);
 
             TextRect space;
             space = getZeroTxRect(&lines[l]);
@@ -730,7 +746,25 @@ void PrintRTL(LVArray<WordItem> WordItems, LVDrawBuf * buf, LVFont * font, int s
     {
         return;
     }
+    int linewidth = 0;
+    for (int i = 0; i < WordItems.length(); i++)
+    {
+        WordItem curr = WordItems.get(i);
+        if(curr.getText().firstChar() == ' ')
+        {
+            linewidth += space_width;
+        }
+        else
+        {
+            linewidth += curr.width_;
+        }
+    }
+    lvRect clip;
+    buf->GetClipRect(&clip);
     int startx = WordItems.get(0).x_;
+    int leftspace = startx - clip.left;
+    int rightspace = clip.right - (startx + linewidth);
+    startx = startx - leftspace + rightspace;
     bool line_isRTL = false;
     for (int i = 0; i < WordItems.length(); i++)
     {

@@ -5572,7 +5572,7 @@ void ldomXRange::getRangeWords(LVArray<ldomWord>& words_list) {
 }
 
 /// get all words from specified range
-void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
+void ldomXRange::getRangeChars(LVArray<TextRect>& words_list,int clip_width) {
     class WordsCollector : public ldomNodeCallback {
     public:
         LVArray<TextRect> list_;
@@ -5785,7 +5785,7 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
     forEach2(&collector);
     if(collector.contains_rtl)
     {
-        words_list = RTL_mix(collector.list_);
+        words_list = RTL_mix(collector.list_,clip_width);
     }
     else
     {

@@ -13,7 +13,7 @@ bool char_isRTL(const lChar16 c);
 bool char_isPunct(const lChar16 c);
 
 //hitboxes side
-LVArray<TextRect> RTL_mix(LVArray<TextRect> in_list);
+LVArray<TextRect> RTL_mix(LVArray<TextRect> in_list, int clip_width);
 
 //txtfmt side
 class WordItem
