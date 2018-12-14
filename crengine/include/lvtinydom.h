@@ -1278,7 +1278,7 @@ public:
     ldomWord getWord(){return word_;};
     int getIndex(){return index_;};
     void setRect(lvRect rect){ rect_ = rect;};
-    void setString(lString16 string){ string_ = string;};
+    void setText(lString16 string){ string_ = string;};
     void setIndex(int index){ index_ = index;};
     int getWidthRTL(LVFont * font);
 };

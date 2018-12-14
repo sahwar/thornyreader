@@ -501,6 +501,73 @@ LVArray<TextRectGroup> reverseWordsOrder(LVArray<TextRectGroup> words, int space
     return result;
 }
 
+/*TextRectGroup LigatureCheck(TextRectGroup word, LVFont * font)
+{
+    if (!word.is_rtl_)
+    {
+        return word;
+    }
+
+    if(!char_isRTL(word.getText().firstChar()))
+    {
+        return word;
+    }
+
+
+    if(word.list_.length() == 2)
+    {
+        if(word.list_.get(0).getText().firstChar() == L'\u0644')
+        {
+            if(word.list_.get(1).getText().firstChar() == L'\u0627')
+            {
+                TextRect lam_alef = word.list_.get(0);
+                lString16 lig;
+                lig.append(1,L'\uFEFB');
+                lam_alef.setText(lig);
+                int lig_width = font->getCharWidth(L'\uFEFB');
+                lvRect orig_rect = word.list_.get(0).getRect();
+                lvRect lig_rect = lvRect(orig_rect.left,orig_rect.top,orig_rect.left+lig_width,orig_rect.bottom);
+                lam_alef.setRect(lig_rect);
+                word.list_.clear();
+                word.list_.add(lam_alef);
+            }
+        }
+        return word;
+    }
+    bool lam_flag = false;
+    int lam_index = -1;
+    for (int i = 0; i < word.list_.length(); i++)
+    {
+        TextRect curr = word.list_.get(i);
+        if(curr.getText().firstChar() == L'\u0644')
+        {
+            lam_flag = true;
+            lam_index = i;
+            continue;
+        }
+        if(lam_flag && curr.getText().firstChar() == L'\u0627' && lam_index>0)
+        {
+            TextRect lam_alef = word.list_.get(lam_index);
+            lString16 lig;
+            lig.append(1,L'\uFEFB');
+            lam_alef.setText(lig);
+            int lig_width = font->getCharWidth(L'\uFEFB');
+            lvRect orig_rect = word.list_.get(lam_index).getRect();
+            lvRect lig_rect = lvRect(orig_rect.left,orig_rect.top,orig_rect.left+lig_width,orig_rect.bottom);
+            lam_alef.setRect(lig_rect);
+            word.list_.set(lam_index,lam_alef);
+            word.list_.remove(i);
+        }
+        else
+        {
+            lam_flag = false;
+        }
+    }
+
+    return word;
+}
+*/
+
 LVArray<TextRect> reverseLine(TextRectGroup group, int clip_width)
 {
     LVArray<TextRect> result;
@@ -584,6 +651,13 @@ LVArray<TextRect> reverseLine(TextRectGroup group, int clip_width)
     //CRLog::error("added word = [%s]  (%s)",LCSTR(word.getText()),(word.is_rtl_)?"RTL":"NOT RTL");
     //CRLog::error("WORDS BREAKUP END");
 
+/*    for (int i = 0; i < words.length(); i++)
+    {
+        TextRectGroup curr = words.get(i);
+        LVFont * font = curr.list_.get(0).getNode()->getParentNode()->getFont().get();
+        words[i] = LigatureCheck(curr,font);
+    }
+    */
     //for (int i = 0; i < words.length(); i++)
     //{
     //    TextRectGroup curr = words.get(i);
@@ -667,7 +741,7 @@ TextRect getZeroTxRect(TextRectGroup *line)
     firstrect.bottom = firstrect.top + font->getHeight();
     result=first;
     result.setRect(firstrect);
-    result.setString(lString16(" "));
+    result.setText(lString16(" "));
     //CRLog::error("zero l/r = %d / %d, height = %d fontheight = %d",zerorect.left,zerorect.right,zerorect.height(),font->getHeight());
     return result;
 }
@@ -740,12 +814,59 @@ LVArray<TextRect> RTL_mix(LVArray<TextRect> in_list,int clip_width)
 
 //textfmt side
 
+WordItem LigatureCheck(WordItem word, LVFont * font)
+{
+    if (!word.is_rtl_)
+    {
+        return word;
+    }
+
+    if(word.getText().length() < 2)
+    {
+        return word;
+    }
+
+    lString16 text = word.getText();
+    lChar16 lam = 1604;
+    lChar16 alef = 1575;
+    lChar16 lig = 65275;
+    lChar16 * alef_a = &alef;
+    lChar16 * lam_a = &lam;
+    lChar16 * lig_a = &lig;
+    lString16 lamstr = lString16(lam_a,1);
+    lString16 alefstr = lString16(alef_a,1);
+    lString16 ligstr = lString16(lig_a,1);
+    lString16 search = lamstr + alefstr;
+
+    if(text.pos(search)==-1)
+    {
+        return word;
+    }
+
+    while (text.pos(search) !=-1)
+    {
+        text = text.replace(text.pos(search),2,ligstr);
+    }
+
+    WordItem word_res = word.ChangeTextRTL(text);
+    word_res.width_ = font->getTextWidth(word_res.getText().c_str(),word_res.getText().length());
+
+    return word_res;
+}
+
+
 void PrintRTL(LVArray<WordItem> WordItems, LVDrawBuf * buf, LVFont * font, int space_width)
 {
     if(WordItems.empty() || buf == NULL || font == NULL)
     {
         return;
     }
+
+    for (int i = 0; i < WordItems.length(); i++)
+    {
+        WordItems[i] = LigatureCheck(WordItems[i],font);
+    }
+
     int linewidth = 0;
     for (int i = 0; i < WordItems.length(); i++)
     {

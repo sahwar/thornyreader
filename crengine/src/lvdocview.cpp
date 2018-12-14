@@ -2013,7 +2013,7 @@ LVArray<TextRect> LVDocView::GetPageFootnotesLinks(int page, bool rightpage)
 			continue;
 		}
 
-		word.setString(href);
+		word.setText(href);
 		link_list.add(word);
 	}
 
