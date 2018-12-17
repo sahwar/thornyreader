@@ -2576,7 +2576,13 @@ bool LvXmlParser::CheckFormat() {
                 res = true;
                 // check that only whitespace chars before <
                 for ( int i=0; i<lt_pos && res; i++)
-                    res = IsSpaceChar( chbuf[i] );
+                {
+                    // 0xFEFF is the Byte Order Mark (BOM), char at start of stream that:
+                    // signals the byte order of the stream,
+                    // marks text as a unicode text,
+                    // signals the encoding of the stream.
+                    res = (IsSpaceChar(chbuf[i]) || chbuf[i] == 0xFEFF);
+                }
             }
         }
     }
