@@ -2639,6 +2639,7 @@ bool LvXmlParser::Parse()
     lString16 link_id;
     lString16 section_id;
     lString16 aside_old_id;
+    lString16 rtl_holder;
 
 	for (; !eof_ && !error && !firstpage_thumb_num_reached ;)
     {
@@ -2973,6 +2974,11 @@ bool LvXmlParser::Parse()
 
                 if (close_flag)
                 {
+                    if(tagname == rtl_holder && RTL_DISPLAY_ENABLE)//&& flags & TXTFLG_IN_RTL )
+                    {
+                        flags &= ~TXTFLG_IN_RTL;
+                        callback_->setFlags(flags);
+                    }
                     callback_->OnTagClose(tagns.c_str(), tagname.c_str());
                     //CRLog::trace("</%s>", LCSTR(tagname));
                     if (SkipTillChar('>'))
@@ -3065,6 +3071,19 @@ bool LvXmlParser::Parse()
                 }
                 if ((flags & TXTFLG_CONVERT_8BIT_ENTITY_ENCODING) && m_conv_table) {
                     PreProcessXmlString(attrvalue, 0, m_conv_table);
+                }
+
+                if(RTL_DISPLAY_ENABLE)
+                {
+                    if(attrname=="dir" || attrname == "class")
+                    {
+                        if(attrvalue=="rtl")
+                        {
+                            flags |= TXTFLG_IN_RTL;
+                            rtl_holder = tagname;
+                            callback_->setFlags(flags);
+                        }
+                    }
                 }
 
                 //epub3
@@ -4424,6 +4443,8 @@ bool LvXmlParser::ParseEpubFootnotes()
     lString16 attrns;
     lString16 attrvalue;
     lString16 buffer;
+    lString16 rtl_holder;
+
     int buffernum =-1;
     //LVArray<LinkStruct> LinksList = getLinksList();
     LinksMap LinksMap = getLinksMap();
@@ -4727,6 +4748,11 @@ bool LvXmlParser::ParseEpubFootnotes()
 
                 if (close_flag)
                 {
+                    if(tagname == rtl_holder && RTL_DISPLAY_ENABLE)//&& flags & TXTFLG_IN_RTL )
+                    {
+                        flags &= ~TXTFLG_IN_RTL;
+                        callback_->setFlags(flags);
+                    }
                     callback_->OnTagClose(tagns.c_str(), tagname.c_str());
                     //CRLog::trace("</%s:%s>", LCSTR(tagns),LCSTR(tagname));
                     if (SkipTillChar('>'))
@@ -4824,6 +4850,20 @@ bool LvXmlParser::ParseEpubFootnotes()
                 if ((flags & TXTFLG_CONVERT_8BIT_ENTITY_ENCODING) && m_conv_table) {
                     PreProcessXmlString(attrvalue, 0, m_conv_table);
                 }
+
+                if(RTL_DISPLAY_ENABLE)
+                {
+                    if(attrname=="dir" || attrname == "class")
+                    {
+                        if(attrvalue=="rtl")
+                        {
+                            flags |= TXTFLG_IN_RTL;
+                            rtl_holder = tagname;
+                            callback_->setFlags(flags);
+                        }
+                    }
+                }
+
                 if(in_section && attrname == "id")
                 {
                     temp_section_id = lString16("#") + callback_->convertId(attrvalue);
@@ -5355,7 +5395,7 @@ int LVTextFileBase::fillCharBuffer()
 bool LvXmlParser::ReadText()
 {
     lString16 temp;
-    return ReadTextToString(temp,true);
+    return this->ReadTextToString(temp,true);
 }
 
 bool LvXmlParser::ReadTextToString(lString16 & output, bool write_to_tree)

@@ -34,6 +34,7 @@
 #include "lvhashtable.h"
 #include "lvimg.h"
 #include "props.h"
+#include "crconfig.h"
 
 #define LXML_NO_DATA       0 ///< to mark data storage record as empty
 #define LXML_ELEMENT_NODE  1 ///< element node
@@ -1936,7 +1937,16 @@ public:
             return;
         }
         if ( insideTag )
-            parent->OnText( text, len, flags );
+        {
+            if (flags & TXTFLG_IN_RTL && RTL_DISPLAY_ENABLE)
+            {
+                parent->OnText(lString16(text).PrepareRTL().c_str(), len, flags);
+            }
+            else
+            {
+                parent->OnText(text, len, flags);
+            }
+        }
     }
 
     /// add named BLOB data to document

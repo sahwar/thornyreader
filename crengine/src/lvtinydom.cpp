@@ -2709,7 +2709,16 @@ void LvDomWriter::OnText(const lChar16 * text, int len, lUInt32 flags) {
              && IsEmptySpace(text, len)  && !(flags & TXTFLG_PRE))
              return;
         if (_currNode->_allowText)
-            _currNode->onText( text, len, flags );
+        {
+            if (flags & TXTFLG_IN_RTL && RTL_DISPLAY_ENABLE)
+            {
+                _currNode->onText(lString16(text).PrepareRTL().c_str(), len, flags);
+            }
+            else
+            {
+                _currNode->onText(text, len, flags);
+            }
+        }
     }
 }
 

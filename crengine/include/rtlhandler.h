@@ -59,12 +59,6 @@ public:
     {
         return lString16(text_,len_);
     }
-
-    WordItem ChangeTextRTL(lString16 in)
-    {
-        return WordItem(x_,y_,in.modify(),in.length(),flgHyphen_,srcline_,is_rtl_,width_);
-    }
-
 };
 
 void PrintRTL(LVArray<WordItem> WordItems, LVDrawBuf * buf, LVFont* font , int spacewidth);

@@ -16,6 +16,7 @@
 #include <zlib.h>
 #include "include/lvstring.h"
 #include "include/lvref.h"
+#include "include/arabic_tables.h"
 
 ref_count_rec_t ref_count_rec_t::null_ref(NULL);
 
@@ -4687,4 +4688,222 @@ void limitStringSize(lString16 & str, int maxSize) {
 	int split = lastSpace > 0 ? lastSpace : maxSize;
 	str = str.substr(0, split);
     str += "...";
+}
+
+bool char_isRTL(const lChar16 c){
+    return ( //(c==0x00A6) ||  // UNICODE "BROKEN BAR"
+                   (c>=0x0590)&&(c<=0x05FF)) ||
+           (c == 0x05BE) || (c == 0x05C0) || (c == 0x05C3) || (c == 0x05C6) ||
+           ((c>=0x05D0)&&(c<=0x05F4)) ||
+           (c==0x0608) || (c==0x060B) ||
+           (c==0x060D) ||
+           ((c>=0x0600)&&(c<=0x06FF)) ||
+           ((c>=0x06FF)&&(c<=0x0710)) ||
+           ((c>=0x0712)&&(c<=0x072F)) ||
+           ((c>=0x074D)&&(c<=0x07A5)) ||
+           ((c>=0x07B1)&&(c<=0x07EA)) ||
+           ((c>=0x07F4)&&(c<=0x07F5)) ||
+           ((c>=0x07FA)&&(c<=0x0815)) ||
+           (c==0x081A) || (c==0x0824) ||
+           (c==0x0828) ||
+           ((c>=0x0830)&&(c<=0x0858)) ||
+           ((c>=0x085E)&&(c<=0x08AC)) ||
+           (c==0x200F) || (c==0xFB1D) ||
+           ((c>=0xFB1F)&&(c<=0xFB28)) ||
+           ((c>=0xFB2A)&&(c<=0xFD3D)) ||
+           ((c>=0xFD50)&&(c<=0xFDFC)) ||
+           ((c>=0xFE70)&&(c<=0xFEFC)) ||
+           ((c>=0x10800)&&(c<=0x1091B)) ||
+           ((c>=0x10920)&&(c<=0x10A00)) ||
+           ((c>=0x10A10)&&(c<=0x10A33)) ||
+           ((c>=0x10A40)&&(c<=0x10B35)) ||
+           ((c>=0x10B40)&&(c<=0x10C48)) ||
+           ((c>=0x1EE00)&&(c<=0x1EEBB));
+}
+
+bool char_isPunct(const lChar16 c){
+    return ((c>=33) && (c<=47)) ||
+           ((c>=58) && (c<=64)) ||
+           ((c>=91) && (c<=96)) ||
+           ((c>=123)&& (c<=126))||
+           (c == 0x00A6);
+}
+
+lString16 lString16::LigatureCheck(lString16 text)
+{
+    if(text.length() < 2)
+    {
+        return text;
+    }
+
+    lChar16 lam = 1604;
+    lChar16 alef = 1575;
+    lChar16 lig = 65275;
+    lChar16 * alef_a = &alef;
+    lChar16 * lam_a = &lam;
+    lChar16 * lig_a = &lig;
+    lString16 lamstr = lString16(lam_a,1);
+    lString16 alefstr = lString16(alef_a,1);
+    lString16 ligstr = lString16(lig_a,1);
+    lString16 search = lamstr + alefstr;
+
+    if(text.pos(search)==-1)
+    {
+        return text;
+    }
+
+    while (text.pos(search) !=-1)
+    {
+        text = text.replace(text.pos(search),2,ligstr);
+    }
+
+    return text;
+}
+
+LetterMap arabicLetterMap = ArabicLetterMap();
+
+lString16 lString16::PrettyLetters(lString16 text)
+{
+    if (text.empty())
+    {
+        return text;
+    }
+
+    lString16 restext;
+    for (int i = 0; i < text.length(); i++)
+    {
+        lChar16 ch = text.at(i);
+        if( arabicLetterMap.find(ch) != arabicLetterMap.end() )
+        {
+            unsigned int pos = arabic_isolated;
+            if(text.length() == 1)
+            {
+                pos = arabic_isolated;
+            }
+            else if (i == 0)
+            {
+                pos = arabic_start;
+            }
+            else if (i == text.length() - 1)
+            {
+                pos = arabic_end;
+            }
+            else
+            {
+                pos = arabic_mid;
+            }
+
+            lChar16 replace = arabicLetterMap.at(ch).at(pos);
+            lChar16 * replace_a = &replace;
+            lString16 replacestr = lString16(replace_a,1);
+            restext += replacestr;
+        }
+        else
+        {
+            lChar16 * ch_a = &ch;
+            lString16 ch_str = lString16(ch_a,1);
+            restext += ch_str;
+        }
+        //restext += lString16::itoa(i);
+    }
+    return restext;
+}
+
+lString16Collection lString16::ArabicSplitToWords()
+{
+    lString16Collection result;
+
+    lString16 line = *this;
+
+    int start = 0;
+    bool last_space = false;
+    bool last_punct = false;
+
+    lChar16 last_text = line.at(0);
+    bool last_state = char_isRTL(last_text);
+
+    for (int c = 0; c < line.length(); c++)
+    {
+        lChar16 ch = line.at(c);
+
+        bool is_space = ch == ' ';
+        bool is_punct = char_isPunct(ch);
+
+        //bool curr_state = (is_space)? last_state : char_isRTL(ch);
+        bool curr_state;
+        if(is_space)
+        {
+            curr_state = last_state;
+        }
+        else if(is_punct)
+        {
+            curr_state = (last_space)? false : last_state ;
+        }
+        else
+        {
+            curr_state = char_isRTL(ch);
+        }
+        //curr_state = (is_punct && last_space)? : curr_state
+        bool break_char = (is_space || last_space || is_punct || last_punct);
+
+        //CRLog::error("letter = [%s]",LCSTR(curr_text));
+        if (curr_state != last_state || break_char )
+        {
+            int len = c-start;
+            if(len>0)
+            {
+                lString16 word;
+                for (int i = start; i < c; i++)
+                {
+                    word += line.at(i);
+                }
+                result.add(word);
+                start = c;
+            }
+        }
+        last_state = curr_state;
+        last_space = is_space;
+        last_punct = is_punct;
+    }
+    lString16 word;
+    for (int i = start; i < line.length(); i++)
+    {
+        word += line.at(i);
+    }
+    result.add(word);
+    return result;
+}
+
+bool lString16::CheckRTL()
+{
+    for (int i = 0; i < this->length(); i++)
+    {
+        if (char_isRTL(this->at(i)))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+lString16 lString16::PrepareRTL()
+{
+    //CRLog::error("preparertl");
+    if(this->length() < 0)
+    {
+        return *this;
+    }
+    if(!this->CheckRTL())
+    {
+        return *this;
+    }
+    lString16Collection words = this->ArabicSplitToWords();
+    lString16 result;
+    for (int i = 0; i < words.length(); i++)
+    {
+        lString16 word = PrettyLetters(LigatureCheck(words.at(i)));
+        result += word;
+    }
+    *this = result;
+    return *this;
 }

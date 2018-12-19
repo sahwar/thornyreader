@@ -7,53 +7,6 @@
 #include "include/rtlhandler.h"
 
 //shared
-bool char_isRTL(const lChar16 c){
-/*
-    if(c==0x00A6) // BROKEN BAR
-        return false;
-    if((c>=0x0030)&&(c<=0x0039)) // digits
-    {
-        return false;
-    }
-    return true;
-*/
-    return ( //(c==0x00A6) ||  // UNICODE "BROKEN BAR"
-                   (c>=0x0590)&&(c<=0x05FF)) ||
-           (c == 0x05BE) || (c == 0x05C0) || (c == 0x05C3) || (c == 0x05C6) ||
-           ((c>=0x05D0)&&(c<=0x05F4)) ||
-           (c==0x0608) || (c==0x060B) ||
-           (c==0x060D) ||
-           ((c>=0x0600)&&(c<=0x06FF)) ||
-           ((c>=0x06FF)&&(c<=0x0710)) ||
-           ((c>=0x0712)&&(c<=0x072F)) ||
-           ((c>=0x074D)&&(c<=0x07A5)) ||
-           ((c>=0x07B1)&&(c<=0x07EA)) ||
-           ((c>=0x07F4)&&(c<=0x07F5)) ||
-           ((c>=0x07FA)&&(c<=0x0815)) ||
-           (c==0x081A) || (c==0x0824) ||
-           (c==0x0828) ||
-           ((c>=0x0830)&&(c<=0x0858)) ||
-           ((c>=0x085E)&&(c<=0x08AC)) ||
-           (c==0x200F) || (c==0xFB1D) ||
-           ((c>=0xFB1F)&&(c<=0xFB28)) ||
-           ((c>=0xFB2A)&&(c<=0xFD3D)) ||
-           ((c>=0xFD50)&&(c<=0xFDFC)) ||
-           ((c>=0xFE70)&&(c<=0xFEFC)) ||
-           ((c>=0x10800)&&(c<=0x1091B)) ||
-           ((c>=0x10920)&&(c<=0x10A00)) ||
-           ((c>=0x10A10)&&(c<=0x10A33)) ||
-           ((c>=0x10A40)&&(c<=0x10B35)) ||
-           ((c>=0x10B40)&&(c<=0x10C48)) ||
-           ((c>=0x1EE00)&&(c<=0x1EEBB));
-}
-
-bool char_isPunct(const lChar16 c){
-    return ((c>=33) && (c<=47)) ||
-           ((c>=58) && (c<=64)) ||
-           ((c>=91) && (c<=96)) ||
-           ((c>=123)&& (c<=126))||
-           (c == 0x00A6);
-}
 
 int TextRect::getWidthRTL(LVFont * font)
 {
@@ -389,11 +342,11 @@ LVArray<TextRectGroup> reverseWordsOrder(LVArray<TextRectGroup> words, int space
                         {
                             width =  font->getCharWidth(curr.getText().firstChar());
                         }
-                        lvRect new_rect(startx_nonrtlbuff,curr_rect.top,startx_nonrtlbuff + width,curr_rect.top+height);
                         if(curr_text == " ")
                         {
                             width = spacewidth;
                         }
+                        lvRect new_rect(startx_nonrtlbuff,curr_rect.top,startx_nonrtlbuff + width,curr_rect.top+height);
                         curr.setRect(new_rect);
                         buff_word.list_.set(c, curr);
                         startx_nonrtlbuff += width;
@@ -481,12 +434,12 @@ LVArray<TextRectGroup> reverseWordsOrder(LVArray<TextRectGroup> words, int space
                 {
                     width =  font->getCharWidth(curr.getText().firstChar());
                 }
-                lvRect new_rect(startx_nonrtlbuff,curr_rect.top,startx_nonrtlbuff + width,curr_rect.top+height);
 
                 if(curr_text == " " )
                 {
                     width = spacewidth;
                 }
+                lvRect new_rect(startx_nonrtlbuff,curr_rect.top,startx_nonrtlbuff + width,curr_rect.top+height);
                 curr.setRect(new_rect);
                 buff_word.list_.set(c, curr);
                 startx_nonrtlbuff += width;
@@ -794,7 +747,6 @@ LVArray<TextRect> RTL_mix(LVArray<TextRect> in_list,int clip_width)
             trimFirstSpace(&lines[l]);
             trimLastSpace(&lines[l]);
             //CRLog::trace("reverse line text = [%s]",LCSTR(lines[l].getText()));
-            CRLog::trace("reversing line # %d",l);
             lines[l].list_ = reverseLine(lines[l],clip_width);
 
             TextRect space;
@@ -814,57 +766,11 @@ LVArray<TextRect> RTL_mix(LVArray<TextRect> in_list,int clip_width)
 
 //textfmt side
 
-WordItem LigatureCheck(WordItem word, LVFont * font)
-{
-    if (!word.is_rtl_)
-    {
-        return word;
-    }
-
-    if(word.getText().length() < 2)
-    {
-        return word;
-    }
-
-    lString16 text = word.getText();
-    lChar16 lam = 1604;
-    lChar16 alef = 1575;
-    lChar16 lig = 65275;
-    lChar16 * alef_a = &alef;
-    lChar16 * lam_a = &lam;
-    lChar16 * lig_a = &lig;
-    lString16 lamstr = lString16(lam_a,1);
-    lString16 alefstr = lString16(alef_a,1);
-    lString16 ligstr = lString16(lig_a,1);
-    lString16 search = lamstr + alefstr;
-
-    if(text.pos(search)==-1)
-    {
-        return word;
-    }
-
-    while (text.pos(search) !=-1)
-    {
-        text = text.replace(text.pos(search),2,ligstr);
-    }
-
-    WordItem word_res = word.ChangeTextRTL(text);
-    word_res.width_ = font->getTextWidth(word_res.getText().c_str(),word_res.getText().length());
-
-    return word_res;
-}
-
-
 void PrintRTL(LVArray<WordItem> WordItems, LVDrawBuf * buf, LVFont * font, int space_width)
 {
     if(WordItems.empty() || buf == NULL || font == NULL)
     {
         return;
-    }
-
-    for (int i = 0; i < WordItems.length(); i++)
-    {
-        WordItems[i] = LigatureCheck(WordItems[i],font);
     }
 
     int linewidth = 0;

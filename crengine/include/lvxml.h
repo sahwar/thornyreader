@@ -99,6 +99,7 @@ public:
 #define TXTFLG_PRE_PARA_SPLITTING           128
 #define TXTFLG_KEEP_SPACES                  256
 #define TXTFLG_IN_NOTES                     512
+#define TXTFLG_IN_RTL                       1024
 #define TXTFLG_ENCODING_MASK                0xFF00
 #define TXTFLG_ENCODING_SHIFT               8
 #define TXTFLG_CONVERT_8BIT_ENTITY_ENCODING 0x10000
