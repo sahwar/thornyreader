@@ -1663,6 +1663,11 @@ public:
             lastParaWasTitle = false;
         }
         callback->OnTagOpenNoAttr(NULL, L"p");
+        if(str.CheckRTL())
+        {
+            callback->setRTLflag(true);
+            callback->OnAttribute(L"",L"dir",L"rtl");
+        }
         callback->OnText(str.c_str(), str.length(), TXTFLG_TRIM | TXTFLG_TRIM_REMOVE_EOL_HYPHENS);
         callback->OnTagClose(NULL, L"p");
         if (isHeader) {
@@ -2112,7 +2117,14 @@ public:
         do {
             for (int i = remainingLines; i < length(); i++) {
                 LVTextFileLine* item = get(i);
-                importer.processLine(item->text);
+                lString16 temp = item->text;
+                if(temp.CheckRTL())
+                {
+                    callback->setRTLflag(true);
+                    callback->OnAttribute(L"",L"dir",L"rtl");
+                    temp.PrepareRTL();
+                }
+                importer.processLine(temp);
             }
             RemoveLines(length() - 3);
             remainingLines = 3;
@@ -2167,6 +2179,11 @@ public:
                 LVTextFileLine* item = get(i);
                 if (item->rpos > item->lpos) {
                     callback->OnTagOpenNoAttr(NULL, L"pre");
+                    if(item->text.CheckRTL())
+                    {
+                        callback->setRTLflag(true);
+                        callback->OnAttribute(L"",L"dir",L"rtl");
+                    }
                     callback->OnText(item->text.c_str(), item->text.length(), item->flags);
                     callback->OnTagClose(NULL, L"pre");
                 } else {
