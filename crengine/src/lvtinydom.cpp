@@ -2710,7 +2710,7 @@ void LvDomWriter::OnText(const lChar16 * text, int len, lUInt32 flags) {
              return;
         if (_currNode->_allowText)
         {
-            if (flags & TXTFLG_IN_RTL && RTL_DISPLAY_ENABLE)
+            if (this->RTLflag_ && RTL_DISPLAY_ENABLE)
             {
                 _currNode->onText(lString16(text).PrepareRTL().c_str(), len, flags);
             }

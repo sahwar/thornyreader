@@ -1777,8 +1777,13 @@ protected:
     bool _popStyleOnFinish;
     lUInt16 _stopTagId;
     lUInt32 _flags;
+    bool RTLflag_ = false;
     virtual void ElementCloseHandler( ldomNode * node ) { node->persist(); }
 public:
+    void setRTLflag(bool RTLflag) {RTLflag_ = RTLflag;}
+
+    bool getRTLflag() { return RTLflag_; }
+
     /// returns flags
     virtual lUInt32 getFlags() { return _flags; }
     /// sets flags
@@ -1876,8 +1881,11 @@ private:
     ldomNode* lastBaseElement;
     lString8 headStyleText;
     int headStyleState;
+    bool RTLflag_;
 
 public:
+    void setRTLflag (bool RTLflag) {RTLflag_ = RTLflag; }
+    bool getRTLflag () { return RTLflag_; }
     /// return content of html/head/style element
     lString8 getHeadStyleText() { return headStyleText; }
 
@@ -1938,7 +1946,7 @@ public:
         }
         if ( insideTag )
         {
-            if (flags & TXTFLG_IN_RTL && RTL_DISPLAY_ENABLE)
+            if (this->RTLflag_ && RTL_DISPLAY_ENABLE)
             {
                 parent->OnText(lString16(text).PrepareRTL().c_str(), len, flags);
             }

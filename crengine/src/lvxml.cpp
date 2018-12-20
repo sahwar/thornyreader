@@ -2640,7 +2640,7 @@ bool LvXmlParser::Parse()
     lString16 section_id;
     lString16 aside_old_id;
     lString16 rtl_holder;
-
+    int rtl_holder_counter = 0;
 	for (; !eof_ && !error && !firstpage_thumb_num_reached ;)
     {
 	    if (m_stopped)
@@ -2971,13 +2971,24 @@ bool LvXmlParser::Parse()
                         callback_->OnTagClose(L"",L"a");
                     }
                 }
+                if(!rtl_holder.empty() && tagname == rtl_holder)
+                {
+                    if(!close_flag)
+                    {
+                        rtl_holder_counter++;
+                    }
+                    else
+                    {
+                        rtl_holder_counter--;
+                    }
+                }
 
                 if (close_flag)
                 {
-                    if(tagname == rtl_holder && RTL_DISPLAY_ENABLE)//&& flags & TXTFLG_IN_RTL )
+                    if(tagname == rtl_holder && RTL_DISPLAY_ENABLE && ( rtl_holder_counter == 0 ) )
                     {
-                        flags &= ~TXTFLG_IN_RTL;
-                        callback_->setFlags(flags);
+                        callback_->setRTLflag(false);
+                        rtl_holder.clear();
                     }
                     callback_->OnTagClose(tagns.c_str(), tagname.c_str());
                     //CRLog::trace("</%s>", LCSTR(tagname));
@@ -3072,16 +3083,16 @@ bool LvXmlParser::Parse()
                 if ((flags & TXTFLG_CONVERT_8BIT_ENTITY_ENCODING) && m_conv_table) {
                     PreProcessXmlString(attrvalue, 0, m_conv_table);
                 }
-
-                if(RTL_DISPLAY_ENABLE)
+                if(RTL_DISPLAY_ENABLE && rtl_holder.empty())
                 {
                     if(attrname=="dir" || attrname == "class")
                     {
                         if(attrvalue=="rtl")
                         {
-                            flags |= TXTFLG_IN_RTL;
                             rtl_holder = tagname;
-                            callback_->setFlags(flags);
+                            callback_->setRTLflag(true);
+                            rtl_holder_counter++;
+                            CRLog::error("holder = [%s] flags ++ rtl",LCSTR(rtl_holder));
                         }
                     }
                 }
@@ -3177,11 +3188,11 @@ bool LvXmlParser::Parse()
 //                }
             if(save_notes_title)
             {
-                ReadTextToString(Epub3Notes_.FootnotesTitle_,true);
+                this->ReadTextToString(Epub3Notes_.FootnotesTitle_,true);
             }
             else if(save_a_content)
             {
-                ReadTextToString(buffer,true);
+                this->ReadTextToString(buffer,true);
                 //CRLog::error("buffer = %s",LCSTR(buffer));
             }
             else
@@ -4350,7 +4361,7 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
                 }
                 if(save_text)
                 {
-                    ReadTextToString(str_buffer,true);
+                    this->ReadTextToString(str_buffer,true);
                 }
                 else
                 {
@@ -4444,6 +4455,7 @@ bool LvXmlParser::ParseEpubFootnotes()
     lString16 attrvalue;
     lString16 buffer;
     lString16 rtl_holder;
+    int rtl_holder_counter = 0;
 
     int buffernum =-1;
     //LVArray<LinkStruct> LinksList = getLinksList();
@@ -4745,13 +4757,24 @@ bool LvXmlParser::ParseEpubFootnotes()
                     }
                 }
 
+                if(!rtl_holder.empty() && tagname == rtl_holder)
+                {
+                    if(!close_flag)
+                    {
+                        rtl_holder_counter++;
+                    }
+                    else
+                    {
+                        rtl_holder_counter--;
+                    }
+                }
 
                 if (close_flag)
                 {
-                    if(tagname == rtl_holder && RTL_DISPLAY_ENABLE)//&& flags & TXTFLG_IN_RTL )
+                    if(tagname == rtl_holder && RTL_DISPLAY_ENABLE && ( rtl_holder_counter == 0 ) )
                     {
-                        flags &= ~TXTFLG_IN_RTL;
-                        callback_->setFlags(flags);
+                        callback_->setRTLflag(false);
+                        rtl_holder.clear();
                     }
                     callback_->OnTagClose(tagns.c_str(), tagname.c_str());
                     //CRLog::trace("</%s:%s>", LCSTR(tagns),LCSTR(tagname));
@@ -4851,15 +4874,15 @@ bool LvXmlParser::ParseEpubFootnotes()
                     PreProcessXmlString(attrvalue, 0, m_conv_table);
                 }
 
-                if(RTL_DISPLAY_ENABLE)
+                if(RTL_DISPLAY_ENABLE && rtl_holder.empty())
                 {
                     if(attrname=="dir" || attrname == "class")
                     {
                         if(attrvalue=="rtl")
                         {
-                            flags |= TXTFLG_IN_RTL;
                             rtl_holder = tagname;
-                            callback_->setFlags(flags);
+                            callback_->setRTLflag(true);
+                            rtl_holder_counter++;
                         }
                     }
                 }
@@ -4892,7 +4915,7 @@ bool LvXmlParser::ParseEpubFootnotes()
                 }
                 if (save_title_content)
                 {
-                    ReadTextToString(buffer,false);
+                    this->ReadTextToString(buffer,false);
                     //CRLog::error("saving to buffer = [%s]", LCSTR(buffer));
                     if (buffer.atoi() <= 0)
                     {
