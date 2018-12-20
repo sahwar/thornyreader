@@ -377,7 +377,7 @@ public:
     //docx tags to filter initialization
     void initDocxTagsFilter();
 
-    bool ReadTextToString(lString16 &output, bool write_to_tree);
+    bool ReadTextToString(lString16 &output, bool write_to_tree, bool rtl_force_check = false);
 
     void setLinksMap(LinksMap LinksMap);
 

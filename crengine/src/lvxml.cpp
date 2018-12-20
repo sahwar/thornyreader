@@ -3092,7 +3092,6 @@ bool LvXmlParser::Parse()
                             rtl_holder = tagname;
                             callback_->setRTLflag(true);
                             rtl_holder_counter++;
-                            CRLog::error("holder = [%s] flags ++ rtl",LCSTR(rtl_holder));
                         }
                     }
                 }
@@ -4361,11 +4360,13 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
                 }
                 if(save_text)
                 {
-                    this->ReadTextToString(str_buffer,true);
+                    this->ReadTextToString(str_buffer,true,true);
                 }
                 else
                 {
-                    ReadText();
+                    lString16 temp;
+                    this->ReadTextToString(temp,true,true);
+                    temp.clear();
                 }
                 fragments_counter++;
                 //bold italic underline list tag insertion closing tags
@@ -5419,9 +5420,10 @@ bool LvXmlParser::ReadText()
 {
     lString16 temp;
     return this->ReadTextToString(temp,true);
+    temp.clear();
 }
 
-bool LvXmlParser::ReadTextToString(lString16 & output, bool write_to_tree)
+bool LvXmlParser::ReadTextToString(lString16 & output, bool write_to_tree, bool rtl_force_check)
 {
     // TODO: remove tracking of file pos
     //int text_start_pos = 0;
@@ -5496,6 +5498,15 @@ bool LvXmlParser::ReadTextToString(lString16 & output, bool write_to_tree)
                     (flags & TXTFLG_TRIM_REMOVE_EOL_HYPHENS)?true:false );
             }
 
+            if(RTL_DISPLAY_ENABLE && rtl_force_check)
+            {
+                if (lString16(buf,nlen).CheckRTL())
+                {
+                    CRLog::error("added rtl for docx");
+                    callback_->OnAttribute(L"", L"dir", L"rtl");
+                    callback_->setRTLflag(true);
+                }
+            }
             if (flags & TXTFLG_PRE) {
                 // check for tabs
                 int tabCount = CalcTabCount(buf, nlen);
