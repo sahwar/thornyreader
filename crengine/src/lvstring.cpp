@@ -4907,3 +4907,46 @@ lString16 lString16::PrepareRTL()
     *this = result;
     return *this;
 }
+
+ReverseLetterMap reverseLetterMap = ArabicReverseLetterMap();
+
+lString16 lString16::ReversePrettyLetters()
+{
+    if (this->empty())
+    {
+        return *this;
+    }
+
+    lString16 result;
+    for (int i = 0; i < this->length(); i++)
+    {
+        lChar16 lam = 1604;
+        lChar16 alef = 1575;
+
+        lChar16 ch = this->at(i);
+        if( reverseLetterMap.find(ch) != reverseLetterMap.end() )
+        {
+            lChar16 replace = reverseLetterMap.at(ch);
+            lChar16 * replace_a = &replace;
+            lString16 replacestr;
+            if(replace != -1)
+            {
+                replacestr = lString16(replace_a,1);
+            }
+            else
+            {
+                replacestr.append(&lam);
+                replacestr.append(&alef);
+            }
+            result += replacestr;
+        }
+        else
+        {
+            lChar16 * ch_a = &ch;
+            lString16 ch_str = lString16(ch_a,1);
+            result += ch_str;
+        }
+        //restext += lString16::itoa(i);
+    }
+    return result;
+}

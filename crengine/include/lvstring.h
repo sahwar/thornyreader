@@ -695,6 +695,8 @@ public:
     bool CheckRTL();
     //split string to array of words, punct signs ands spaces
     lString16Collection ArabicSplitToWords();
+
+    lString16 ReversePrettyLetters();
 };
 
 /// calculates hash for wide string

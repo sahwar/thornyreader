@@ -9,7 +9,135 @@
 #include <array>
 typedef std::array<lChar16,4> CharArr;
 typedef std::map<lChar16 , CharArr> LetterMap;
+typedef std::map<lChar16 , lChar16 > ReverseLetterMap;
 enum charType {arabic_end = 0, arabic_mid = 1,arabic_start = 2, arabic_isolated = 3};
+
+
+ReverseLetterMap ArabicReverseLetterMap()
+{
+    ReverseLetterMap reverseLetterMap;
+
+    reverseLetterMap.insert(std::make_pair(0xFE8E,0x0627));
+    reverseLetterMap.insert(std::make_pair(0xFE8D,0x0627));
+    reverseLetterMap.insert(std::make_pair(0xFE90,0x0628));
+    reverseLetterMap.insert(std::make_pair(0xFE92,0x0628));
+    reverseLetterMap.insert(std::make_pair(0xFE91,0x0628));
+    reverseLetterMap.insert(std::make_pair(0xFE8F,0x0628));
+    reverseLetterMap.insert(std::make_pair(0xFE96,0x062A));
+    reverseLetterMap.insert(std::make_pair(0xFE98,0x062A));
+    reverseLetterMap.insert(std::make_pair(0xFE97,0x062A));
+    reverseLetterMap.insert(std::make_pair(0xFE95,0x062A));
+    reverseLetterMap.insert(std::make_pair(0xFE9A,0x062B));
+    reverseLetterMap.insert(std::make_pair(0xFE9C,0x062B));
+    reverseLetterMap.insert(std::make_pair(0xFE9B,0x062B));
+    reverseLetterMap.insert(std::make_pair(0xFE99,0x062B));
+    reverseLetterMap.insert(std::make_pair(0xFE9E,0x062C));
+    reverseLetterMap.insert(std::make_pair(0xFEA0,0x062C));
+    reverseLetterMap.insert(std::make_pair(0xFE9F,0x062C));
+    reverseLetterMap.insert(std::make_pair(0xFE9D,0x062C));
+    reverseLetterMap.insert(std::make_pair(0xFEA2,0x062D));
+    reverseLetterMap.insert(std::make_pair(0xFEA4,0x062D));
+    reverseLetterMap.insert(std::make_pair(0xFEA3,0x062D));
+    reverseLetterMap.insert(std::make_pair(0xFEA1,0x062D));
+    reverseLetterMap.insert(std::make_pair(0xFEA6,0x062E));
+    reverseLetterMap.insert(std::make_pair(0xFEA8,0x062E));
+    reverseLetterMap.insert(std::make_pair(0xFEA7,0x062E));
+    reverseLetterMap.insert(std::make_pair(0xFEA5,0x062E));
+    reverseLetterMap.insert(std::make_pair(0xFEAA,0x062F));
+    reverseLetterMap.insert(std::make_pair(0xFEA9,0x062F));
+    reverseLetterMap.insert(std::make_pair(0xFEAC,0x0630));
+    reverseLetterMap.insert(std::make_pair(0xFEAB,0x0630));
+    reverseLetterMap.insert(std::make_pair(0xFEAE,0x0631));
+    reverseLetterMap.insert(std::make_pair(0xFEAD,0x0631));
+    reverseLetterMap.insert(std::make_pair(0xFEB0,0x0632));
+    reverseLetterMap.insert(std::make_pair(0xFEAF,0x0632));
+    reverseLetterMap.insert(std::make_pair(0xFEB2,0x0633));
+    reverseLetterMap.insert(std::make_pair(0xFEB4,0x0633));
+    reverseLetterMap.insert(std::make_pair(0xFEB3,0x0633));
+    reverseLetterMap.insert(std::make_pair(0xFEB1,0x0633));
+    reverseLetterMap.insert(std::make_pair(0xFEB6,0x0634));
+    reverseLetterMap.insert(std::make_pair(0xFEB8,0x0634));
+    reverseLetterMap.insert(std::make_pair(0xFEB7,0x0634));
+    reverseLetterMap.insert(std::make_pair(0xFEB5,0x0634));
+    reverseLetterMap.insert(std::make_pair(0xFEBA,0x0635));
+    reverseLetterMap.insert(std::make_pair(0xFEBC,0x0635));
+    reverseLetterMap.insert(std::make_pair(0xFEBB,0x0635));
+    reverseLetterMap.insert(std::make_pair(0xFEB9,0x0635));
+    reverseLetterMap.insert(std::make_pair(0xFEBE,0x0636));
+    reverseLetterMap.insert(std::make_pair(0xFEC0,0x0636));
+    reverseLetterMap.insert(std::make_pair(0xFEBF,0x0636));
+    reverseLetterMap.insert(std::make_pair(0xFEBD,0x0636));
+    reverseLetterMap.insert(std::make_pair(0xFEC2,0x0637));
+    reverseLetterMap.insert(std::make_pair(0xFEC4,0x0637));
+    reverseLetterMap.insert(std::make_pair(0xFEC3,0x0637));
+    reverseLetterMap.insert(std::make_pair(0xFEC1,0x0637));
+    reverseLetterMap.insert(std::make_pair(0xFEC6,0x0638));
+    reverseLetterMap.insert(std::make_pair(0xFEC8,0x0638));
+    reverseLetterMap.insert(std::make_pair(0xFEC7,0x0638));
+    reverseLetterMap.insert(std::make_pair(0xFEC5,0x0638));
+    reverseLetterMap.insert(std::make_pair(0xFECA,0x0639));
+    reverseLetterMap.insert(std::make_pair(0xFECC,0x0639));
+    reverseLetterMap.insert(std::make_pair(0xFECB,0x0639));
+    reverseLetterMap.insert(std::make_pair(0xFEC9,0x0639));
+    reverseLetterMap.insert(std::make_pair(0xFECE,0x063A));
+    reverseLetterMap.insert(std::make_pair(0xFED0,0x063A));
+    reverseLetterMap.insert(std::make_pair(0xFECF,0x063A));
+    reverseLetterMap.insert(std::make_pair(0xFECD,0x063A));
+    reverseLetterMap.insert(std::make_pair(0xFED2,0x0641));
+    reverseLetterMap.insert(std::make_pair(0xFED4,0x0641));
+    reverseLetterMap.insert(std::make_pair(0xFED3,0x0641));
+    reverseLetterMap.insert(std::make_pair(0xFED1,0x0641));
+    reverseLetterMap.insert(std::make_pair(0xFED6,0x0642));
+    reverseLetterMap.insert(std::make_pair(0xFED8,0x0642));
+    reverseLetterMap.insert(std::make_pair(0xFED7,0x0642));
+    reverseLetterMap.insert(std::make_pair(0xFED5,0x0642));
+    reverseLetterMap.insert(std::make_pair(0xFEDA,0x0643));
+    reverseLetterMap.insert(std::make_pair(0xFEDC,0x0643));
+    reverseLetterMap.insert(std::make_pair(0xFEDB,0x0643));
+    reverseLetterMap.insert(std::make_pair(0xFED9,0x0643));
+    reverseLetterMap.insert(std::make_pair(0xFEDE,0x0644));
+    reverseLetterMap.insert(std::make_pair(0xFEE0,0x0644));
+    reverseLetterMap.insert(std::make_pair(0xFEDF,0x0644));
+    reverseLetterMap.insert(std::make_pair(0xFEDD,0x0644));
+    reverseLetterMap.insert(std::make_pair(0xFEE2,0x0645));
+    reverseLetterMap.insert(std::make_pair(0xFEE4,0x0645));
+    reverseLetterMap.insert(std::make_pair(0xFEE3,0x0645));
+    reverseLetterMap.insert(std::make_pair(0xFEE1,0x0645));
+    reverseLetterMap.insert(std::make_pair(0xFEE6,0x0646));
+    reverseLetterMap.insert(std::make_pair(0xFEE8,0x0646));
+    reverseLetterMap.insert(std::make_pair(0xFEE7,0x0646));
+    reverseLetterMap.insert(std::make_pair(0xFEE5,0x0646));
+    reverseLetterMap.insert(std::make_pair(0xFEEA,0x0647));
+    reverseLetterMap.insert(std::make_pair(0xFEEC,0x0647));
+    reverseLetterMap.insert(std::make_pair(0xFEEB,0x0647));
+    reverseLetterMap.insert(std::make_pair(0xFEE9,0x0647));
+    reverseLetterMap.insert(std::make_pair(0xFEEE,0x0648));
+    reverseLetterMap.insert(std::make_pair(0xFEED,0x0648));
+    reverseLetterMap.insert(std::make_pair(0xFEF2,0x064A));
+    reverseLetterMap.insert(std::make_pair(0xFEF4,0x064A));
+    reverseLetterMap.insert(std::make_pair(0xFEF3,0x064A));
+    reverseLetterMap.insert(std::make_pair(0xFEF1,0x064A));
+    reverseLetterMap.insert(std::make_pair(0xFE82,0x0622));
+    reverseLetterMap.insert(std::make_pair(0xFE81,0x0622));
+    reverseLetterMap.insert(std::make_pair(0xFE84,0x0623));
+    reverseLetterMap.insert(std::make_pair(0xFE83,0x0623));
+    reverseLetterMap.insert(std::make_pair(0xFE88,0x0625));
+    reverseLetterMap.insert(std::make_pair(0xFE87,0x0625));
+    reverseLetterMap.insert(std::make_pair(0xFE86,0x0624));
+    reverseLetterMap.insert(std::make_pair(0xFE85,0x0624));
+    reverseLetterMap.insert(std::make_pair(0xFE8A,0x0626));
+    reverseLetterMap.insert(std::make_pair(0xFE8C,0x0626));
+    reverseLetterMap.insert(std::make_pair(0xFE8B,0x0626));
+    reverseLetterMap.insert(std::make_pair(0xFE89,0x0626));
+    reverseLetterMap.insert(std::make_pair(0xFE94,0x0629));
+    reverseLetterMap.insert(std::make_pair(0xFE93,0x0629));
+    reverseLetterMap.insert(std::make_pair(0xFEF0,0x0649));
+    reverseLetterMap.insert(std::make_pair(0xFEEF,0x0649));
+    reverseLetterMap.insert(std::make_pair(0xFEFC,-1));     //lam-alef ligature
+    reverseLetterMap.insert(std::make_pair(0xFEFB,-1));     //lam-alef ligature
+
+    return reverseLetterMap;
+}
 
 LetterMap ArabicLetterMap()
 {
