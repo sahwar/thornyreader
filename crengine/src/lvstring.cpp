@@ -4726,7 +4726,18 @@ bool char_isPunct(const lChar16 c){
            ((c>=58) && (c<=64)) ||
            ((c>=91) && (c<=96)) ||
            ((c>=123)&& (c<=126))||
-           (c == 0x00A6);
+           (c == 0x00A6)||
+           (c == 0x060C)||
+           (c == 0x060D)||
+           (c == 0x060E)||
+           (c == 0x060F)||
+           (c == 0x061F)||
+           (c == 0x066D)||
+           (c == 0x06DD)||
+           (c == 0x06DE)||
+           (c == 0x06E9)||
+           (c == 0xFD3E)||
+           (c == 0xFD3F);
 }
 
 lString16 lString16::LigatureCheck(lString16 text)
@@ -4762,6 +4773,15 @@ lString16 lString16::LigatureCheck(lString16 text)
 
 LetterMap arabicLetterMap = ArabicLetterMap();
 
+bool char_is_RTL_left_unjoinable(lChar16 ch)
+{
+    return ((ch == 0x0627)||
+           (ch == 0x062F)||
+           (ch == 0x0630)||
+           (ch == 0x0631)||
+           (ch == 0x0632)||
+           (ch == 0x0648));
+}
 lString16 lString16::PrettyLetters(lString16 text)
 {
     if (text.empty())
@@ -4776,7 +4796,7 @@ lString16 lString16::PrettyLetters(lString16 text)
         if( arabicLetterMap.find(ch) != arabicLetterMap.end() )
         {
             unsigned int pos = arabic_isolated;
-            if(text.length() == 1)
+            if (text.length() == 1)
             {
                 pos = arabic_isolated;
             }
@@ -4784,13 +4804,30 @@ lString16 lString16::PrettyLetters(lString16 text)
             {
                 pos = arabic_start;
             }
-            else if (i == text.length() - 1)
+            else if (i > 0)
             {
-                pos = arabic_end;
-            }
-            else
-            {
-                pos = arabic_mid;
+                if (char_is_RTL_left_unjoinable(text.at(i - 1)))
+                {
+                    if (i == text.length() - 1)
+                    {
+                        pos = arabic_isolated;
+                    }
+                    else
+                    {
+                        pos = arabic_start;
+                    }
+                }
+                else
+                {
+                    if (i == text.length() - 1)
+                    {
+                        pos = arabic_end;
+                    }
+                    else
+                    {
+                        pos = arabic_mid;
+                    }
+                }
             }
 
             lChar16 replace = arabicLetterMap.at(ch).at(pos);
