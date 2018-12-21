@@ -2140,6 +2140,8 @@ public:
             {continue;}
             if (temp.pos("AndroidClock")!=-1)
             {continue;}
+            if (temp.pos("tahoma")!=-1)
+            {continue;}
             /*if (temp.pos("Noto")!=-1)  // Noto family is preferred
             {
                 list.add(temp);
