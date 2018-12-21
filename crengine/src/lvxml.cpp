@@ -2576,7 +2576,13 @@ bool LvXmlParser::CheckFormat() {
                 res = true;
                 // check that only whitespace chars before <
                 for ( int i=0; i<lt_pos && res; i++)
-                    res = IsSpaceChar( chbuf[i] );
+                {
+                    // 0xFEFF is the Byte Order Mark (BOM), char at start of stream that:
+                    // signals the byte order of the stream,
+                    // marks text as a unicode text,
+                    // signals the encoding of the stream.
+                    res = (IsSpaceChar(chbuf[i]) || chbuf[i] == 0xFEFF);
+                }
             }
         }
     }
@@ -3505,6 +3511,14 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
     int h5min = docxStyles.h5min_;
     int h6min = docxStyles.h6min_;
 
+    Headermap headermap;
+    headermap[docxStyles.h1id_.getHash()] = 1;
+    headermap[docxStyles.h2id_.getHash()] = 2;
+    headermap[docxStyles.h3id_.getHash()] = 3;
+    headermap[docxStyles.h4id_.getHash()] = 4;
+    headermap[docxStyles.h5id_.getHash()] = 5;
+    headermap[docxStyles.h6id_.getHash()] = 6;
+
     LinksMap LinksMap = LinksMap_;
     for (; !eof_ && !error && !firstpage_thumb_num_reached ;)
     {
@@ -4058,19 +4072,28 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
                     if(attrname == "val")
                     {
                         in_header = true;
-                        int currfontsize = docxStyles.getSizeById(attrvalue);
-                        if(currfontsize > default_size)
+                        if(headermap.find(attrvalue.getHash())!=headermap.end())
                         {
-                            if ( currfontsize >  h6min )  pstyle_value = 6;
-                            if ( currfontsize >= h5min )  pstyle_value = 5;
-                            if ( currfontsize >= h4min )  pstyle_value = 4;
-                            if ( currfontsize >= h3min )  pstyle_value = 3;
-                            if ( currfontsize >= h2min )  pstyle_value = 2;
-                            if ( currfontsize >= h1min )  pstyle_value = 1;
+                            pstyle_value = headermap[attrvalue.getHash()];
+                            //CRLog::error("pstyle = %d",pstyle_value);
                         }
-                        else if(currfontsize <= default_size)
+                        else
                         {
-                            pstyle_value = -1;
+                            int currfontsize = docxStyles.getSizeById(attrvalue);
+                            if(currfontsize > default_size)
+                            {
+                                if ( currfontsize >  h6min )  pstyle_value = 6;
+                                if ( currfontsize >= h5min )  pstyle_value = 5;
+                                if ( currfontsize >= h4min )  pstyle_value = 4;
+                                if ( currfontsize >= h3min )  pstyle_value = 3;
+                                if ( currfontsize >= h2min )  pstyle_value = 2;
+                                if ( currfontsize >= h1min )  pstyle_value = 1;
+                            }
+                            else if(currfontsize <= default_size)
+                            {
+                                pstyle_value = -1;
+                            }
+                            //CRLog::error("pstyle generated = %d",pstyle_value);
                         }
                         // can be val="Normal"
                     }

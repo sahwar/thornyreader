@@ -1092,6 +1092,14 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 	}
 	CRLog::debug("EPUB: %d documents merged", fragmentCount);
 
+	if (m_doc->getToc()->getChildCount() == 0)
+	{
+		GetTOC(m_doc, m_doc->getToc());
+	}
+	else
+	{
+		CRLog::trace("TOC already exists. No TOC generation for now.");
+	}
 	if (!fontList.empty())
 	{
 		// set document font list, and register fonts

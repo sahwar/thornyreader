@@ -31,6 +31,7 @@ typedef std::map<lUInt32,int> Tagmap;
 typedef std::map<lUInt32,int>::iterator iter;
 typedef std::map<lUInt32,lString16> LinksMap;
 typedef std::map<lUInt32,lString16>::iterator LinksIter;
+typedef std::map<lUInt32,int> Headermap;
 
 //class LvXmlParser;
 class LVFileFormatParser;
