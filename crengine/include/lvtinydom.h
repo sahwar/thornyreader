@@ -639,6 +639,9 @@ public:
     ldomNode * removeChild( lUInt32 index );
     /// returns XPath segment for this element relative to parent element (e.g. "p[10]")
     lString16 getXPathSegment();
+    // returns full XPath for node, can be used in navigation through domtree
+    lString16 getPath();
+    // returns XPath for node with addioinal info, used for logs
     lString16 getXPath();
     /// creates stream to read base64 encoded data from element
     LVStreamRef createBase64Stream();
@@ -1542,16 +1545,6 @@ private:
     ldomXPointer    _position;
     LVPtrVector<LvTocItem> _children;
 
-    LvTocItem(ldomXPointer pos, lString16 path, const lString16& name)
-    		: _parent(NULL),
-    		  _doc(NULL),
-    		  _level(0),
-    		  _index(0),
-    		  _page(0),
-    		  _name(name),
-    		  _path(path),
-    		  _position(pos) { }
-
     void addChild(LvTocItem* item)
     {
     	item->_level = _level + 1;
@@ -1561,6 +1554,25 @@ private:
     	_children.add(item);
     }
 public:
+    LvTocItem(ldomXPointer pos, lString16 path, const lString16& name)
+            : _parent(NULL),
+            _doc(NULL),
+            _level(0),
+            _index(0),
+            _page(0),
+            _name(name),
+            _path(path),
+            _position(pos) { }
+
+    void addItem(LvTocItem* item, int level)
+    {
+        item->_level = level;
+        item->_parent = this;
+        item->_index = _children.length(),
+        item->_doc = _doc;
+        _children.add(item);
+    }
+
     void setPage( int n ) { _page = n; }
     /// get page number
     int getPage() { return _page; }
@@ -1959,5 +1971,6 @@ lString16 ExtractDocLanguage(CrDom* dom);
 lString16 ExtractDocSeries(CrDom* dom, int* pSeriesNumber=NULL);
 lString16 ExtractDocThumbImageName(CrDom* dom);
 
-
+void RecurseTOC(ldomNode * node,LvTocItem * toc);
+void GetTOC(CrDom * crDom, LvTocItem * toc);
 #endif
