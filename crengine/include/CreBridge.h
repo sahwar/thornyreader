@@ -37,6 +37,8 @@ protected:
     void processPageXpaths(CmdRequest &request, CmdResponse &response);
     void processPageRangeText(CmdRequest &request, CmdResponse &response);
     void processPageRects(CmdRequest &request, CmdResponse &response);
+    void processRTLHitboxes(CmdRequest &request, CmdResponse &response);
+
 };
 
 #endif //READERA_CREBRIDGE_H

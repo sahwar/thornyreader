@@ -67,6 +67,8 @@
 #define CMD_RES_RANGE_HITBOX	        41
 #define CMD_REQ_XPATH_HITBOX   	        42
 #define CMD_RES_XPATH_HITBOX		    43
+#define CMD_REQ_RTL_TEXT    		    44
+#define CMD_RES_RTL_TEXT    		    45
 
 #define CMD_REQ_PDF_STORAGE 124
 #define CMD_RES_PDF_STORAGE 125

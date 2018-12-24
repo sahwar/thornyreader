@@ -275,7 +275,7 @@ public:
     };
     LVArray<Hitbox> GetPageLinks();
     //returns array of Hitbox objects that contain hitbox info about characters on current docview page
-    LVArray<Hitbox> GetPageHitboxes(ldomXRange *in_range = NULL);
+    LVArray<Hitbox> GetPageHitboxes(ldomXRange *in_range = NULL, bool rtl_enable = true);
     //returns array of lvRects, that contains info about image location on current docview page
     LVArray<ImgRect> GetPageImages(image_display_t type=img_all);
     //rewrites imgheight and imgwidth to corresponding values of scaled image.
@@ -285,6 +285,7 @@ public:
     lString16   GetHitboxHash(float l,float r,float t,float b);
     ldomWord    FindldomWordFromMap(ldomWordMap m, lString16 key);
     ldomWordMap GetldomWordMapFromPage(int page);
+    lString16 GetXpathByRectCoords(lString16 key, ldomWordMap m);
 
     LVDocView();
     ~LVDocView();

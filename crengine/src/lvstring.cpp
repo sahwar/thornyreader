@@ -4743,31 +4743,9 @@ bool char_isPunct(const lChar16 c){
 
 lString16 lString16::LigatureCheck(lString16 text)
 {
-    // INCREMENT THIS NUMBER WHILE ADDING COMBOS!
-    #define LAM_ALEF_COMBOS 10
-
-    lChar16 lamAlefCombos[LAM_ALEF_COMBOS][3] =
-            {       //lam    //alef  //ligature
-                    {0x0644, 0x0627, 0xFEFB}, // regular lam + regular alef
-
-                    {0x0644, 0x0622, 0xFEF5}, // + madda above
-                    {0x0644, 0xFE81, 0xFEF5},
-                    {0x0644, 0xFE82, 0xFEF6},
-
-                    {0x0644, 0x0623 ,0xFEF7}, //+ hamza above
-                    {0x0644, 0xFE83, 0xFEF7},
-                    {0x0644, 0xFE84, 0xFEF8},
-
-                    {0x0644, 0x0625, 0xFEF9}, //+ hamza below
-                    {0x0644, 0xFE87, 0xFEF9},
-                    {0x0644, 0xFE88, 0xFEFA}
-            };
-
-    for (int i = 0; i < LAM_ALEF_COMBOS; i++)
-    {
-        text = LigatureCheck(text,lamAlefCombos[i][0],lamAlefCombos[i][1],lamAlefCombos[i][2]);
+    for (int i = 0 ; i < LAM_ALEF_COMBOS_LENGTH; i++) {
+        text = LigatureCheck(text, lamAlefCombos[i][0], lamAlefCombos[i][1], lamAlefCombos[i][2]);
     }
-    #undef LAM_ALEF_COMBOS
     return text;
 }
 
@@ -4989,8 +4967,8 @@ lString16 lString16::ReversePrettyLetters()
     lString16 result;
     for (int i = 0; i < this->length(); i++)
     {
-        lChar16 lam = 1604;
-        lChar16 alef = 1575;
+        lChar16 lam = 0x0644;
+        lChar16 alef = 0x003F; //question mark
 
         lChar16 ch = this->at(i);
         if( reverseLetterMap.find(ch) != reverseLetterMap.end() )
@@ -4998,12 +4976,21 @@ lString16 lString16::ReversePrettyLetters()
             lChar16 replace = reverseLetterMap.at(ch);
             lChar16 * replace_a = &replace;
             lString16 replacestr;
-            if(replace != -1)
+            if(replace > 0 )
             {
                 replacestr = lString16(replace_a,1);
             }
             else
             {
+                if ( replace == -1)
+                { alef = 0x0627; }
+                else if ( replace == -2)
+                { alef = 0x0622; }
+                else if ( replace == -3)
+                { alef = 0x0623; }
+                else if ( replace == -4)
+                { alef = 0x0625; }
+
                 replacestr.append(&lam);
                 replacestr.append(&alef);
             }

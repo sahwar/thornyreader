@@ -133,9 +133,13 @@ ReverseLetterMap ArabicReverseLetterMap()
     reverseLetterMap.insert(std::make_pair(0xFE93,0x0629));
     reverseLetterMap.insert(std::make_pair(0xFEF0,0x0649));
     reverseLetterMap.insert(std::make_pair(0xFEEF,0x0649));
-    reverseLetterMap.insert(std::make_pair(0xFEFC,-1));     //lam-alef ligature
     reverseLetterMap.insert(std::make_pair(0xFEFB,-1));     //lam-alef ligature
-
+    reverseLetterMap.insert(std::make_pair(0xFEF5,-2));     //lam-alef + madda above
+    reverseLetterMap.insert(std::make_pair(0xFEF6,-2));     //lam-alef + madda above
+    reverseLetterMap.insert(std::make_pair(0xFEF7,-3));     //lam-alef + hamza above
+    reverseLetterMap.insert(std::make_pair(0xFEF8,-3));     //lam-alef + hamza above
+    reverseLetterMap.insert(std::make_pair(0xFEF9,-4));     //lam-alef + hamza below
+    reverseLetterMap.insert(std::make_pair(0xFEFA,-4));     //lam-alef + hamza below
     return reverseLetterMap;
 }
 
@@ -221,4 +225,23 @@ LetterMap ArabicLetterMap()
 
  return LetterMap;
 }
+
+// INCREMENT THIS NUMBER WHILE ADDING COMBOS!!!1
+#define LAM_ALEF_COMBOS_LENGTH 10
+lChar16 lamAlefCombos[LAM_ALEF_COMBOS_LENGTH][3] =
+        {       //lam    //alef  //ligature
+                {0x0644, 0x0627, 0xFEFB}, // regular lam + regular alef
+
+                {0x0644, 0x0622, 0xFEF5}, // + madda above
+                {0x0644, 0xFE81, 0xFEF5},
+                {0x0644, 0xFE82, 0xFEF6},
+
+                {0x0644, 0x0623 ,0xFEF7}, //+ hamza above
+                {0x0644, 0xFE83, 0xFEF7},
+                {0x0644, 0xFE84, 0xFEF8},
+
+                {0x0644, 0x0625, 0xFEF9}, //+ hamza below
+                {0x0644, 0xFE87, 0xFEF9},
+                {0x0644, 0xFE88, 0xFEFA}
+        };
 #endif //CODE_THORNYREADER_PURE_ARABIC_TABLES_H

@@ -470,6 +470,98 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
 #undef DEBUG_TEXT
 }
 
+
+void CreBridge::processRTLHitboxes(CmdRequest &request, CmdResponse &response)
+{
+    //response.cmd = CMD_RES_RTL_TEXT;
+
+   // CmdDataIterator iter(request.first);
+   // uint8_t *temp_val;
+   // iter.getByteArray(&temp_val);
+   // if (!iter.isValid())
+   // {
+   //     CRLog::error("processPageXpaths bad request data");
+   //     // response.result = RES_BAD_REQ_DATA;
+   //     // return;
+   // }
+   // const char *val = reinterpret_cast<const char *>(temp_val);
+    // lString16 key_input = lString16(val);
+
+
+    lString16 key_input = lString16("0;"
+                                    "0.115625:0.116250:0.188048:0.224303;"
+                                    "0.516875:0.528750:0.296813:0.333068");
+
+    lString16Collection keys;
+    keys.split(key_input,lString16(";"));
+
+    uint32_t external_page = keys.at(0).atoi();
+    lString16 key_start = keys.at(1);
+    lString16 key_end = keys.at(2);
+
+    if(key_start == lString16("-") && key_end == lString16("-"))
+    {
+        responseAddString(response, lString16("-"));
+        responseAddString(response, lString16("-"));
+        return;
+    }
+
+    uint32_t page = (uint32_t) ImportPage(external_page, doc_view_->GetColumns());
+    ldomWordMap m = doc_view_->GetldomWordMapFromPage(page);
+
+    lString16 startstr = doc_view_->GetXpathByRectCoords(key_start, m);
+    lString16 endstr = doc_view_->GetXpathByRectCoords(key_end, m);
+
+    ldomXPointer start  = doc_view_->GetCrDom()->createXPointer(startstr);
+    ldomXPointer end    = doc_view_->GetCrDom()->createXPointer(endstr);
+    int startpage = doc_view_->GetPageForBookmark(start);
+    int endpage = doc_view_->GetPageForBookmark(end);
+
+    LVArray<Hitbox> BookmarkHitboxes;
+    ldomXRange* range;
+
+    // out of selection range
+    if (page < startpage || page > endpage)
+    {
+        //CRLog::trace("Selection out of range");
+        return;
+    }
+    //exactly on one current page
+    if (startpage == page && endpage == page)
+    {
+        range = new ldomXRange(start, end);
+    }
+    //selection goes lower
+    if (startpage == page && endpage > page)
+    {
+        ldomXPointer page_end = doc_view_->GetPageDocRange(page).get()->getEnd();
+        range = new ldomXRange(start, page_end);
+    }
+    //selection goes upper
+    if (startpage < page && endpage == page)
+    {
+        ldomXPointer page_start = doc_view_->GetPageDocRange(page).get()->getStart();
+        range = new ldomXRange(page_start, end);
+    }
+    //selection goes upper and lower
+    if (startpage < page && endpage > page)
+    {
+        ldomXPointer page_start = doc_view_->GetPageDocRange(page).get()->getStart();
+        ldomXPointer page_end = doc_view_->GetPageDocRange(page).get()->getEnd();
+        range = new ldomXRange(page_start, page_end);
+    }
+
+    BookmarkHitboxes = doc_view_->GetPageHitboxes(range,false);
+
+    lString16 result;
+    for (int i = 0; i < BookmarkHitboxes.length(); i++)
+    {
+            result+=BookmarkHitboxes.get(i).text_;
+    }
+    result = result.ReversePrettyLetters();
+    //responseAddString(response,result);
+}
+
 //searches for the specified rectangles on page, returns xpaths if found.
 void CreBridge::processPageXpaths(CmdRequest &request, CmdResponse &response)
 {
@@ -514,37 +606,11 @@ void CreBridge::processPageXpaths(CmdRequest &request, CmdResponse &response)
     uint32_t page = (uint32_t) ImportPage(external_page, doc_view_->GetColumns());
     ldomWordMap m = doc_view_->GetldomWordMapFromPage(page);
 
-    if(key_start == lString16("-"))
-    {
-        responseAddString(response, lString16("-"));
-    }
-    else
-    {
-        ldomWord word = doc_view_->FindldomWordFromMap(m,key_start);
-        if (word.isNull())
-        {
-            responseAddString(response, lString16("-"));
-        }
-        ldomXPointer xPointer = word.getStartXPointer();
-        responseAddString(response, xPointer.toString());
-        //CRLog::error("xpointer1 for key [%d__%s] = [%s]",page,LCSTR(key_start),LCSTR(xPointer.toString()));
-    }
+    lString16 xp1 = doc_view_->GetXpathByRectCoords(key_start, m);
+    responseAddString(response, xp1);
+    lString16 xp2 = doc_view_->GetXpathByRectCoords(key_end, m);
+    responseAddString(response, xp2);
 
-    if(key_end == lString16("-"))
-    {
-        responseAddString(response, lString16("-"));
-    }
-    else
-    {
-        ldomWord word = doc_view_->FindldomWordFromMap(m,key_end);
-        if (word.isNull())
-        {
-            responseAddString(response, lString16("-"));
-        }
-        ldomXPointer xPointer = word.getEndXPointer();
-        responseAddString(response, xPointer.toString());
-        //CRLog::error("xpointer2 for key [%d__%s] = [%s]",page,LCSTR(key_end),LCSTR(xPointer.toString()));
-    }
 }
 //returns hitboxes of letters between the specified xpointers
 void CreBridge::processPageRangeText(CmdRequest &request, CmdResponse &response)

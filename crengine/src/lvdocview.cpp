@@ -1855,6 +1855,11 @@ LVRef<ldomXRange> LVDocView::GetPageDocRange(int page_index)
 		{
 			page_index = GetCurrPage();
 		}
+		if(pages_list_.empty())
+		{
+			CRLog::error("Fatal error: no pages in pages list found!");
+			return res;
+		}
 		LVRendPageInfo *page = pages_list_[page_index];
 		if (page->type != PAGE_TYPE_NORMAL)
 		{
@@ -3363,7 +3368,7 @@ LVArray<ImgRect> LVDocView::GetPageImages(image_display_t type)  //display type 
 	return result;
 }
 
-LVArray<Hitbox> LVDocView::GetPageHitboxes(ldomXRange* in_range)
+LVArray<Hitbox> LVDocView::GetPageHitboxes(ldomXRange* in_range, bool rtl_enable)
 {
 	//CRLog::trace("GETPAGEHITBOXES start");
     LVArray<Hitbox> result;
@@ -3415,7 +3420,7 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes(ldomXRange* in_range)
     //CRLog::trace("RANGECHARS start");
     int width = (this->page_columns_==1)?this->GetWidth() : this->GetWidth()/2;
     int line_width =  width - margins.left - margins.right;
-    pagerange.getRangeChars(word_chars,line_width);
+    pagerange.getRangeChars(word_chars,line_width,rtl_enable);
 
     //CRLog::trace("RANGECHARS end");
     for (int i = 0; i < word_chars.length(); ++i)
@@ -3772,4 +3777,23 @@ ldomWordMap LVDocView::GetldomWordMapFromPage(int page)
 		m[key] = curr.word_;
 	}
 	return m;
+}
+
+lString16 LVDocView::GetXpathByRectCoords(lString16 key, ldomWordMap m)
+{
+	if (key == lString16("-"))
+	{
+		return lString16("-");
+	}
+	else
+	{
+		ldomWord word = this->FindldomWordFromMap(m, key);
+		if (word.isNull())
+		{
+			return lString16("-");
+		}
+		ldomXPointer xPointer = word.getStartXPointer();
+		return xPointer.toString();
+		///CRLog::error("xpointer1 for key [%d__%s] = [%s]",page,LCSTR(key_start),LCSTR(xPointer.toString()));
+	}
 }
