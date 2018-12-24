@@ -450,6 +450,7 @@ private:
     inline void addref() const { ++pchunk->nref; }
     inline void release() { if (--pchunk->nref==0) free(); }
     lString16 LigatureCheck(lString16 text) ;
+    lString16 LigatureCheck(lString16 text, lChar16 lam, lChar16 alef, lChar16 lig);
     lString16 PrettyLetters(lString16 text) ;
 public:
     explicit lString16(lstring_chunk_t * chunk) : pchunk(chunk) { addref(); }

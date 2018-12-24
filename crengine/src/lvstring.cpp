@@ -4737,19 +4737,47 @@ bool char_isPunct(const lChar16 c){
            (c == 0x06DE)||
            (c == 0x06E9)||
            (c == 0xFD3E)||
+           (c == 0x0621)|| // hamza
            (c == 0xFD3F);
 }
 
 lString16 lString16::LigatureCheck(lString16 text)
+{
+    // INCREMENT THIS NUMBER WHILE ADDING COMBOS!
+    #define LAM_ALEF_COMBOS 10
+
+    lChar16 lamAlefCombos[LAM_ALEF_COMBOS][3] =
+            {       //lam    //alef  //ligature
+                    {0x0644, 0x0627, 0xFEFB}, // regular lam + regular alef
+
+                    {0x0644, 0x0622, 0xFEF5}, // + madda above
+                    {0x0644, 0xFE81, 0xFEF5},
+                    {0x0644, 0xFE82, 0xFEF6},
+
+                    {0x0644, 0x0623 ,0xFEF7}, //+ hamza above
+                    {0x0644, 0xFE83, 0xFEF7},
+                    {0x0644, 0xFE84, 0xFEF8},
+
+                    {0x0644, 0x0625, 0xFEF9}, //+ hamza below
+                    {0x0644, 0xFE87, 0xFEF9},
+                    {0x0644, 0xFE88, 0xFEFA}
+            };
+
+    for (int i = 0; i < LAM_ALEF_COMBOS; i++)
+    {
+        text = LigatureCheck(text,lamAlefCombos[i][0],lamAlefCombos[i][1],lamAlefCombos[i][2]);
+    }
+    #undef LAM_ALEF_COMBOS
+    return text;
+}
+
+lString16 lString16::LigatureCheck(lString16 text, lChar16 lam, lChar16 alef, lChar16 lig)
 {
     if(text.length() < 2)
     {
         return text;
     }
 
-    lChar16 lam = 1604;
-    lChar16 alef = 1575;
-    lChar16 lig = 65275;
     lChar16 * alef_a = &alef;
     lChar16 * lam_a = &lam;
     lChar16 * lig_a = &lig;
@@ -4780,8 +4808,12 @@ bool char_is_RTL_left_unjoinable(lChar16 ch)
            (ch == 0x0630)||
            (ch == 0x0631)||
            (ch == 0x0632)||
-           (ch == 0x0648));
+           (ch == 0x0648)||
+           (ch == 0x0621)|| //Hamza
+           (ch == 0xFEFC)|| //Lab-alif final
+           (ch == 0xFEFB)); //Lam-alif isolated
 }
+
 lString16 lString16::PrettyLetters(lString16 text)
 {
     if (text.empty())
