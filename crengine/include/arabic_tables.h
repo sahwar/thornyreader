@@ -179,12 +179,21 @@ LetterMap ArabicLetterMap()
     CharArr x064A = {0xFEF2, 0xFEF4, 0xFEF3, 0xFEF1};
     CharArr x0622 = {0xFE82, 0xFE82, 0xFE81, 0xFE81};
     CharArr xFEFB = {0xFEFC, 0xFEFC, 0xFEFB, 0xFEFB}; // LAM-ALEF LIGATURE //fefb comes from LigatureCheck() function
-    CharArr x0623 = {0xFE84, 0xFE84, 0xFE83, 0xFE83}; // ALEF WITH HAMZA ABOVE
-    CharArr x0625 = {0xFE88, 0xFE88, 0xFE87, 0xFE87}; // ALEF WITH HAMZA BELOW
-    CharArr x0624 = {0xFE86, 0xFE86, 0xFE85, 0xFE85}; // WAW WITH HAMZA ABOVE
-    CharArr x0626 = {0xFE8A, 0xFE8C, 0xFE8B, 0xFE89}; // YEH WITH HAMZA ABOVE
-    CharArr x0629 = {0xFE94, 0xFE94, 0xFE93, 0xFE93}; // TEH MARBUTA
-    CharArr x0649 = {0xFEF0, 0xFEF0, 0xFEEF, 0xFEEF}; // ALEF MAKSURA
+    CharArr xFEF5 = {0xFEF6, 0xFEF6, 0xFEF5, 0xFEF5}; // LAM-ALEF WITH MADDA ABOVE 1
+    CharArr xFEF6 = {0xFEF6, 0xFEF6, 0xFEF5, 0xFEF5}; // LAM-ALEF WITH MADDA ABOVE 2
+    CharArr xFEF7 = {0xFEF8, 0xFEF8, 0xFEF7, 0xFEF7}; // LAM-ALEF WITH HAMZA ABOVE 1
+    CharArr xFEF8 = {0xFEF8, 0xFEF8, 0xFEF7, 0xFEF7}; // LAM-ALEF WITH HAMZA ABOVE 2
+    CharArr xFEF9 = {0xFEFA, 0xFEFA, 0xFEF9, 0xFEF9}; // LAM-ALEF WITH HAMZA BELOW 1
+    CharArr xFEFA = {0xFEFA, 0xFEFA, 0xFEF9, 0xFEF9}; // LAM-ALEF WITH HAMZA BELOW 2
+    CharArr xFE81 = {0xFE82, 0xFE82, 0xFE81, 0xFE81}; // ALEF     WITH MADDA ABOVE 1
+    CharArr xFE82 = {0xFE82, 0xFE82, 0xFE81, 0xFE81}; // ALEF     WITH MADDA ABOVE 2
+    CharArr x0671 = {0xFB51, 0xFB51, 0xFB50, 0xFB50}; // ALEF     WITH WASLA ABOVE
+    CharArr x0623 = {0xFE84, 0xFE84, 0xFE83, 0xFE83}; // ALEF     WITH HAMZA ABOVE
+    CharArr x0625 = {0xFE88, 0xFE88, 0xFE87, 0xFE87}; // ALEF     WITH HAMZA BELOW
+    CharArr x0624 = {0xFE86, 0xFE86, 0xFE85, 0xFE85}; // WAW      WITH HAMZA ABOVE
+    CharArr x0626 = {0xFE8A, 0xFE8C, 0xFE8B, 0xFE89}; // YEH      WITH HAMZA ABOVE
+    CharArr x0629 = {0xFE94, 0xFE94, 0xFE93, 0xFE93}; // TEH      MARBUTA
+    CharArr x0649 = {0xFEF0, 0xFEF0, 0xFEEF, 0xFEEF}; // ALEF     MAKSURA
 
     LetterMap.insert(std::make_pair(0x0627,x0627));
     LetterMap.insert(std::make_pair(0x0628,x0628));
@@ -216,6 +225,15 @@ LetterMap ArabicLetterMap()
     LetterMap.insert(std::make_pair(0x064A,x064A));
     LetterMap.insert(std::make_pair(0x0622,x0622));
     LetterMap.insert(std::make_pair(0xFEFB,xFEFB));
+    LetterMap.insert(std::make_pair(0xFEF5,xFEF5));
+    LetterMap.insert(std::make_pair(0xFEF6,xFEF6));
+    LetterMap.insert(std::make_pair(0xFEF7,xFEF7));
+    LetterMap.insert(std::make_pair(0xFEF8,xFEF8));
+    LetterMap.insert(std::make_pair(0xFEF9,xFEF9));
+    LetterMap.insert(std::make_pair(0xFEFA,xFEFA));
+    LetterMap.insert(std::make_pair(0xFE81,xFE81));
+    LetterMap.insert(std::make_pair(0xFE82,xFE82));
+    LetterMap.insert(std::make_pair(0x0671,x0671));
     LetterMap.insert(std::make_pair(0x0623,x0623));
     LetterMap.insert(std::make_pair(0x0625,x0625));
     LetterMap.insert(std::make_pair(0x0624,x0624));

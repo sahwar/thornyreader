@@ -4781,15 +4781,21 @@ LetterMap arabicLetterMap = ArabicLetterMap();
 
 bool char_is_RTL_left_unjoinable(lChar16 ch)
 {
-    return ((ch == 0x0627)||
-           (ch == 0x062F)||
-           (ch == 0x0630)||
-           (ch == 0x0631)||
-           (ch == 0x0632)||
-           (ch == 0x0648)||
-           (ch == 0x0621)|| //Hamza
-           (ch == 0xFEFC)|| //Lab-alif final
-           (ch == 0xFEFB)); //Lam-alif isolated
+    return ((ch == 0x0627) ||
+            (ch == 0x062F) ||
+            (ch == 0x0630) ||
+            (ch == 0x0631) ||
+            (ch == 0x0632) ||
+            (ch == 0x0648) ||
+            (ch == 0x0621) || //Hamza
+            (ch == 0x0623) || //alef + hamza above
+            (ch == 0x0625) || //alef + hamza below
+            (ch == 0x0623) || //alef + wavy hamza above
+            (ch == 0x0672) || //alef + wavy hamza below
+            (ch == 0x0673) || //alef + madda
+            (ch == 0x0671) || //alef + wasla
+            (ch == 0xFEFC) || //Lam-alif final
+            (ch == 0xFEFB)); //Lam-alif isolated
 }
 
 lString16 lString16::PrettyLetters(lString16 text)
