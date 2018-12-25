@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <crengine/include/crconfig.h>
+#include <crengine/include/RectHelper.h>
 
 #include "thornyreader/include/thornyreader.h"
 #include "thornyreader/include/StProtocol.h"
@@ -300,7 +301,8 @@ void CreBridge::processConfig(CmdRequest& request, CmdResponse& response)
             }
             bool bool_val = (bool) int_val;
             doc_view_->cfg_enable_footnotes_ = bool_val;
-            doc_view_->GetCrDom()->setDocFlag(DOC_FLAG_ENABLE_FOOTNOTES, bool_val);
+            //doc_view_->GetCrDom()->setDocFlag(DOC_FLAG_ENABLE_FOOTNOTES, bool_val);
+            doc_view_->GetCrDom()->setDocFlag(DOC_FLAG_ENABLE_FOOTNOTES, true);
             doc_view_->RequestRender();
         } else if (key == CONFIG_CRE_TEXT_ALIGN) {
             int int_val = atoi(val);
@@ -459,14 +461,341 @@ void CreBridge::processPageText(CmdRequest& request, CmdResponse& response)
     for (int i = 0; i < hitboxes.length(); i++)
     {
         Hitbox currHitbox = hitboxes.get(i);
-        response.addFloat(currHitbox._left);
-        response.addFloat(currHitbox._top);
-        response.addFloat(currHitbox._right);
-        response.addFloat(currHitbox._bottom);
-        responseAddString(response, currHitbox._text);
+        response.addFloat(currHitbox.left_);
+        response.addFloat(currHitbox.top_);
+        response.addFloat(currHitbox.right_);
+        response.addFloat(currHitbox.bottom_);
+        responseAddString(response, currHitbox.text_);
     }
 #undef DEBUG_TEXT
 }
+
+
+void CreBridge::processRTLHitboxes(CmdRequest &request, CmdResponse &response)
+{
+    //response.cmd = CMD_RES_RTL_TEXT;
+
+   // CmdDataIterator iter(request.first);
+   // uint8_t *temp_val;
+   // iter.getByteArray(&temp_val);
+   // if (!iter.isValid())
+   // {
+   //     CRLog::error("processPageXpaths bad request data");
+   //     // response.result = RES_BAD_REQ_DATA;
+   //     // return;
+   // }
+   // const char *val = reinterpret_cast<const char *>(temp_val);
+    // lString16 key_input = lString16(val);
+
+
+    lString16 key_input = lString16("0;"
+                                    "0.115625:0.116250:0.188048:0.224303;"
+                                    "0.516875:0.528750:0.296813:0.333068");
+
+    lString16Collection keys;
+    keys.split(key_input,lString16(";"));
+
+    uint32_t external_page = keys.at(0).atoi();
+    lString16 key_start = keys.at(1);
+    lString16 key_end = keys.at(2);
+
+    if(key_start == lString16("-") && key_end == lString16("-"))
+    {
+        responseAddString(response, lString16("-"));
+        responseAddString(response, lString16("-"));
+        return;
+    }
+
+    uint32_t page = (uint32_t) ImportPage(external_page, doc_view_->GetColumns());
+    ldomWordMap m = doc_view_->GetldomWordMapFromPage(page);
+
+    lString16 startstr = doc_view_->GetXpathByRectCoords(key_start, m);
+    lString16 endstr = doc_view_->GetXpathByRectCoords(key_end, m);
+
+    ldomXPointer start  = doc_view_->GetCrDom()->createXPointer(startstr);
+    ldomXPointer end    = doc_view_->GetCrDom()->createXPointer(endstr);
+    int startpage = doc_view_->GetPageForBookmark(start);
+    int endpage = doc_view_->GetPageForBookmark(end);
+
+    LVArray<Hitbox> BookmarkHitboxes;
+    ldomXRange* range;
+
+    // out of selection range
+    if (page < startpage || page > endpage)
+    {
+        //CRLog::trace("Selection out of range");
+        return;
+    }
+    //exactly on one current page
+    if (startpage == page && endpage == page)
+    {
+        range = new ldomXRange(start, end);
+    }
+    //selection goes lower
+    if (startpage == page && endpage > page)
+    {
+        ldomXPointer page_end = doc_view_->GetPageDocRange(page).get()->getEnd();
+        range = new ldomXRange(start, page_end);
+    }
+    //selection goes upper
+    if (startpage < page && endpage == page)
+    {
+        ldomXPointer page_start = doc_view_->GetPageDocRange(page).get()->getStart();
+        range = new ldomXRange(page_start, end);
+    }
+    //selection goes upper and lower
+    if (startpage < page && endpage > page)
+    {
+        ldomXPointer page_start = doc_view_->GetPageDocRange(page).get()->getStart();
+        ldomXPointer page_end = doc_view_->GetPageDocRange(page).get()->getEnd();
+        range = new ldomXRange(page_start, page_end);
+    }
+
+    BookmarkHitboxes = doc_view_->GetPageHitboxes(range,false);
+
+    lString16 result;
+    for (int i = 0; i < BookmarkHitboxes.length(); i++)
+    {
+            result+=BookmarkHitboxes.get(i).text_;
+    }
+    result = result.ReversePrettyLetters();
+    //responseAddString(response,result);
+}
+
+//searches for the specified rectangles on page, returns xpaths if found.
+void CreBridge::processPageXpaths(CmdRequest &request, CmdResponse &response)
+{
+    response.cmd = CMD_RES_XPATH;
+    //response.cmd = CMD_RES_PAGE_TEXT;
+
+    CmdDataIterator iter(request.first);
+    uint8_t *temp_val;
+    iter.getByteArray(&temp_val);
+    if (!iter.isValid())
+    {
+        CRLog::error("processPageXpaths bad request data");
+       // response.result = RES_BAD_REQ_DATA;
+       // return;
+    }
+    const char *val = reinterpret_cast<const char *>(temp_val);
+   // lString16 key_input = lString16(val);
+
+
+   lString16 key_input = lString16("0;"
+                                    "0.103750:0.121875:0.039841:0.062550;"
+                                    "0.103750:0.121875:0.039841:0.062550");
+  /*
+    lString16 key_input = lString16("3;"
+                                    "0.103750:0.120000:0.811155:0.833068");
+   */
+
+    lString16Collection keys;
+    keys.split(key_input,lString16(";"));
+
+    uint32_t external_page = keys.at(0).atoi();
+    lString16 key_start = keys.at(1);
+    lString16 key_end = keys.at(2);
+
+    if(key_start == lString16("-") && key_end == lString16("-"))
+    {
+        responseAddString(response, lString16("-"));
+        responseAddString(response, lString16("-"));
+        return;
+    }
+
+    uint32_t page = (uint32_t) ImportPage(external_page, doc_view_->GetColumns());
+    ldomWordMap m = doc_view_->GetldomWordMapFromPage(page);
+
+    lString16 xp1 = doc_view_->GetXpathByRectCoords(key_start, m);
+    responseAddString(response, xp1);
+    lString16 xp2 = doc_view_->GetXpathByRectCoords(key_end, m);
+    responseAddString(response, xp2);
+
+}
+//returns hitboxes of letters between the specified xpointers
+void CreBridge::processPageRangeText(CmdRequest &request, CmdResponse &response)
+{
+    response.cmd = CMD_RES_RANGE_HITBOX;
+    //response.cmd = CMD_RES_PAGE_TEXT;
+
+    /*CmdDataIterator iter(request.first);
+    uint8_t *temp_val;
+    iter.getByteArray(&temp_val);
+    if (!iter.isValid())
+    {
+        CRLog::error("processPageRangeText bad request data");
+        // response.result = RES_BAD_REQ_DATA;
+        // return;
+    }
+    const char *val = reinterpret_cast<const char *>(temp_val);
+    // lString16 key_input = lString16(val);
+*/
+
+    CmdDataIterator iter(request.first);
+    uint32_t external_page = 0;
+    iter.getInt(&external_page);
+    if (!iter.isValid())
+    {
+        CRLog::error("processPageText bad request data");
+        response.result = RES_BAD_REQ_DATA;
+        return;
+    }
+    uint32_t page = (uint32_t) ImportPage(external_page, doc_view_->GetColumns());
+    doc_view_->GoToPage(page);
+
+    lString16 key_input = lString16("0;"
+                                    "/body/body[1]/p[11]/h6/text().0;"
+                                    "/body/body[1]/p[44]/a/text().1");
+
+    //temp_vals
+    lString16Collection keys;
+    keys.split(key_input,lString16(";"));
+
+   // uint32_t external_page = keys.at(0).atoi();
+    lString16 startstr  = keys.at(1);
+    lString16 endstr    = keys.at(2);
+    ldomXPointer start  = doc_view_->GetCrDom()->createXPointer(startstr);
+    ldomXPointer end    = doc_view_->GetCrDom()->createXPointer(endstr);
+    int startpage = doc_view_->GetPageForBookmark(start);
+    int endpage = doc_view_->GetPageForBookmark(end);
+
+
+    LVArray<Hitbox> BookmarkHitboxes;
+    ldomXRange* range;
+
+    // out of selection range
+    if (page < startpage || page > endpage)
+    {
+        //CRLog::trace("Selection out of range");
+        return;
+    }
+    //exactly on one current page
+    if (startpage == page && endpage == page)
+    {
+        range = new ldomXRange(start, end);
+    }
+    //selection goes lower
+    if (startpage == page && endpage > page)
+    {
+        ldomXPointer page_end = doc_view_->GetPageDocRange(page).get()->getEnd();
+        range = new ldomXRange(start, page_end);
+    }
+    //selection goes upper
+    if (startpage < page && endpage == page)
+    {
+        ldomXPointer page_start = doc_view_->GetPageDocRange(page).get()->getStart();
+        range = new ldomXRange(page_start, end);
+    }
+    //selection goes upper and lower
+    if (startpage < page && endpage > page)
+    {
+        ldomXPointer page_start = doc_view_->GetPageDocRange(page).get()->getStart();
+        ldomXPointer page_end = doc_view_->GetPageDocRange(page).get()->getEnd();
+        range = new ldomXRange(page_start, page_end);
+    }
+
+    BookmarkHitboxes = doc_view_->GetPageHitboxes(range);
+
+    for (int i = 0; i < BookmarkHitboxes.length(); i++)
+    {
+        Hitbox currHitbox = BookmarkHitboxes.get(i);
+        response.addFloat(currHitbox.left_);
+        response.addFloat(currHitbox.top_);
+        response.addFloat(currHitbox.right_);
+        response.addFloat(currHitbox.bottom_);
+        responseAddString(response, currHitbox.text_);
+    }
+
+}
+//returns two (or one) hitboxes of letters for the specified xpointers
+void CreBridge::processPageRects(CmdRequest &request, CmdResponse &response)
+{
+    //response.cmd = CMD_RES_PAGE_TEXT;
+    response.cmd = CMD_RES_XPATH_HITBOX;
+   /* CmdDataIterator iter(request.first);
+    uint8_t *temp_val;
+    iter.getByteArray(&temp_val);
+    if (!iter.isValid())
+    {
+        CRLog::error("processPageRects bad request data");
+        //response.result = RES_BAD_REQ_DATA;
+        //return;
+    }
+    const char *val = reinterpret_cast<const char *>(temp_val);
+    //lString16 str = lString16(val);
+*/
+
+    CmdDataIterator iter(request.first);
+    uint32_t external_page = 0;
+    iter.getInt(&external_page);
+    if (!iter.isValid())
+    {
+        CRLog::error("processPageText bad request data");
+        response.result = RES_BAD_REQ_DATA;
+        return;
+    }
+    uint32_t page = (uint32_t) ImportPage(external_page, doc_view_->GetColumns());
+    doc_view_->GoToPage(page);
+
+    lString16 key_input = lString16("0;"
+                                    "/body/body[1]/p[11]/h6/text().0;"
+                                    "/body/body[1]/p[44]/a/text().1");
+
+    /*lString16 key_input = lString16("0;"
+                                    "/body/body[1]/p[11]/h6/text().0;"
+                                    "/body/body[1]/p[11]/h6/text().0");
+    */
+    lString16Collection keys;
+    keys.split(key_input,lString16(";"));
+
+    // uint32_t external_page = keys.at(0).atoi();
+    lString16 startstr = keys.at(1);
+    lString16 endstr = keys.at(2);
+
+    ldomXPointer xPointer = doc_view_->GetCrDom()->createXPointer(startstr);
+    ldomNode *node = xPointer.getNode();
+    int xPointerPage = doc_view_->GetPageForBookmark(xPointer);
+    int xPointerOffset = xPointer.getOffset() + 1;
+
+    if (xPointerPage == page)
+    {
+        ldomXPointer xPointer2 = ldomXPointer(node, xPointerOffset);
+        ldomXRange *range = new ldomXRange(xPointer, xPointer2);
+
+        Hitbox currHitbox = doc_view_->GetPageHitboxes(range).get(0);
+        response.addFloat(currHitbox.left_);
+        response.addFloat(currHitbox.top_);
+        response.addFloat(currHitbox.right_);
+        response.addFloat(currHitbox.bottom_);
+        responseAddString(response, currHitbox.text_);
+    }
+    if (startstr == endstr)
+    {
+        return;
+    }
+
+    xPointer = doc_view_->GetCrDom()->createXPointer(endstr);
+    node = xPointer.getNode();
+    xPointerPage = doc_view_->GetPageForBookmark(xPointer);
+    xPointerOffset = xPointer.getOffset() - 1;
+
+    if (xPointerPage == page)
+    {
+        ldomXPointer xPointer2 = ldomXPointer(node, xPointerOffset);
+        ldomXRange *range = new ldomXRange(xPointer2, xPointer);
+
+        Hitbox currHitbox = doc_view_->GetPageHitboxes(range).get(0);
+        response.addFloat(currHitbox.left_);
+        response.addFloat(currHitbox.top_);
+        response.addFloat(currHitbox.right_);
+        response.addFloat(currHitbox.bottom_);
+        responseAddString(response, currHitbox.text_);
+    }
+    return;
+}
+
+
+
 
 void CreBridge::processPageLinks(CmdRequest& request, CmdResponse& response)
 {
@@ -487,11 +816,11 @@ void CreBridge::processPageLinks(CmdRequest& request, CmdResponse& response)
     {
         uint16_t target_page = 0;
         Hitbox curr_link = pageLinks.get(i);
-        float l = curr_link._left;
-        float t = curr_link._top;
-        float r = curr_link._right;
-        float b = curr_link._bottom;
-        lString16 href = curr_link._text;
+        float l = curr_link.left_;
+        float t = curr_link.top_;
+        float r = curr_link.right_;
+        float b = curr_link.bottom_;
+        lString16 href = curr_link.text_;
 
         if (href.length() > 1 && href[0] == '#')
         {
@@ -723,6 +1052,15 @@ void CreBridge::process(CmdRequest& request, CmdResponse& response)
         case CMD_REQ_PAGE_TEXT:
             //CRLog::trace("CreBridge: CMD_REQ_PAGE_TEXT");
             processPageText(request, response);
+            break;
+        case CMD_REQ_XPATH:
+            processPageXpaths(request, response);
+            break;
+        case CMD_REQ_RANGE_HITBOX:
+            processPageRangeText(request, response);
+            break;
+        case CMD_REQ_XPATH_HITBOX:
+            processPageRects(request, response);
             break;
         case CMD_REQ_OUTLINE:
             //CRLog::trace("CreBridge: CMD_REQ_OUTLINE");

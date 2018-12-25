@@ -13,6 +13,9 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <crengine/include/lvtextfm.h>
+#include <crengine/include/crconfig.h>
+#include "include/rtlhandler.h"
 #include "include/lvfnt.h"
 #include "include/lvtextfm.h"
 
@@ -696,6 +699,23 @@ public:
         frmline->y = m_y;
         frmline->x = x;
         src_text_fragment_t * lastSrc = m_srcs[start];
+        if (RTL_DISPLAY_ENABLE)
+        {
+            ldomNode *node = (ldomNode *) lastSrc->object;
+            if (node != NULL)
+            {
+                while (node->getParentNode() != NULL)
+                {
+                    if (node->getAttributeValue("dir") == "rtl" || node->getAttributeValue("class") == "rtl")
+                    {
+                        frmline->rtl = true;
+                        //align = LTEXT_ALIGN_RIGHT;
+                        break;
+                    }
+                    node = node->getParentNode();
+                }
+            }
+        }
         int wstart = start;
         bool lastIsSpace = false;
         bool lastWord = false;
@@ -1083,12 +1103,12 @@ public:
                CRLog::trace("up skip left punctuation %s, at index %d", LCSTR(lString16(m_text+endp, 1)), endp);
             } else if (endp > 1 && isCJKPunctuation(*(m_text + endp))) {
                 for (int epos = endp; epos>=start; epos++, downSkipCount++) {
-                    if ( !isCJKPunctuation(*(m_text + epos)) ) 
+                    if ( !isCJKPunctuation(*(m_text + epos)) )
 						break;
                    //CRLog::trace("down skip punctuation %s, at index %d", LCSTR(lString16(m_text + epos, 1)), epos);
                 }
                 for (int epos = endp; epos>=start; epos--, upSkipCount++) {
-                    if ( !isCJKPunctuation(*(m_text + epos)) ) 
+                    if ( !isCJKPunctuation(*(m_text + epos)) )
 						break;
                    //CRLog::trace("up skip punctuation %s, at index %d", LCSTR(lString16(m_text + epos, 1)), epos);
 				}
@@ -1276,6 +1296,56 @@ void DrawBookmarkTextUnderline(LVDrawBuf & drawbuf, int x0, int y0, int x1, int 
     }
 }
 
+
+int getSpaceWidth(LVArray<WordItem> words)
+{
+    if (words.empty())
+    {
+        return -1;
+    }
+    int words_len = words.length();
+    if (words.get(words_len - 1).getText() == " ")
+    {
+        words_len--;
+    }
+    int gaps = 0;
+    int space_counter = 0;
+    int offset = words.get(0).x_;
+    int start = 0;
+    if (words.get(0).getText() == " ")
+    {
+        start++;
+    }
+    for (int i = start; i < words_len; i++)
+    {
+        WordItem curr = words.get(i);
+        if (curr.getText() == " ")
+        {
+            space_counter++;
+            continue;
+        }
+        int left = curr.x_;
+        //CRLog::error("hitbox word left = %d, text = [%s]",left+100,LCSTR(curr.getText()));
+        int width = curr.width_;
+        int gap = left - offset;
+        offset += width + gap;
+        gaps += gap;
+        //CRLog::error("l/r = [%d:X], width = %d, gap = %d , offset = %d gaps = %d, spaces = %d",left,width,gap, offset, gaps, space_counter);
+    }
+
+    if (space_counter > 0)
+    {
+        int spacewidth = gaps / space_counter;
+        //CRLog::error("gaps = %d, space_counter = %d , spacewidth = %d",gaps,space_counter, spacewidth);
+        //CRLog::error("space_counter = %d , spacewidth = %d",space_counter, spacewidth);
+        return spacewidth;
+    }
+    //CRLog::error("gaps = %d, space_counter = %d , spacewidth = -1",gaps,space_counter);
+    //CRLog::error("space_counter = %d , spacewidth = -1",space_counter);
+    return -1;
+}
+
+
 void LFormattedText::Draw( LVDrawBuf * buf, int x, int y, ldomMarkedRangeList * marks, ldomMarkedRangeList *bookmarks )
 {
     int i, j;
@@ -1367,9 +1437,14 @@ void LFormattedText::Draw( LVDrawBuf * buf, int x, int y, ldomMarkedRangeList * 
                 }
             }
 #endif
+            bool printrtl = false;
+            LVArray<WordItem> WordItems;
+            //CRLog::trace(" new line");
             for (j=0; j<frmline->word_count; j++)
             {
                 word = &frmline->words[j];
+                int word_x = x + frmline->x + word->x;
+                //CRLog::trace("word = [%s]",LCSTR(lString16( srcline->t.text + word->t.start,word->t.len)));
                 if (word->flags & LTEXT_WORD_IS_OBJECT)
                 {
                     srcline = &m_pbuffer->srctext[word->src_text_index];
@@ -1410,22 +1485,126 @@ void LFormattedText::Draw( LVDrawBuf * buf, int x, int y, ldomMarkedRangeList * 
                         buf->SetTextColor( cl );
                     if ( bgcl!=0xFFFFFFFF )
                         buf->SetBackgroundColor( bgcl );
-                    font->DrawTextString(
-                        buf,
-                        x + frmline->x + word->x,
-                        line_y + (frmline->baseline - font->getBaseline()) + word->y,
-                        str,
-                        word->t.len,
-                        '?',
-                        NULL,
-                        flgHyphen,
-                        srcline->flags & 0x0F00,
-                        srcline->letter_spacing);
+                    //CRLog::error("x = %d, word->width = %d, ++ = %d",x + frmline->x + word->x,word->width,x + frmline->x + word->x+word->width);
+                    if (!frmline->rtl)
+                    {
+                        font->DrawTextString(buf,
+                                x + frmline->x + word->x,
+                                line_y + (frmline->baseline - font->getBaseline()) + word->y,
+                                str,
+                                word->t.len,
+                                '?',
+                                NULL,
+                                flgHyphen,
+                                srcline->flags & 0x0F00,
+                                srcline->letter_spacing,
+                                false);
+                    }
+                    else //rtl
+                    {
+                        printrtl = true;
+                        //CRLog::error("word start = %d, len = %d",word->t.start,word->t.len);
+                        //CRLog::error("str = [%s]",LCSTR(lString16(str,word->t.len)));
+                        int start = 0;
+                        bool last_space = false;
+                        bool last_punct = false;
+                        bool last_state = char_isRTL(str[0]);
+                        int width = 0;
+                        int fullwidth = 0;
+                        int offset = x + frmline->x + word->x;
+                        for (int c = 0; c < word->t.len; c++)
+                        {
+                            lChar16 ch = str[c];
+                            bool is_space = ch == ' ';
+                            bool is_punct = char_isPunct(ch);
+                            bool curr_state;
+                            int ch_width = font->getCharWidth(ch);
+
+                            if(is_space)
+                            {
+                                curr_state = last_state;
+                            }
+                            else if(is_punct)
+                            {
+                                curr_state = (last_space)? false : last_state ;
+                            }
+                            else
+                            {
+                                curr_state = char_isRTL(ch);
+                            }
+
+                            bool break_char = (is_space || last_space || is_punct || last_punct);
+                            if (curr_state != last_state || break_char)
+                            {
+                                int len = c-start;
+                                if(len>0)
+                                {
+                                    WordItem wordItem(
+                                            offset,
+                                            line_y + (frmline->baseline - font->getBaseline()) + word->y,
+                                            str + start,
+                                            len,
+                                            false,
+                                            srcline,
+                                            last_state,
+                                            width);
+                                    //CRLog::error("fmt word = [%s], x = %d , orig x = %d, width = %d",LCSTR(lString16(str+start,len)),offset,x + frmline->x + word->x,width);
+                                    WordItems.add(wordItem);
+                                    start = c;
+                                    fullwidth += width;
+                                    offset += width;
+                                    width = 0;
+                                }
+                            }
+                            last_state = curr_state;
+                            last_space = is_space;
+                            last_punct = is_punct;
+                            width += ch_width;
+                        }
+
+                        int len = word->t.len - start;
+                        //CRLog::error("word->width = %d, fullwidth = %d, width = %d, last_space = %d",word->width,fullwidth,width,(int)last_space);
+                        lString16(str+start,len);
+                        width = (last_space)? word->width - fullwidth : width ;
+                        //CRLog::error("width after = %d",width);
+                        WordItem wordItem(
+                                offset,
+                                line_y + (frmline->baseline - font->getBaseline()) + word->y,
+                                str + start,
+                                len,
+                                false,
+                                srcline,
+                                last_state,
+                                width);
+                        //CRLog::error("fmt word = [%s], x = %d , orig x = %d, width = %d",LCSTR(lString16(str+start,len)),offset,x + frmline->x + word->x,width);
+                        WordItems.add(wordItem);
+                    }
                     if ( cl!=0xFFFFFFFF )
                         buf->SetTextColor( oldColor );
                     if ( bgcl!=0xFFFFFFFF )
                         buf->SetBackgroundColor( oldBgColor );
                 }
+            }
+            //CRLog::error("new rtl flagged line");
+
+            if (printrtl)
+            {
+                //for (int w = 0; w < WordItems.length(); w++)
+                //{
+                //    WordItem curr = WordItems.get(w);
+                //    CRLog::error("fmt left = %d, text = [%s]",curr.x_,LCSTR(curr.getText()));
+                //}
+
+                int space_width = getSpaceWidth(WordItems);
+                if(space_width == -1)
+                {
+                    space_width = font->getCharWidth(' ');
+                }
+                if (WordItems.get(WordItems.length() - 1).getText().lastChar() == ' ')
+                {
+                    WordItems.remove(WordItems.length() - 1);
+                }
+                PrintRTL(WordItems, buf, font, space_width);
             }
 
 #ifdef CR_USE_INVERT_FOR_SELECTION_MARKS

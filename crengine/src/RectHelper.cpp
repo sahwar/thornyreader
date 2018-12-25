@@ -329,6 +329,23 @@ void RectHelper::ResetLineIndex()
     LineIndex_ = NodeLineIndex_;
 }
 
+lvRect RectHelper::getRect(ldomWord word, bool init)
+{
+    if(init)
+    {
+        Init(word.getNode());
+    }
+    return getRect(word);
+}
+
+lvRect RectHelper::getRect(ldomXPointer xPointer)
+{
+    Init(xPointer.getNode());
+    lvRect rect;
+    processRect(xPointer,rect);
+    return rect;
+}
+
 lvRect RectHelper::getRect(ldomWord word)
 {
     #if DEBUG_GETRECT_LOGS

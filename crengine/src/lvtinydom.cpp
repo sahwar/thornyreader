@@ -18,6 +18,7 @@
 #include "include/lvrend.h"
 #include "include/crconfig.h"
 #include "include/RectHelper.h"
+#include "include/rtlhandler.h"
 
 /// Data compression level (0=no compression, 1=fast compressions, 3=normal compression)
 #ifndef DOC_DATA_COMPRESSION_LEVEL
@@ -2708,7 +2709,16 @@ void LvDomWriter::OnText(const lChar16 * text, int len, lUInt32 flags) {
              && IsEmptySpace(text, len)  && !(flags & TXTFLG_PRE))
              return;
         if (_currNode->_allowText)
-            _currNode->onText( text, len, flags );
+        {
+            if (this->RTLflag_ && RTL_DISPLAY_ENABLE)
+            {
+                _currNode->onText(lString16(text).PrepareRTL().c_str(), len, flags);
+            }
+            else
+            {
+                _currNode->onText(text, len, flags);
+            }
+        }
     }
 }
 
@@ -5570,13 +5580,13 @@ void ldomXRange::getRangeWords(LVArray<ldomWord>& words_list) {
     forEach2(&collector);
 }
 
-
 /// get all words from specified range
-void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
+void ldomXRange::getRangeChars(LVArray<TextRect>& words_list,int clip_width, bool rtl_enable ) {
     class WordsCollector : public ldomNodeCallback {
-        LVArray<TextRect>& list_;
     public:
-        WordsCollector(LVArray<TextRect>& list) : list_(list) {}
+        LVArray<TextRect> list_;
+        bool contains_rtl = false;
+        WordsCollector() {}
         RectHelper* rectHelper_ = new RectHelper();
 
         bool AllowTextNodeShift(ldomNode* node)
@@ -5650,6 +5660,16 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
             }
             ldomNode* parent_node = node->getParentNode();
 
+            ldomNode* parent_temp= parent_node;
+            while (parent_temp != NULL)
+            {
+                if (parent_temp->getAttributeValue("dir") == "rtl" || parent_temp->getAttributeValue("class") == "rtl")
+                {
+                    this->contains_rtl = true;
+                    break;
+                }
+                parent_temp = parent_temp->getParentNode();
+            }
             lString16 text = node->getText();
             //CRLog::error("node [%s]",LCSTR(node->getXPath()));
             //CRLog::error("Text[%s]",LCSTR(text));
@@ -5701,7 +5721,7 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
                     lString16 string = word.getText();
                     rect.left = rect.left - leftshift + gTextLeftShift;
                     rect.right = rect.right - leftshift + gTextLeftShift -1;
-                    list_.add(TextRect(node, rect, string));
+                    list_.add(TextRect(node, rect, string, word));
                 }
                 //last char zero width fix
                 ldomWord word = ldomWord(node, len - 1, len);
@@ -5709,7 +5729,7 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
                 lString16 string = word.getText();
                 rect.left = rect.left - leftshift + gTextLeftShift;
                 rect.right = rect.right + gTextLeftShift-1;
-                list_.add(TextRect(node, rect, string));
+                list_.add(TextRect(node, rect, string,word));
             }
             else
             {
@@ -5743,7 +5763,7 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
                     lString16 string = word.getText();
                     rect.left = rect.left + gTextLeftShift;
                     rect.right = rect.right + gTextLeftShift-1;
-                    list_.add(TextRect(node, rect, string));
+                    list_.add(TextRect(node, rect, string, word));
                 }
             }
         }
@@ -5770,8 +5790,17 @@ void ldomXRange::getRangeChars(LVArray<TextRect>& words_list) {
             return true;
         }
     };
-    WordsCollector collector(words_list);
-    return forEach2(&collector);
+    WordsCollector collector;
+    forEach2(&collector);
+    if( RTL_DISPLAY_ENABLE && collector.contains_rtl && rtl_enable )
+    {
+        words_list = RTL_mix(collector.list_,clip_width);
+    }
+    else
+    {
+        words_list = collector.list_;
+    }
+    return;
 }
 
 /*ALPHACHECK*/
@@ -7423,6 +7452,24 @@ int ldomNode::getAttrCount() const
             return me->attrCount;
         }
     }
+}
+
+bool ldomNode::isRTL()
+{
+    if (this == NULL)
+    {
+        return false;
+    }
+    ldomNode* node = this;
+    while (node->getParentNode() != NULL)
+    {
+        if (node->getAttributeValue("dir") == "rtl" || node->getAttributeValue("class") == "rtl")
+        {
+            return true;
+        }
+        node = node->getParentNode();
+    }
+    return false;
 }
 
 /// returns attribute value by attribute name id and namespace id

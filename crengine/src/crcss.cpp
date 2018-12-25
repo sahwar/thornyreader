@@ -370,6 +370,15 @@ sup a[type="note"] {
   text-decoration: none;
 }
 
+p[dir="rtl"], html[dir="rtl"], body[dir="rtl"], div[dir="rtl"], .rtl  {
+  display: block;
+  hyphenate: none;
+}
+
+.center{
+text-align: center;
+}
+
 annotation {
   display: block;
   font-size: 80%;

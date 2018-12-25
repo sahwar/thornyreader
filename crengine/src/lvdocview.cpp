@@ -797,6 +797,14 @@ void LVDocView::DrawPageTo(LVDrawBuf *drawbuf, LVRendPageInfo &page, lvRect *pag
 				fny + 1,
 				cl);
 	}
+    if (DEBUG_DRAW_CLIP_REGION == 1)
+    {
+        lUInt32 cl = drawbuf->GetTextColor();
+        cl = (cl & 0xFFFFFF) | (0x55000000);
+        drawbuf->FillRect(
+                clip,
+                cl);
+    }
 	drawbuf->SetClipRect(NULL);
 }
 
@@ -1847,6 +1855,11 @@ LVRef<ldomXRange> LVDocView::GetPageDocRange(int page_index)
 		{
 			page_index = GetCurrPage();
 		}
+		if(pages_list_.empty())
+		{
+			CRLog::error("Fatal error: no pages in pages list found!");
+			return res;
+		}
 		LVRendPageInfo *page = pages_list_[page_index];
 		if (page->type != PAGE_TYPE_NORMAL)
 		{
@@ -1904,7 +1917,7 @@ LVArray<TextRect> LVDocView::GetPageFootnotesText(int page, bool rightpage)
 	LVArray<FootNoteInfo>  fnotes = this->pages_list_.get(page)->footnotes_info;
 	if (fnotes.empty())
 	{
-		CRLog::trace("No footnotes on page %d",page);
+		//CRLog::trace("No footnotes on page %d",page);
 		return result;
 	}
 
@@ -1931,7 +1944,9 @@ LVArray<TextRect> LVDocView::GetPageFootnotesText(int page, bool rightpage)
     //CRLog::error("xp2 node = %s",LCSTR(xp2.getNode()->getXPath()));
 	ldomXRange range = ldomXRange(xp1, xp2);
 	LVArray<TextRect> word_chars;
-	range.getRangeChars(word_chars);
+	int width = (this->page_columns_==1)?this->GetWidth() : this->GetWidth()/2;
+    int line_width = width - this->cfg_margins_.left - this->cfg_margins_.right;
+	range.getRangeChars(word_chars,line_width);
 
 
 	if (word_chars.empty())
@@ -2004,7 +2019,7 @@ LVArray<TextRect> LVDocView::GetPageFootnotesLinks(int page, bool rightpage)
 			continue;
 		}
 
-		word.setString(href);
+		word.setText(href);
 		link_list.add(word);
 	}
 
@@ -3353,7 +3368,7 @@ LVArray<ImgRect> LVDocView::GetPageImages(image_display_t type)  //display type 
 	return result;
 }
 
-LVArray<Hitbox> LVDocView::GetPageHitboxes()
+LVArray<Hitbox> LVDocView::GetPageHitboxes(ldomXRange* in_range, bool rtl_enable)
 {
 	//CRLog::trace("GETPAGEHITBOXES start");
     LVArray<Hitbox> result;
@@ -3371,17 +3386,27 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
             footnotesheightr = footnotesheightr + pages_list_[this->page_+1]->footnotes[fn].height;
         }
     }
-    LVArray<lvRect> para_array = this->GetPageParaEnds();
 
 #if DEBUG_DRAW_IMAGE_HITBOXES
     LVArray<ImgRect> images_array = this->GetPageImages();
 #else
-    LVArray<ImgRect> images_array = this->GetPageImages(img_inline);
+	LVArray<ImgRect> images_array = this->GetPageImages(img_inline);
 #endif //DEBUG_DRAW_IMAGE_HITBOXES
+	lvRect margins = this->cfg_margins_;
+	LVArray<lvRect> para_array;
+	ldomXRange pagerange;
+	if(in_range->isNull())
+    {
+    	//allow paraends when full range
+	    para_array = this->GetPageParaEnds();
 
-    LVRef<ldomXRange> range = this->GetPageDocRange();
-    lvRect margins = this->cfg_margins_;
-    ldomXRange text = *range;
+	    LVRef<ldomXRange> range = this->GetPageDocRange();
+	    pagerange= *range;
+    }
+	else
+	{
+		pagerange = *in_range;
+	}
 
     int strheight_last = 0;
     int para_counter = 0;
@@ -3393,12 +3418,16 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
 
     LVArray<TextRect> word_chars;
     //CRLog::trace("RANGECHARS start");
-    text.getRangeChars(word_chars);
+    int width = (this->page_columns_==1)?this->GetWidth() : this->GetWidth()/2;
+    int line_width =  width - margins.left - margins.right;
+    pagerange.getRangeChars(word_chars,line_width,rtl_enable);
+
     //CRLog::trace("RANGECHARS end");
     for (int i = 0; i < word_chars.length(); ++i)
     {
-        lString16 word = word_chars.get(i).getText();
-        //CRLog::error("letter = %s",LCSTR(word));
+	    ldomWord word = word_chars.get(i).getWord();
+        lString16 text = word_chars.get(i).getText();
+        //CRLog::error("letter = %s",LCSTR(text));
         lvRect rect = word_chars.get(i).getRect();
         ldomNode* node = word_chars.get(i).getNode();
         int strheight_curr = rect.bottom - rect.top;
@@ -3459,7 +3488,7 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
             img_counter++;
             if (rect.top == img_rect.top)
             {
-                //CRLog::error("letter       = %s",LCSTR(word));
+                //CRLog::error("letter       = %s",LCSTR(text));
                 //CRLog::error("rect.bottom     = %d",rect.bottom);
                 //CRLog::error("img_rect.bottom = %d",img_rect.bottom);
                 if (rect.bottom-strheight_curr < img_rect.bottom)
@@ -3486,19 +3515,25 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
 	        float r = pre_r / page_width;
 	        float t = rect.top / page_height;
 	        float b = (rect.top + strheight_last) / page_height;
-	        //word=word+lString16("+00");
+
+	        //l = rect.left    / page_width;
+	        //r = rect.right   / page_width;
+	        //t = rect.top     / page_height;
+	        //b = rect.bottom  / page_height;
+
+	        //text=text+lString16("+00");
             // на случай второго переноса в stanza
 	        int rightzone = (this->GetColumns()==1)? (GetWidth()*3/4) : (GetWidth()*7/8);
             if(rect.left > rightzone)
             {
                 l = rect.left / page_width;
-                //word=word+lString16("+001");
+                //text=text+lString16("+001");
             }
 
             //инлайновые изображения
             if (rect.top == img_top && word_chars.length() > i + 1)
             {
-                int charwidth = font->getCharWidth(word.firstChar());
+                int charwidth = font->getCharWidth(text.firstChar());
                 int height = node->getParentNode()->getStyle().get()->font_size.value;
                 height = height + (height / 4);
                 l = rect.left / page_width;
@@ -3510,10 +3545,10 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
                 DocToWindowRect(lastrect);
                 lvRect nextrect = word_chars.get(i + 1).getRect();
                 DocToWindowRect(nextrect);
-	            //word=word+lString16("+0");
+	            //text=text+lString16("+0");
                 if (nextrect.top > img_top) //последний символ в строке с инлайновым изображением
                 {
-                    //word=word+lString16("+1");
+                    //text=text+lString16("+1");
                     l = (rect.left)    / page_width;
                     r = (rect.right)   / page_width;
                     t = (lastrect.bottom - height) / page_height;
@@ -3521,21 +3556,21 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
 
                     if(rect.left <= img_left)
                     {
-	                    //   word=word+lString16("+2");
+	                    //   text=text+lString16("+2");
                         l = (rect.right) / page_width;
                         r = pre_r / page_width;
                     }
 
                     if(rect.right <= img_right)
                     {
-	                    //   word=word+lString16("+3");
+	                    //   text=text+lString16("+3");
                         l = rect.right / page_width;
                         r = rect.left / page_width;
                     }
 
                     if (lastrect.top != img_top ) //первый И последний символ в строке с инлайновым изображением
                     {
-	                    //    word=word+lString16("+4");
+	                    //    text=text+lString16("+4");
                         l = (rect.left)    / page_width;
                         r = (rect.right)   / page_width;
                         b = (nextrect.top) / page_height;
@@ -3551,8 +3586,8 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
 		        b = (rect.top + 10) / page_height;
 	        }
 
-	        //CRLog::error("linebreak letter = %s",LCSTR(word));
-	        Hitbox *hitbox = new Hitbox(l, r, t, b, word);
+	        //CRLog::error("linebreak letter = %s",LCSTR(text));
+	        Hitbox *hitbox = new Hitbox(l, r, t, b, text, word);
 	        result.add(*hitbox);
         }
         else
@@ -3564,12 +3599,12 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
             else
             {
                 #ifdef TRDEBUG
-                //CRLog::error("invalid character [%s] %x : too short height!",LCSTR(word),word.firstChar());
+                //CRLog::error("invalid character [%s] %x : too short height!",LCSTR(text),text.firstChar());
                 #endif
                 continue;
             }
             // filling between-nodes empty space (right direction)
-            if(word == " " && word_chars.length() > i + 1)
+            if(text == " " && word_chars.length() > i + 1)
             {
                 lvRect nextrect = word_chars.get(i + 1).getRect();
                 DocToWindowRect(nextrect);
@@ -3579,7 +3614,7 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
                 }
             }
             // filling between-nodes empty space (left direction)
-            if(word == " " && i > 0)
+            if(text == " " && i > 0)
             {
                 lvRect lastrect = word_chars.get(i - 1 ).getRect();
                 DocToWindowRect(lastrect);
@@ -3592,10 +3627,10 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
             float t = rect.top / page_height;
             float r = rect.right / page_width;
             float b = rect.bottom / page_height;
-	        //word=word+lString16("+01");
+	        //text=text+lString16("+01");
             if (rect.top == img_top && word_chars.length() > i + 1)
             {
-	            //	word=word+lString16("+11");
+	            //	text=text+lString16("+11");
                 int charheight = node->getParentNode()->getStyle().get()->font_size.value;
                 charheight = charheight + (charheight / 4);
                 l = rect.left / page_width;
@@ -3607,8 +3642,8 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
                 DocToWindowRect(nextrect);
                 if (nextrect.top > img_top) //последний символ в строке с инлайновым изображением
                 {
-                    //word = word + lString16("+12");
-                    int charwidth = font->getCharWidth(word.firstChar());
+                    //text = text + lString16("+12");
+                    int charwidth = font->getCharWidth(text.firstChar());
                     l = (rect.right)                / page_width;
                     r = (rect.right + charwidth)    / page_width;
                     t = (nextrect.top - charheight) / page_height;
@@ -3616,9 +3651,10 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes()
                 }
             }
 
-            //CRLog::error("usual letter = %s rect [%f:%f]:[%f:%f]", LCSTR(word),l*page_width,t*page_height,r*page_width,b*page_height);
+            //CRLog::error("usual letter = %s rect [%f:%f]:[%f:%f]", LCSTR(text),l*page_width,t*page_height,r*page_width,b*page_height);
+            //CRLog::error("usual letter = %s rect %d;%f:%f:%f:%f", LCSTR(text),page_,l,r,t,b);
 
-            Hitbox *hitbox = new Hitbox(l, r, t, b, word);
+            Hitbox *hitbox = new Hitbox(l, r, t, b, text, word);
             result.add(*hitbox);
         }
     }
@@ -3702,3 +3738,62 @@ LVArray<Hitbox> LVDocView::GetPageLinks()
 	return result;
  }
 font_ref_t LVDocView::GetBaseFont() { return base_font_; };
+
+lString16 LVDocView::GetHitboxHash(float l,float r,float t,float b)
+{
+	lString16 result;
+	result<<std::to_string(l).c_str();
+	result<<":";
+	result<<std::to_string(r).c_str();
+	result<<":";
+	result<<std::to_string(t).c_str();
+	result<<":";
+	result<<std::to_string(b).c_str();
+	return result;
+}
+
+ldomWord LVDocView::FindldomWordFromMap(ldomWordMap m, lString16 key)
+{
+	lUInt32 in_key = key.getHash();
+	ldomWord result;
+	if (m.find(in_key) != m.end())
+	{
+		result = m.at(in_key);
+	}
+	return result;
+}
+
+ldomWordMap LVDocView::GetldomWordMapFromPage(int page)
+{
+	ldomWordMap m;
+
+	this->GoToPage(page);
+
+	LVArray<Hitbox> hitboxes = this->GetPageHitboxes();
+	for (int i = 0; i < hitboxes.length(); i++)
+	{
+		Hitbox curr = hitboxes.get(i);
+		lUInt32 key = GetHitboxHash(curr.left_,curr.right_,curr.top_,curr.bottom_).getHash();
+		m[key] = curr.word_;
+	}
+	return m;
+}
+
+lString16 LVDocView::GetXpathByRectCoords(lString16 key, ldomWordMap m)
+{
+	if (key == lString16("-"))
+	{
+		return lString16("-");
+	}
+	else
+	{
+		ldomWord word = this->FindldomWordFromMap(m, key);
+		if (word.isNull())
+		{
+			return lString16("-");
+		}
+		ldomXPointer xPointer = word.getStartXPointer();
+		return xPointer.toString();
+		///CRLog::error("xpointer1 for key [%d__%s] = [%s]",page,LCSTR(key_start),LCSTR(xPointer.toString()));
+	}
+}

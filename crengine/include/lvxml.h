@@ -44,6 +44,8 @@ class LvXMLParserCallback {
 protected:
     LVFileFormatParser * _parser;
 public:
+    virtual bool getRTLflag() { return 0;}
+    virtual void setRTLflag(bool RTLflag) { }
     /// returns flags
     virtual lUInt32 getFlags() { return 0; }
     /// sets flags
@@ -375,7 +377,7 @@ public:
     //docx tags to filter initialization
     void initDocxTagsFilter();
 
-    bool ReadTextToString(lString16 &output, bool write_to_tree);
+    bool ReadTextToString(lString16 &output, bool write_to_tree, bool rtl_force_check = false);
 
     void setLinksMap(LinksMap LinksMap);
 

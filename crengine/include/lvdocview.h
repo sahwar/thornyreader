@@ -15,7 +15,9 @@
 #include "lvptrvec.h"
 #include "bookmark.h"
 #include "StProtocol.h"
+#include "crconfig.h"
 
+typedef std::map<int, ldomWord> ldomWordMap;
 /// document view mode: pages/scroll
 enum LVDocViewMode
 {
@@ -64,19 +66,30 @@ public:
 class Hitbox
 {
 public:
-    float _left;
-    float _right;
-    float _top;
-    float _bottom;
-    lString16 _text;
+    float left_;
+    float right_;
+    float top_;
+    float bottom_;
+    lString16 text_;
+    ldomWord word_;
     Hitbox() {};
     Hitbox(float left, float right, float top, float bottom, lString16 text)
     {
-        _left = left;
-        _right = right;
-        _top = top;
-        _bottom = bottom;
-        _text = text;
+        left_ = left;
+        right_ = right;
+        top_ = top;
+        bottom_ = bottom;
+        text_ = text;
+    };
+
+    Hitbox(float left, float right, float top, float bottom, lString16 text, ldomWord word)
+    {
+        left_ = left;
+        right_ = right;
+        top_ = top;
+        bottom_ = bottom;
+        text_ = text;
+        word_ = word;
     };
     ~Hitbox(){};
     void TrHitboxesArrayModify()
@@ -262,12 +275,17 @@ public:
     };
     LVArray<Hitbox> GetPageLinks();
     //returns array of Hitbox objects that contain hitbox info about characters on current docview page
-    LVArray<Hitbox> GetPageHitboxes();
+    LVArray<Hitbox> GetPageHitboxes(ldomXRange *in_range = NULL, bool rtl_enable = true);
     //returns array of lvRects, that contains info about image location on current docview page
     LVArray<ImgRect> GetPageImages(image_display_t type=img_all);
     //rewrites imgheight and imgwidth to corresponding values of scaled image.
     void GetImageScaleParams(ldomNode *node, int &imgheight, int &imgwidth);
     font_ref_t GetBaseFont();
+
+    lString16   GetHitboxHash(float l,float r,float t,float b);
+    ldomWord    FindldomWordFromMap(ldomWordMap m, lString16 key);
+    ldomWordMap GetldomWordMapFromPage(int page);
+    lString16 GetXpathByRectCoords(lString16 key, ldomWordMap m);
 
     LVDocView();
     ~LVDocView();

@@ -141,6 +141,7 @@ typedef struct
    lUInt16            baseline;    /**< baseline y offset */
    lUInt8             flags;       /**< flags */
    lUInt8             align;       /**< alignment */
+   bool               rtl;
 } formatted_line_t;
 
 /** \brief Bookmark highlight modes.

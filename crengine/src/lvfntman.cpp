@@ -1415,9 +1415,7 @@ public:
     }
 
     /// draws text string
-    virtual void DrawTextString( LVDrawBuf * buf, int x, int y,
-                       const lChar16 * text, int len,
-                       lChar16 def_char, lUInt32 * palette, bool addHyphen, lUInt32 flags, int letter_spacing )
+    virtual void DrawTextString(LVDrawBuf *buf, int x, int y, const lChar16 *text, int len, lChar16 def_char, lUInt32 *palette, bool addHyphen, lUInt32 flags, int letter_spacing, bool reverse)
     {
         if ( len <= 0 || _face==NULL )
             return;
@@ -1446,7 +1444,15 @@ public:
             if ( i==len && (!addHyphen || isHyphen) )
                 break;
             if ( i<len ) {
-                ch = text[i];
+                //ch = text[i];
+                ch = (reverse)? text[len-1-i] : text[i];
+                if(reverse)
+                {
+                if ( ch == ']' ) { ch = '['; } else if ( ch == '[' ){ ch = ']';}
+                if ( ch == '}' ) { ch = '{'; } else if ( ch == '{' ){ ch = '}';}
+                if ( ch == ')' ) { ch = '('; } else if ( ch == '(' ){ ch = ')';}
+                }
+
                 if ( ch=='\t' )
                     ch = ' ';
                 isHyphen = (ch==UNICODE_SOFT_HYPHEN_CODE) && (i<len-1);
@@ -1826,10 +1832,7 @@ public:
     }
 
     /// draws text string
-    virtual void DrawTextString( LVDrawBuf * buf, int x, int y,
-                       const lChar16 * text, int len,
-                       lChar16 def_char, lUInt32 * palette, bool addHyphen,
-                       lUInt32 flags=0, int letter_spacing=0 )
+    virtual void DrawTextString(LVDrawBuf *buf, int x, int y, const lChar16 *text, int len, lChar16 def_char, lUInt32 *palette, bool addHyphen, lUInt32 flags, int letter_spacing, bool reverse)
     {
         if ( len <= 0 )
             return;
@@ -1853,7 +1856,14 @@ public:
             if ( i==len && (!addHyphen || isHyphen) )
                 break;
             if ( i<len ) {
-                ch = text[i];
+                //ch = text[i];
+                ch = (reverse)? text[len-1-i] : text[i];
+                if(reverse)
+                {
+                    if ( ch == ']' ) { ch = '['; CRLog::error("char replaced"); } else if ( ch == '[' ){ ch = ']';CRLog::error("char replaced");}
+                    if ( ch == '}' ) { ch = '{'; CRLog::error("char replaced"); } else if ( ch == '{' ){ ch = '}';CRLog::error("char replaced");}
+                    if ( ch == ')' ) { ch = '('; CRLog::error("char replaced"); } else if ( ch == '(' ){ ch = ')';CRLog::error("char replaced");}
+                }
                 isHyphen = (ch==UNICODE_SOFT_HYPHEN_CODE) && (i<len-1);
             } else {
                 ch = UNICODE_SOFT_HYPHEN_CODE;
@@ -2129,6 +2139,8 @@ public:
             if (temp.pos("Emoji")!=-1)
             {continue;}
             if (temp.pos("AndroidClock")!=-1)
+            {continue;}
+            if (temp.pos("tahoma")!=-1)
             {continue;}
             /*if (temp.pos("Noto")!=-1)  // Noto family is preferred
             {
