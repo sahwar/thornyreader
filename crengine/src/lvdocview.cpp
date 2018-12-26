@@ -3419,8 +3419,8 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes(ldomXRange* in_range, bool rtl_enable
     LVArray<TextRect> word_chars;
     //CRLog::trace("RANGECHARS start");
     int width = (this->page_columns_==1)?this->GetWidth() : this->GetWidth()/2;
-    int line_width =  width - margins.left - margins.right;
-    pagerange.getRangeChars(word_chars,line_width,rtl_enable);
+    int clip_width =  width - margins.left - margins.right;
+    pagerange.getRangeChars(word_chars,clip_width,rtl_enable);
 
     //CRLog::trace("RANGECHARS end");
     for (int i = 0; i < word_chars.length(); ++i)
@@ -3452,9 +3452,22 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes(ldomXRange* in_range, bool rtl_enable
                 float r = (para_rect.right + (strheight_curr * 2)) / page_width;
                 float t = (para_rect.top + 10) / page_height;
                 float b = (para_rect.bottom - 10) / page_height;
-				#else
-			    float l = para_rect.right / page_width;
-			    float r = (para_rect.right + (strheight_curr / 4)) / page_width;
+                #else
+                float l = para_rect.right / page_width;
+                float r = (para_rect.right + (strheight_curr / 4)) / page_width;
+			    if (i >= 1)
+			    {
+				    ldomNode *last_node = word_chars.get(i - 1).getNode();
+				    if (last_node->isRTL() || node->isRTL())
+				    {
+					    int startx = para_rect.left;
+					    int leftspace = startx - margins.left;
+					    startx = (margins.left + clip_width) - leftspace - (strheight_curr/4);
+
+					    r = startx / page_width;
+					    l = (startx + (strheight_curr / 4)) / page_width;
+				    }
+			    }
 			    float t = para_rect.top / page_height;
 			    float b = para_rect.bottom / page_height;
 			    #endif // DEBUG_PARA_END_BLOCKS
