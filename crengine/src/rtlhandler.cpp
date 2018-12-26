@@ -530,7 +530,6 @@ LVArray<TextRect> reverseLine(TextRectGroup group, int clip_width)
 
     if (line.empty())
     {
-        CRLog::error("Line is empty.");
         return result;
     }
     //CRLog::error("line length = %d",line.length());
