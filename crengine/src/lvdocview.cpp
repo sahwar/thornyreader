@@ -3688,6 +3688,25 @@ LVArray<Hitbox> LVDocView::GetPageHitboxes(ldomXRange* in_range, bool rtl_enable
 				#else
                 float l = rect.right / page_width;
                 float r = (rect.right + (strheight_last / 4)) / page_width;
+	            if (word_chars.length()>=1)
+	            {
+                    int counter = word_chars.length() - 1;
+                    ldomNode *last_node = word_chars.get(counter).getNode();
+                    while (last_node == NULL && counter >= 0)
+                    {
+                        last_node = word_chars.get(counter).getNode();
+                        counter--;
+                    }
+                    if (last_node->isRTL())
+		            {
+			            int startx = rect.right;
+			            int leftspace = startx - margins.left;
+			            startx = (margins.left + clip_width) - leftspace - (strheight_last/4);
+
+			            r = startx / page_width;
+			            l = (startx + (strheight_last / 4)) / page_width;
+		            }
+	            }
                 float t = rect.top / page_height;
                 float b = rect.bottom / page_height;
 				#endif // DEBUG_PARA_END_BLOCKS
