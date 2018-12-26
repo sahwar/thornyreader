@@ -266,6 +266,10 @@ LVArray<TextRectGroup> reverseWordsOrder(LVArray<TextRectGroup> words, int space
         }
     }
     int startx = first_rect.left;
+    if(gFlgFloatingPunctuationEnabled)
+    {
+        startx = startx-(font->getVisualAligmentWidth()/2);
+    }
 
     int leftspace = startx ; // startx - margin.left = startx - 0 = startx
     int rightspace = clip_width - (startx + linewidth);
