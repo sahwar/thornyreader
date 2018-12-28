@@ -266,6 +266,10 @@ LVArray<TextRectGroup> reverseWordsOrder(LVArray<TextRectGroup> words, int space
         }
     }
     int startx = first_rect.left;
+    if(gFlgFloatingPunctuationEnabled)
+    {
+        startx = startx-(font->getVisualAligmentWidth()/2);
+    }
 
     int leftspace = startx ; // startx - margin.left = startx - 0 = startx
     int rightspace = clip_width - (startx + linewidth);
@@ -530,7 +534,6 @@ LVArray<TextRect> reverseLine(TextRectGroup group, int clip_width)
 
     if (line.empty())
     {
-        CRLog::error("Line is empty.");
         return result;
     }
     //CRLog::error("line length = %d",line.length());
@@ -639,6 +642,10 @@ LVArray<TextRect> reverseLine(TextRectGroup group, int clip_width)
         for (int j = 0; j < words.get(i).list_.length(); j++)
         {
             TextRect curr = words.get(i).list_.get(j);
+            if(char_isRTL(curr.getText().firstChar()))
+            {
+                curr.setText(lString16("\a"));
+            }
             result.add(curr);
         }
     }
@@ -683,6 +690,10 @@ void trimLastSpace(TextRectGroup *line)
 TextRect getZeroTxRect(TextRectGroup *line)
 {
     TextRect result;
+    if(line->list_.empty())
+    {
+        return result;
+    }
     TextRect first = line->list_.get(0);
     int firstleft = first.getRect().left;
     LVFont * font = first.getNode()->getParentNode()->getFont().get();
@@ -742,21 +753,34 @@ LVArray<TextRect> RTL_mix(LVArray<TextRect> in_list,int clip_width)
 
     for (int l = 0; l < lines.length(); l++)
     {
-        if(lines[l].is_rtl_ && lines[l].checkLineRTL())
+        if(lines[l].is_rtl_)// && lines[l].checkLineRTL())
         {
             trimFirstSpace(&lines[l]);
             trimLastSpace(&lines[l]);
             //CRLog::trace("reverse line text = [%s]",LCSTR(lines[l].getText()));
             lines[l].list_ = reverseLine(lines[l],clip_width);
 
+        }
+        if(lines[l].is_rtl_)
+        {
+            //reverse addition to result for rtl lines
+            for (int c = lines[l].list_.length() -1 ; c >= 0 ; c--)
+            {
+                result_list.add(lines[l].list_.get(c));
+            }
             TextRect space;
             space = getZeroTxRect(&lines[l]);
             result_list.add(space);
         }
-        for (int c = 0; c < lines[l].list_.length(); c++)
+        else
         {
-            TextRect curr = lines[l].list_.get(c);
-            result_list.add(curr);
+           // TextRect space;
+           // space = getZeroTxRect(&lines[l]);
+           // result_list.add(space);
+            for (int c = 0; c < lines[l].list_.length(); c++)
+            {
+                result_list.add(lines[l].list_.get(c));
+            }
         }
     }
     return result_list;

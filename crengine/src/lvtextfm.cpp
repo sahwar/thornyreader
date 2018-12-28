@@ -709,6 +709,7 @@ public:
                     if (node->getAttributeValue("dir") == "rtl" || node->getAttributeValue("class") == "rtl")
                     {
                         frmline->rtl = true;
+                        visualAlignmentEnabled = false;
                         //align = LTEXT_ALIGN_RIGHT;
                         break;
                     }
@@ -983,11 +984,15 @@ public:
             LVFont * font = NULL;
             for ( int i=start; i<end; i++ ) {
                 if ( !(m_pbuffer->srctext[i].flags & LTEXT_SRC_IS_OBJECT) ) {
-                    font = (LVFont*)m_pbuffer->srctext[i].t.font;
-                    if (font) {
-                        int dx = font->getVisualAligmentWidth();
-                        if ( dx>visialAlignmentWidth )
-                            visialAlignmentWidth = dx;
+                    ldomNode * node = (ldomNode*)m_pbuffer->srctext[i].object;
+                    if(!node->isRTL())
+                    {
+                        font = (LVFont*)m_pbuffer->srctext[i].t.font;
+                        if (font) {
+                            int dx = font->getVisualAligmentWidth();
+                            if ( dx>visialAlignmentWidth )
+                                visialAlignmentWidth = dx;
+                        }
                     }
                 }
             }

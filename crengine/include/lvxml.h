@@ -337,6 +337,7 @@ private:
     LinksMap LinksMap_;
     Epub3Notes Epub3Notes_;
     bool Notes_exists = false;
+    EpubStylesManager EpubStylesManager_ = EpubStylesManager();
 protected:
     bool possible_capitalized_tags_;
     bool m_allowHtml;
@@ -386,6 +387,10 @@ public:
     void setEpub3Notes(Epub3Notes Epub3Notes);
 
     Epub3Notes getEpub3Notes();
+
+    void setStylesManager(EpubStylesManager manager);
+
+    EpubStylesManager getStylesManager();
 };
 
 extern const char * * HTML_AUTOCLOSE_TABLE[];

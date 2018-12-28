@@ -99,4 +99,235 @@ public:
     int size() { return AsidesMap_.size(); }
 };
 
+enum epub_CSS_attr_t_align {ta_inherit = 0, ta_left, ta_right, ta_center, ta_justify};
+
+class EpubCSSClass
+{
+public:
+    lString16 source_line_;
+    lString16 name_;
+    bool rtl_       = false;
+    bool bold_      = false;
+    bool italic_    = false;
+    bool underline_ = false;
+    int text_align_ = ta_inherit;
+    lString16 bg_color_;
+    EpubCSSClass() {};
+
+    inline bool empty() {return source_line_.empty();}
+
+    lString16 getAttrval(lString16 in, lString16 attrname)
+    {
+        lString16 result;
+        int attr_start = in.pos(attrname);
+        if(attr_start == -1)
+        {
+            return result;
+        }
+
+        int attr_end = -1;
+        for (int i = attr_start; i < in.length(); i++)
+        {
+            lChar16 curr = in.at(i);
+            if (curr == ';')
+            {
+                attr_end = i;
+                break;
+            }
+        }
+
+        lString16 attrstr = in.substr(attr_start, attr_end - attr_start);
+        //CRLog::error("attrstr = [%s]", LCSTR(attrstr));
+
+        if(attrstr.pos(":")!=-1)
+        {
+            int colonpos = attrstr.pos(":")+1;
+            result = attrstr.substr(colonpos,attrstr.length()-colonpos);
+        }
+        return result.trimDoubleSpaces(false, false, false);
+    }
+
+    EpubCSSClass(lString16 in)
+    {
+        source_line_ = in;
+        lString16 rest;
+        for (int i = 0; i < in.length(); i++)
+        {
+            lChar16 curr = in.at(i);
+            if(curr!='{')
+            {
+                continue;
+            }
+            else
+            {
+                name_ = in.substr(0,i).trimDoubleSpaces(false,false,false);
+                if(name_.startsWith("."))
+                {
+                    name_ = name_.substr(1,name_.length()-1);
+                }
+                rest = in.substr(i,in.length()-i);
+                break;
+            }
+        }
+        if(!rest.empty())
+        {
+            lString16 attrval = getAttrval(rest, lString16("direction"));
+            if(attrval.empty())
+            {
+                attrval = getAttrval(rest, lString16("dir"));
+            }
+            rtl_ = (attrval==lString16("rtl"));
+
+            attrval = getAttrval(rest,lString16("text-align"));
+            if (attrval == lString16("left"))
+            {
+                text_align_ = ta_left;
+            }
+            else if (attrval == lString16("right"))
+            {
+                text_align_ = ta_right;
+            }
+            else if (attrval == lString16("center"))
+            {
+                text_align_ = ta_center;
+            }
+            else if (attrval == lString16("justify"))
+            {
+                text_align_ = ta_justify;
+            }
+            else
+            {
+                text_align_ = ta_inherit;
+            }
+            attrval     = getAttrval(rest,lString16("font-weight"));
+            bold_       = (attrval == "bold");
+            attrval     = getAttrval(rest,lString16("font-style"));
+            italic_     = (attrval == "italic");
+            attrval     = getAttrval(rest,lString16("text-decoration"));
+            underline_  = (attrval == "underline");
+            bg_color_   = getAttrval(rest,lString16("background-color"));
+        }
+    };
+};
+
+typedef std::map<lUInt32,EpubCSSClass> EpubCSSMap;
+
+class EpubStylesManager
+{
+private:
+    EpubCSSMap classes_map_;
+    void addCSSClass(EpubCSSClass CSSclass)
+    {
+        classes_map_.insert(std::make_pair(CSSclass.name_.getHash(),CSSclass));
+    }
+
+    lString16Collection SplitToClasses(lString16 in)
+    {
+        lString16Collection result;
+        int classstart = -1;
+        int classend = -1;
+        for (int i = 0; i < in.length(); i++)
+        {
+            lChar16 curr = in.at(i);
+
+            if (classstart == -1 && curr== '.')
+            {
+                classstart = i;
+            }
+            if(classstart!=-1)
+            {
+                if(curr!='}')
+                {
+                    continue;
+                }
+                else
+                {
+                    classend = i+1;
+                    lString16 CSSclass = in.substr(classstart,classend-classstart);
+                    result.add(CSSclass);
+                    classstart=-1;
+                    classend=-1;
+                    continue;
+                }
+            }
+            if (curr != L'.')
+            {
+                continue;
+            }
+        }
+        for (int i = 0; i < result.length(); i++)
+        {
+            if(result.at(i).pos("{")==-1 || result.at(i).pos("}")==-1)
+            {
+                result.erase(i,1);
+            }
+        }
+        return result;
+    }
+
+public:
+    EpubStylesManager() {};
+
+    inline bool empty() { return classes_map_.empty();}
+    LVArray<lString16> char_CSS_classes_;
+
+    void parseString(lString16 in)
+    {
+        {
+        in = in.trimDoubleSpaces(false,false,false);
+        lString16Collection classes_str_coll = SplitToClasses(in);
+        for (int i = 0; i < classes_str_coll.length(); i++)
+        {
+            EpubCSSClass cssClass = EpubCSSClass(classes_str_coll.at(i));
+            this->addCSSClass(cssClass);
+        }
+        }
+        std::map<lUInt32 , EpubCSSClass>::iterator it = classes_map_.begin();
+
+        while (it != classes_map_.end())
+        {
+            //lUInt32 hash = it->first;
+            EpubCSSClass curr = it->second;
+            lString16 text_align;
+
+            switch (curr.text_align_)
+            {
+                case ta_left:text_align = lString16("left"); break;
+                case ta_right:text_align = lString16("right"); break;
+                case ta_center:text_align = lString16("center"); break;
+                case ta_justify:text_align = lString16("justify"); break;
+                case ta_inherit:text_align = lString16("inherit"); break;
+            }
+            CRLog::error("class [%s], biu = %d%d%d ,rtl = %d, text_align = %s, color = %s",
+                    LCSTR(curr.name_),
+                    (int)curr.bold_,
+                    (int)curr.italic_,
+                    (int)curr.underline_,
+                    (int)curr.rtl_,
+                    LCSTR(text_align)),
+                    LCSTR(curr.bg_color_);
+
+            lString16 f_weight = (curr.bold_)?lString16("bold"):lString16("normal");
+            lString16 f_style = (curr.italic_)?lString16("italic"):lString16("normal");
+            lString16 t_decoration = (curr.underline_)?lString16("underline"):lString16("normal");
+            lString16 CSS_class("."+curr.name_+"{"+"font-weight: "+f_weight+"; font-style: "+f_style+"; text-decoration: "+t_decoration+"; background-color:" +curr.bg_color_ + "; }");
+            CRLog::error("class = [%s]",LCSTR(CSS_class));
+            char_CSS_classes_.add(CSS_class);
+            it++;
+        }
+    }
+
+    EpubCSSClass getCSSClass(lString16 name) //array scan
+    {
+        if(classes_map_.empty())
+        {
+            return EpubCSSClass();
+        }
+        if(classes_map_.find(name.getHash())!=classes_map_.end())
+        {
+            return classes_map_.at(name.getHash());
+        }
+        return EpubCSSClass();
+    }
+};
 #endif //CODE_THORNYREADER_PURE_EPUBITEMS_H
