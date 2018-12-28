@@ -2619,6 +2619,7 @@ void LvXmlParser::FullDom()
 bool LvXmlParser::Parse()
 {
 	Reset();
+	EpubStylesManager stylesManager = getStylesManager();
     callback_->OnStart(this);
     //int txt_count = 0;
     int flags = callback_->getFlags();
@@ -3100,6 +3101,20 @@ bool LvXmlParser::Parse()
                 if ((flags & TXTFLG_CONVERT_8BIT_ENTITY_ENCODING) && m_conv_table) {
                     PreProcessXmlString(attrvalue, 0, m_conv_table);
                 }
+
+                if(EPUB_EMBEDDED_STYLES && !stylesManager.empty())
+                {
+                    if(attrname == "class")
+                    {
+                        EpubCSSClass cssClass = stylesManager.getCSSClass(attrvalue);
+                        if(!cssClass.empty() && cssClass.rtl_)
+                        {
+                            callback_->OnAttribute(L"",L"dir",L"rtl");
+                            callback_->setRTLflag(true);
+                        }
+                    }
+                }
+
                 if(RTL_DISPLAY_ENABLE && rtl_holder.empty())
                 {
                     if(attrname=="dir" || attrname == "class")
@@ -5698,6 +5713,16 @@ void LvXmlParser::setEpub3Notes(Epub3Notes Epub3Notes)
 Epub3Notes LvXmlParser::getEpub3Notes()
 {
     return Epub3Notes_;
+}
+
+void LvXmlParser::setStylesManager(EpubStylesManager manager)
+{
+    EpubStylesManager_ = manager;
+}
+
+EpubStylesManager LvXmlParser::getStylesManager()
+{
+    return EpubStylesManager_;
 }
 
 lString16 htmlCharset(lString16 htmlHeader)

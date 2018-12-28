@@ -22,6 +22,7 @@
 #define NOTES_HIDDEN_ID L"__notes_hidden__"
 #define NOTES_HIDDEN_MAX_LEN 1000
 #define TOC_ITEM_LENGTH_MAX 150
+#define EPUB_EMBEDDED_STYLES 1
 
 extern int gTextLeftShift;
 
