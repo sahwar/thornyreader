@@ -3,6 +3,7 @@
 
 #include "thornyreader/include/StBridge.h"
 #include "include/lvdocview.h"
+typedef std::map<int, ldomWord> ldomWordMap;
 
 class CreBridge : public StBridge
 {
@@ -33,6 +34,11 @@ protected:
     void processPageByXPath(CmdRequest& request, CmdResponse& response);
     void processPageXPath(CmdRequest& request, CmdResponse& response);
     void processMetadata(CmdRequest& request, CmdResponse& response);
+    void processPageXpaths(CmdRequest &request, CmdResponse &response);
+    void processPageRangeText(CmdRequest &request, CmdResponse &response);
+    void processPageRects(CmdRequest &request, CmdResponse &response);
+    void processRTLHitboxes(CmdRequest &request, CmdResponse &response);
+
 };
 
 #endif //READERA_CREBRIDGE_H

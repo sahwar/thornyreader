@@ -1663,6 +1663,11 @@ public:
             lastParaWasTitle = false;
         }
         callback->OnTagOpenNoAttr(NULL, L"p");
+        if(str.CheckRTL())
+        {
+            callback->setRTLflag(true);
+            callback->OnAttribute(L"",L"dir",L"rtl");
+        }
         callback->OnText(str.c_str(), str.length(), TXTFLG_TRIM | TXTFLG_TRIM_REMOVE_EOL_HYPHENS);
         callback->OnTagClose(NULL, L"p");
         if (isHeader) {
@@ -2112,7 +2117,14 @@ public:
         do {
             for (int i = remainingLines; i < length(); i++) {
                 LVTextFileLine* item = get(i);
-                importer.processLine(item->text);
+                lString16 temp = item->text;
+                if(temp.CheckRTL())
+                {
+                    callback->setRTLflag(true);
+                    callback->OnAttribute(L"",L"dir",L"rtl");
+                    temp.PrepareRTL();
+                }
+                importer.processLine(temp);
             }
             RemoveLines(length() - 3);
             remainingLines = 3;
@@ -2167,6 +2179,11 @@ public:
                 LVTextFileLine* item = get(i);
                 if (item->rpos > item->lpos) {
                     callback->OnTagOpenNoAttr(NULL, L"pre");
+                    if(item->text.CheckRTL())
+                    {
+                        callback->setRTLflag(true);
+                        callback->OnAttribute(L"",L"dir",L"rtl");
+                    }
                     callback->OnText(item->text.c_str(), item->text.length(), item->flags);
                     callback->OnTagClose(NULL, L"pre");
                 } else {
@@ -2602,6 +2619,7 @@ void LvXmlParser::FullDom()
 bool LvXmlParser::Parse()
 {
 	Reset();
+	EpubStylesManager stylesManager = getStylesManager();
     callback_->OnStart(this);
     //int txt_count = 0;
     int flags = callback_->getFlags();
@@ -2639,7 +2657,8 @@ bool LvXmlParser::Parse()
     lString16 link_id;
     lString16 section_id;
     lString16 aside_old_id;
-
+    lString16 rtl_holder;
+    int rtl_holder_counter = 0;
 	for (; !eof_ && !error && !firstpage_thumb_num_reached ;)
     {
 	    if (m_stopped)
@@ -2970,9 +2989,25 @@ bool LvXmlParser::Parse()
                         callback_->OnTagClose(L"",L"a");
                     }
                 }
+                if(!rtl_holder.empty() && tagname == rtl_holder)
+                {
+                    if(!close_flag)
+                    {
+                        rtl_holder_counter++;
+                    }
+                    else
+                    {
+                        rtl_holder_counter--;
+                    }
+                }
 
                 if (close_flag)
                 {
+                    if(tagname == rtl_holder && RTL_DISPLAY_ENABLE && ( rtl_holder_counter == 0 ) )
+                    {
+                        callback_->setRTLflag(false);
+                        rtl_holder.clear();
+                    }
                     callback_->OnTagClose(tagns.c_str(), tagname.c_str());
                     //CRLog::trace("</%s>", LCSTR(tagname));
                     if (SkipTillChar('>'))
@@ -3067,6 +3102,32 @@ bool LvXmlParser::Parse()
                     PreProcessXmlString(attrvalue, 0, m_conv_table);
                 }
 
+                if(EPUB_EMBEDDED_STYLES && !stylesManager.empty())
+                {
+                    if(attrname == "class")
+                    {
+                        EpubCSSClass cssClass = stylesManager.getCSSClass(attrvalue);
+                        if(!cssClass.empty() && cssClass.rtl_)
+                        {
+                            callback_->OnAttribute(L"",L"dir",L"rtl");
+                            callback_->setRTLflag(true);
+                        }
+                    }
+                }
+
+                if(RTL_DISPLAY_ENABLE && rtl_holder.empty())
+                {
+                    if(attrname=="dir" || attrname == "class")
+                    {
+                        if(attrvalue=="rtl")
+                        {
+                            rtl_holder = tagname;
+                            callback_->setRTLflag(true);
+                            rtl_holder_counter++;
+                        }
+                    }
+                }
+
                 //epub3
                 if(in_section && attrname == "type" && attrvalue == "rearnote")
                 {
@@ -3158,11 +3219,11 @@ bool LvXmlParser::Parse()
 //                }
             if(save_notes_title)
             {
-                ReadTextToString(Epub3Notes_.FootnotesTitle_,true);
+                this->ReadTextToString(Epub3Notes_.FootnotesTitle_,true);
             }
             else if(save_a_content)
             {
-                ReadTextToString(buffer,true);
+                this->ReadTextToString(buffer,true);
                 //CRLog::error("buffer = %s",LCSTR(buffer));
             }
             else
@@ -4331,11 +4392,13 @@ bool LvXmlParser::ParseDocx(DocxItems docxItems, DocxLinks docxLinks, DocxStyles
                 }
                 if(save_text)
                 {
-                    ReadTextToString(str_buffer,true);
+                    this->ReadTextToString(str_buffer,true,true);
                 }
                 else
                 {
-                    ReadText();
+                    lString16 temp;
+                    this->ReadTextToString(temp,true,true);
+                    temp.clear();
                 }
                 fragments_counter++;
                 //bold italic underline list tag insertion closing tags
@@ -4424,6 +4487,9 @@ bool LvXmlParser::ParseEpubFootnotes()
     lString16 attrns;
     lString16 attrvalue;
     lString16 buffer;
+    lString16 rtl_holder;
+    int rtl_holder_counter = 0;
+
     int buffernum =-1;
     //LVArray<LinkStruct> LinksList = getLinksList();
     LinksMap LinksMap = getLinksMap();
@@ -4724,9 +4790,25 @@ bool LvXmlParser::ParseEpubFootnotes()
                     }
                 }
 
+                if(!rtl_holder.empty() && tagname == rtl_holder)
+                {
+                    if(!close_flag)
+                    {
+                        rtl_holder_counter++;
+                    }
+                    else
+                    {
+                        rtl_holder_counter--;
+                    }
+                }
 
                 if (close_flag)
                 {
+                    if(tagname == rtl_holder && RTL_DISPLAY_ENABLE && ( rtl_holder_counter == 0 ) )
+                    {
+                        callback_->setRTLflag(false);
+                        rtl_holder.clear();
+                    }
                     callback_->OnTagClose(tagns.c_str(), tagname.c_str());
                     //CRLog::trace("</%s:%s>", LCSTR(tagns),LCSTR(tagname));
                     if (SkipTillChar('>'))
@@ -4824,6 +4906,20 @@ bool LvXmlParser::ParseEpubFootnotes()
                 if ((flags & TXTFLG_CONVERT_8BIT_ENTITY_ENCODING) && m_conv_table) {
                     PreProcessXmlString(attrvalue, 0, m_conv_table);
                 }
+
+                if(RTL_DISPLAY_ENABLE && rtl_holder.empty())
+                {
+                    if(attrname=="dir" || attrname == "class")
+                    {
+                        if(attrvalue=="rtl")
+                        {
+                            rtl_holder = tagname;
+                            callback_->setRTLflag(true);
+                            rtl_holder_counter++;
+                        }
+                    }
+                }
+
                 if(in_section && attrname == "id")
                 {
                     temp_section_id = lString16("#") + callback_->convertId(attrvalue);
@@ -4852,7 +4948,7 @@ bool LvXmlParser::ParseEpubFootnotes()
                 }
                 if (save_title_content)
                 {
-                    ReadTextToString(buffer,false);
+                    this->ReadTextToString(buffer,false);
                     //CRLog::error("saving to buffer = [%s]", LCSTR(buffer));
                     if (buffer.atoi() <= 0)
                     {
@@ -5355,10 +5451,11 @@ int LVTextFileBase::fillCharBuffer()
 bool LvXmlParser::ReadText()
 {
     lString16 temp;
-    return ReadTextToString(temp,true);
+    return this->ReadTextToString(temp,true);
+    temp.clear();
 }
 
-bool LvXmlParser::ReadTextToString(lString16 & output, bool write_to_tree)
+bool LvXmlParser::ReadTextToString(lString16 & output, bool write_to_tree, bool rtl_force_check)
 {
     // TODO: remove tracking of file pos
     //int text_start_pos = 0;
@@ -5433,6 +5530,15 @@ bool LvXmlParser::ReadTextToString(lString16 & output, bool write_to_tree)
                     (flags & TXTFLG_TRIM_REMOVE_EOL_HYPHENS)?true:false );
             }
 
+            if(RTL_DISPLAY_ENABLE && rtl_force_check)
+            {
+                if (lString16(buf,nlen).CheckRTL())
+                {
+                    CRLog::error("added rtl for docx");
+                    callback_->OnAttribute(L"", L"dir", L"rtl");
+                    callback_->setRTLflag(true);
+                }
+            }
             if (flags & TXTFLG_PRE) {
                 // check for tabs
                 int tabCount = CalcTabCount(buf, nlen);
@@ -5607,6 +5713,16 @@ void LvXmlParser::setEpub3Notes(Epub3Notes Epub3Notes)
 Epub3Notes LvXmlParser::getEpub3Notes()
 {
     return Epub3Notes_;
+}
+
+void LvXmlParser::setStylesManager(EpubStylesManager manager)
+{
+    EpubStylesManager_ = manager;
+}
+
+EpubStylesManager LvXmlParser::getStylesManager()
+{
+    return EpubStylesManager_;
 }
 
 lString16 htmlCharset(lString16 htmlHeader)

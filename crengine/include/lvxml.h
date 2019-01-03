@@ -44,6 +44,8 @@ class LvXMLParserCallback {
 protected:
     LVFileFormatParser * _parser;
 public:
+    virtual bool getRTLflag() { return 0;}
+    virtual void setRTLflag(bool RTLflag) { }
     /// returns flags
     virtual lUInt32 getFlags() { return 0; }
     /// sets flags
@@ -335,6 +337,7 @@ private:
     LinksMap LinksMap_;
     Epub3Notes Epub3Notes_;
     bool Notes_exists = false;
+    EpubStylesManager EpubStylesManager_ = EpubStylesManager();
 protected:
     bool possible_capitalized_tags_;
     bool m_allowHtml;
@@ -375,7 +378,7 @@ public:
     //docx tags to filter initialization
     void initDocxTagsFilter();
 
-    bool ReadTextToString(lString16 &output, bool write_to_tree);
+    bool ReadTextToString(lString16 &output, bool write_to_tree, bool rtl_force_check = false);
 
     void setLinksMap(LinksMap LinksMap);
 
@@ -384,6 +387,10 @@ public:
     void setEpub3Notes(Epub3Notes Epub3Notes);
 
     Epub3Notes getEpub3Notes();
+
+    void setStylesManager(EpubStylesManager manager);
+
+    EpubStylesManager getStylesManager();
 };
 
 extern const char * * HTML_AUTOCLOSE_TABLE[];

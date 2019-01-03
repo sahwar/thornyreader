@@ -34,6 +34,7 @@
 #include "lvhashtable.h"
 #include "lvimg.h"
 #include "props.h"
+#include "crconfig.h"
 
 #define LXML_NO_DATA       0 ///< to mark data storage record as empty
 #define LXML_ELEMENT_NODE  1 ///< element node
@@ -669,6 +670,8 @@ public:
     lString16 getMainParentName();
     //returns specified parent node from ancestor nodes. Returns NULL if not found.
     ldomNode *getParentNode(const char *name);
+
+    bool isRTL();
 };
 
 /**
@@ -1209,38 +1212,6 @@ public:
     virtual bool processElement(ldomNode* node, ldomXRange* range);
 };
 
-class TextRect
-{
-private:
-    ldomNode* node_;
-    lvRect rect_;
-    lString16 string_;
-public:
-    TextRect() :  node_(nullptr),rect_(lvRect(0,0,0,0)),string_(lString16::empty_str) {}
-    TextRect(ldomNode* node,lvRect rect, lString16 string) :node_(node),rect_(rect){
-        string_ = string.ReplaceUnusualSpaces();
-    }
-
-    lString16 getText(){ return string_;};
-    lvRect getRect(){ return rect_;};
-    ldomNode* getNode(){ return node_;};
-    void setRect(lvRect rect){ rect_ = rect;};
-    void setString(lString16 string){ string_ = string;};
-};
-
-class ImgRect
-{
-private:
-    ldomNode* node_;
-    lvRect rect_;
-public:
-    ImgRect() :  node_(nullptr),rect_(lvRect(0,0,0,0)) {}
-    ImgRect(ldomNode* node,lvRect rect ) :node_(node),rect_(rect){}
-
-    lvRect getRect(){ return rect_;};
-    ldomNode* getNode(){ return node_;};
-};
-
 /// range for word inside text node
 class ldomWord
 {
@@ -1280,6 +1251,52 @@ public:
     }
     lvRect getRect();
 };
+
+class TextRect
+{
+private:
+    ldomNode* node_;
+    ldomWord word_;
+    lvRect rect_;
+    lString16 string_;
+    int index_ = -1;
+public:
+    TextRect() :  word_(),node_(nullptr),rect_(lvRect(0,0,0,0)),string_(lString16::empty_str) {}
+    TextRect(ldomNode* node,lvRect rect, lString16 string) :node_(node),rect_(rect)
+    {
+        string_ = string.ReplaceUnusualSpaces();
+    }
+
+    TextRect(ldomNode* node,lvRect rect, lString16 string, ldomWord word) :node_(node),rect_(rect),word_(word)
+    {
+        string_ = string.ReplaceUnusualSpaces();
+    }
+
+
+    lString16 getText(){ return string_;};
+    lvRect getRect(){ return rect_;};
+    ldomNode* getNode(){ return node_;};
+    ldomWord getWord(){return word_;};
+    int getIndex(){return index_;};
+    void setRect(lvRect rect){ rect_ = rect;};
+    void setText(lString16 string){ string_ = string;};
+    void setIndex(int index){ index_ = index;};
+    int getWidthRTL(LVFont * font);
+};
+
+class ImgRect
+{
+private:
+    ldomNode* node_;
+    lvRect rect_;
+public:
+    ImgRect() :  node_(nullptr),rect_(lvRect(0,0,0,0)) {}
+    ImgRect(ldomNode* node,lvRect rect ) :node_(node),rect_(rect){}
+
+    lvRect getRect(){ return rect_;};
+    ldomNode* getNode(){ return node_;};
+};
+
 
 /// DOM range
 class ldomXRange {
@@ -1363,7 +1380,7 @@ public:
     /// get all words from specified range
     void getRangeWords( LVArray<ldomWord> & list );
 
-    void getRangeChars( LVArray<TextRect> & list );
+    void getRangeChars( LVArray<TextRect> & list ,int clip_width, bool rtl_enable = true);
     /// returns href attribute of <A> element, null string if not found
     lString16 getHRef();
     /// sets range to nearest word bounds, returns true if success
@@ -1760,8 +1777,13 @@ protected:
     bool _popStyleOnFinish;
     lUInt16 _stopTagId;
     lUInt32 _flags;
+    bool RTLflag_ = false;
     virtual void ElementCloseHandler( ldomNode * node ) { node->persist(); }
 public:
+    void setRTLflag(bool RTLflag) {RTLflag_ = RTLflag;}
+
+    bool getRTLflag() { return RTLflag_; }
+
     /// returns flags
     virtual lUInt32 getFlags() { return _flags; }
     /// sets flags
@@ -1859,8 +1881,11 @@ private:
     ldomNode* lastBaseElement;
     lString8 headStyleText;
     int headStyleState;
+    bool RTLflag_;
 
 public:
+    void setRTLflag (bool RTLflag) {RTLflag_ = RTLflag; }
+    bool getRTLflag () { return RTLflag_; }
     /// return content of html/head/style element
     lString8 getHeadStyleText() { return headStyleText; }
 
@@ -1920,7 +1945,16 @@ public:
             return;
         }
         if ( insideTag )
-            parent->OnText( text, len, flags );
+        {
+            if (this->RTLflag_ && RTL_DISPLAY_ENABLE)
+            {
+                parent->OnText(lString16(text).PrepareRTL().c_str(), len, flags);
+            }
+            else
+            {
+                parent->OnText(text, len, flags);
+            }
+        }
     }
 
     /// add named BLOB data to document

@@ -698,6 +698,7 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 	//EpubItem * epubToc = NULL; //TODO
 	LVArray<EpubItem *> spineItems;
 	lString16 codeBase;
+	EpubStylesManager stylesManager;
 	//lString16 css;
 	{
 		codeBase = LVExtractPath(rootfilePath, false);
@@ -716,8 +717,8 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 	lString16 coverId;
 	bool CoverPageIsValid = false;
 
-	LVEmbeddedFontList fontList;
-	EmbeddedFontStyleParser styleParser(fontList);
+	//LVEmbeddedFontList fontList;
+	//EmbeddedFontStyleParser styleParser(fontList);
 
 	// reading content stream
 	{
@@ -834,8 +835,14 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 					lString8 cssFile = UnicodeToUtf8(LVReadCssText(cssStream));
 					lString16 base = name;
 					LVExtractLastPathElement(base);
-					//CRLog::trace("style: %s", cssFile.c_str());
-					styleParser.parse(base, cssFile);
+					//styleParser.parse(base, cssFile);
+					lString16 embedded_style;
+                    stylesManager.parseString(Utf8ToUnicode(cssFile));
+                    for (int i = 0; i < stylesManager.char_CSS_classes_.length(); i++)
+                    {
+                        lString16 str = stylesManager.char_CSS_classes_.get(i);
+                        m_doc->setStylesheet(UnicodeToUtf8(str).c_str(), false);
+                    }
 				}
 			}
 		}
@@ -975,13 +982,13 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 					parser.setLinksList(LinksList);
 					parser.setLinksMap(LinksMap);
 					parser.setEpub3Notes(Epub3Notes);
+					parser.setStylesManager(stylesManager);
 					if (parser.CheckFormat() && parser.Parse())
 					{
 						// valid
 						fragmentCount++;
 						lString8 headCss = appender.getHeadStyleText();
-						//CRLog::trace("style: %s", headCss.c_str());
-						styleParser.parse(base, headCss);
+						//styleParser.parse(base, headCss);
 					}
 					else
 					{
@@ -1033,13 +1040,13 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 				LvHtmlParser parser(stream, &appender3, firstpage_thumb);
 				//parser.setLinksList(LinksList);
 				parser.setLinksMap(LinksMap);
-				if (parser.CheckFormat() && parser.ParseEpubFootnotes())
+                parser.setStylesManager(stylesManager);
+                if (parser.CheckFormat() && parser.ParseEpubFootnotes())
 				{
 					// valid
 					//fragmentCount++;
 					lString8 headCss = appender3.getHeadStyleText();
-					//CRLog::trace("style: %s", headCss.c_str());
-					styleParser.parse(base, headCss);
+					//styleParser.parse(base, headCss);
 				}
 				else
 				{
@@ -1100,13 +1107,13 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 	{
 		CRLog::trace("TOC already exists. No TOC generation for now.");
 	}
-	if (!fontList.empty())
-	{
-		// set document font list, and register fonts
-		m_doc->getEmbeddedFontList().set(fontList);
-		m_doc->registerEmbeddedFonts();
-		m_doc->forceReinitStyles();
-	}
+	//if (!fontList.empty())
+	//{
+	//	// set document font list, and register fonts
+	//	m_doc->getEmbeddedFontList().set(fontList);
+	//	m_doc->registerEmbeddedFonts();
+	//	m_doc->forceReinitStyles();
+	//}
 	if (fragmentCount == 0)
 	{
 		return false;

@@ -425,6 +425,7 @@ public:
    Interface is similar to STL strings.
 
 */
+class lString16Collection;
 class lString16
 {
     friend const lString16 & cs16(const char * str);
@@ -448,6 +449,9 @@ private:
     void free();
     inline void addref() const { ++pchunk->nref; }
     inline void release() { if (--pchunk->nref==0) free(); }
+    lString16 LigatureCheck(lString16 text) ;
+    lString16 LigatureCheck(lString16 text, lChar16 lam, lChar16 alef, lChar16 lig);
+    lString16 PrettyLetters(lString16 text) ;
 public:
     explicit lString16(lstring_chunk_t * chunk) : pchunk(chunk) { addref(); }
     /// empty string constructor
@@ -686,6 +690,14 @@ public:
     lString16 ReplaceUnusualSpaces();
     //check lString16 if it contains only digits. True if yes.
     bool DigitsOnly();
+    //convert chars in rtl string depending on their word location
+    lString16 PrepareRTL();
+    //check whether string contains rtl characters
+    bool CheckRTL();
+    //split string to array of words, punct signs ands spaces
+    lString16Collection ArabicSplitToWords();
+
+    lString16 ReversePrettyLetters();
 };
 
 /// calculates hash for wide string
