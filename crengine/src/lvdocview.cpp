@@ -152,6 +152,7 @@ void LVDocView::RequestRender()
 {
 	is_rendered_ = false;
 	cr_dom_->clearRendBlockCache();
+	cr_dom_->ApplyEmbeddedStyles();
 }
 
 /// Ensure current position is set to current bookmark value

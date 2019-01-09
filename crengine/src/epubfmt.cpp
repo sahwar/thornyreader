@@ -698,7 +698,6 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 	//EpubItem * epubToc = NULL; //TODO
 	LVArray<EpubItem *> spineItems;
 	lString16 codeBase;
-	EpubStylesManager stylesManager;
 	//lString16 css;
 	{
 		codeBase = LVExtractPath(rootfilePath, false);
@@ -837,15 +836,13 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 					LVExtractLastPathElement(base);
 					//styleParser.parse(base, cssFile);
 					lString16 embedded_style;
-                    stylesManager.parseString(Utf8ToUnicode(cssFile));
-                    for (int i = 0; i < stylesManager.char_CSS_classes_.length(); i++)
-                    {
-                        lString16 str = stylesManager.char_CSS_classes_.get(i);
-                        m_doc->setStylesheet(UnicodeToUtf8(str).c_str(), false);
-                    }
+					m_doc->stylesManager.parseString(Utf8ToUnicode(cssFile));
 				}
 			}
 		}
+        m_doc->stylesManager.ConvertClassesMap();
+		m_doc->ApplyEmbeddedStyles();
+
         //we're counting xpaths from 1 NOT from 0
         int refcount = 1;
         while (1)
@@ -982,7 +979,7 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 					parser.setLinksList(LinksList);
 					parser.setLinksMap(LinksMap);
 					parser.setEpub3Notes(Epub3Notes);
-					parser.setStylesManager(stylesManager);
+					parser.setStylesManager(m_doc->stylesManager);
 					if (parser.CheckFormat() && parser.Parse())
 					{
 						// valid
@@ -1040,7 +1037,7 @@ bool ImportEpubDocument(LVStreamRef stream, CrDom *m_doc, bool firstpage_thumb)
 				LvHtmlParser parser(stream, &appender3, firstpage_thumb);
 				//parser.setLinksList(LinksList);
 				parser.setLinksMap(LinksMap);
-                parser.setStylesManager(stylesManager);
+                parser.setStylesManager(m_doc->stylesManager);
                 if (parser.CheckFormat() && parser.ParseEpubFootnotes())
 				{
 					// valid
