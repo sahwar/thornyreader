@@ -642,10 +642,10 @@ LVArray<TextRect> reverseLine(TextRectGroup group, int clip_width)
         for (int j = 0; j < words.get(i).list_.length(); j++)
         {
             TextRect curr = words.get(i).list_.get(j);
-            if(char_isRTL(curr.getText().firstChar()))
-            {
-                curr.setText(lString16("\a"));
-            }
+            //if(char_isRTL(curr.getText().firstChar()))
+            //{
+            //    curr.setText(lString16("\a"));
+            //}
             result.add(curr);
         }
     }
