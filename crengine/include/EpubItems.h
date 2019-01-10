@@ -106,17 +106,17 @@ class EpubCSSClass
 public:
     lString16 source_line_;
     lString16 name_;
-    lString16 margin_top;
-    lString16 margin_bottom;
+    lString16 margin_top_;
+    lString16 margin_bottom_;
     bool rtl_       = false;
     bool bold_      = false;
     bool italic_    = false;
     bool underline_ = false;
     int text_align_ = ta_inherit;
-    lString16 bg_color_;
+    lString16 style_string_;
     EpubCSSClass() {};
 
-    inline bool empty() {return source_line_.empty();}
+    inline bool empty() { return (name_.empty() || source_line_.empty());}
 
     lString16 getAttrval(lString16 in, lString16 attrname)
     {
@@ -147,6 +147,37 @@ public:
             result = attrstr.substr(colonpos,attrstr.length()-colonpos);
         }
         return result.trimDoubleSpaces(false, false, false);
+    }
+
+    lString16 formatCSSstring()
+    {
+        lString16 text_align;
+
+        //switch (text_align_)
+        //{
+        //    case ta_left    : text_align = lString16("left");    break;
+        //    case ta_right   : text_align = lString16("right");   break;
+        //    case ta_center  : text_align = lString16("center");  break;
+        //    case ta_justify : text_align = lString16("justify"); break;
+        //    case ta_inherit : text_align = lString16::empty_str; break;
+        //}
+        //if(!text_align.empty())     { CSS_class_string += "text-align: "    + text_align      + "; "; }
+
+        lString16 CSS_class_string;
+        if(bold_)                  { CSS_class_string += "font-weight: bold; ";}
+        if(italic_)                { CSS_class_string += "font-style: italic; ";}
+        if(underline_)             { CSS_class_string += "text-decoration: underline; ";}
+        if(!margin_top_.empty())    { CSS_class_string += "margin-top: "    + margin_top_    + "; "; }
+        if(!margin_bottom_.empty()) { CSS_class_string += "margin-bottom: " + margin_bottom_ + ";"; }
+
+        if(CSS_class_string.empty())
+        {
+            //CRLog::error("class [%s] malformed",LCSTR(name_));
+            return lString16::empty_str;
+        }
+        CSS_class_string = "." + name_ + " { " + CSS_class_string + "}";
+        //CRLog::error("class = [%s]", LCSTR(CSS_class_string));
+        return CSS_class_string;
     }
 
     EpubCSSClass(lString16 in)
@@ -207,8 +238,10 @@ public:
             italic_     = (attrval == "italic");
             attrval     = getAttrval(rest,lString16("text-decoration"));
             underline_  = (attrval == "underline");
-            margin_top    = getAttrval(rest,lString16("margin-top"));
-            margin_bottom = getAttrval(rest,lString16("margin-bottom"));
+            margin_top_    = getAttrval(rest,lString16("margin-top"));
+            margin_bottom_ = getAttrval(rest,lString16("margin-bottom"));
+
+            style_string_ = formatCSSstring();
         }
     };
 };
@@ -219,35 +252,76 @@ class EpubStylesManager
 {
 private:
     EpubCSSMap classes_map_;
-    void addCSSClass(EpubCSSClass CSSclass)
+
+    bool CheckClassName(lString16 name)
     {
+        if(name.empty())
+        {
+            return false;
+        }
+        for (int i = 0; i < name.length(); i++)
+        {
+            lChar16 ch = name.at(i);
+            if ((ch >= 45 && ch <= 57)     || //0-9
+                (ch >= 65 && ch <= 90)     || //A-Z
+                (ch >= 97 && ch <= 122)    || //a-z
+                (ch == ' ') || (ch == '.') ||
+                (ch == ',') || (ch == '=') ||
+                (ch == '_') || (ch == '"') ||
+                (ch == '<') || (ch == '>') ||
+                (ch == '[') || (ch == ']'))
+            {
+                continue;
+            }
+            else
+            {
+                //CRLog::error("Found illegal character in CSS class name: [%s] -> [%lc]",LCSTR(name),ch);
+                return false;
+            }
+        }
+
+        lChar16 last = 0;
+        for (int i = 0; i < name.length(); i++)
+        {
+            lChar16 ch = name.at(i);
+            if (last == '.' || last == ' ' || last == ',')
+            {
+                if ((ch >= 45 && ch <= 57) || ch == '-')
+                {
+                    //CRLog::error("Illegal character combination in css class name: [%s] -> [%lc][%lc]",LCSTR(name),last,ch);
+                    return false;
+                }
+            }
+            last = ch;
+        }
+        return true;
+    }
 
 
-        if(CSSclass.name_.empty() || CSSclass.empty())
+    void addCSSClass(EpubCSSClass css)
+    {
+        if( css.empty() && !css.rtl_ )
         {
             //CRLog::error("EpubCSSclass is empty [%s].",LCSTR(CSSclass.name_));
             return;
         }
-        if(classes_map_.find(CSSclass.name_.getHash())!=classes_map_.end())
+        if(css.style_string_.empty() && !css.rtl_)
+        {
+            //CRLog::error("EpubCSSclass style string is empty and class is not rtl [%s].",LCSTR(CSSclass.name_));
+            return;
+        }
+        if(classes_map_.find(css.name_.getHash())!=classes_map_.end())
         {
             //CRLog::error("EpubCSSclass already exists [%s].",LCSTR(CSSclass.name_));
             return;
         }
-
-        if(
-        CSSclass.name_.pos("*")!=-1 ||
-        CSSclass.name_.pos("#")!=-1 ||
-        CSSclass.name_.pos(":")!=-1 ||
-        CSSclass.name_.pos("~")!=-1 ||
-        CSSclass.name_.pos("|")!=-1 ||
-        CSSclass.name_.pos("$")!=-1 ||
-        CSSclass.name_.pos("^")!=-1  )
+        if(!CheckClassName(css.name_))
         {
-            CRLog::error("EpubCSSclass is invalid [%s].",LCSTR(CSSclass.name_));
+            //CRLog::error("EpubCSSclass is invalid [%s].",LCSTR(CSSclass.name_));
             return;
         }
         //CRLog::trace("EpubCSSclass added [%s] ",LCSTR(CSSclass.name_));
-        classes_map_.insert(std::make_pair(CSSclass.name_.getHash(),CSSclass));
+        classes_map_.insert(std::make_pair(css.name_.getHash(),css));
     }
 
     lString16Collection SplitToClasses(lString16 in)
@@ -336,41 +410,7 @@ public:
         {
             //lUInt32 hash = it->first;
             EpubCSSClass curr = it->second;
-            lString16 text_align;
-
-            switch (curr.text_align_)
-            {
-                case ta_left:text_align = lString16("left"); break;
-                case ta_right:text_align = lString16("right"); break;
-                case ta_center:text_align = lString16("center"); break;
-                case ta_justify:text_align = lString16("justify"); break;
-                case ta_inherit:text_align = lString16("inherit"); break;
-            }
-            /*CRLog::error("class [%s], biu = %d%d%d ,rtl = %d, text_align = %s, color = %s",
-                    LCSTR(curr.name_),
-                    (int)curr.bold_,
-                    (int)curr.italic_,
-                    (int)curr.underline_,
-                    (int)curr.rtl_,
-                    LCSTR(text_align)),
-                    LCSTR(curr.bg_color_);
-            */
-            lString16 f_weight = (curr.bold_)?lString16("bold"):lString16("normal");
-            lString16 f_style = (curr.italic_)?lString16("italic"):lString16("normal");
-            lString16 t_decoration = (curr.underline_)?lString16("underline"):lString16("normal");
-            lString16 CSS_class;
-            CSS_class += "."+curr.name_;
-            CSS_class += "{";
-
-            CSS_class += "font-weight:"     + f_weight     + ";";
-            CSS_class += "font-style:"      + f_style      + ";";
-            CSS_class += "text-decoration:" + t_decoration + ";";
-            if(!curr.margin_top.empty()) {CSS_class += "margin-top:"    + curr.margin_top    + ";"; }
-            if(!curr.margin_top.empty()) {CSS_class += "margin-bottom:" + curr.margin_bottom + ";"; }
-
-            CSS_class += "}";
-            CRLog::error("class = [%s]",LCSTR(CSS_class));
-            char_CSS_classes_.add(CSS_class);
+            char_CSS_classes_.add(curr.style_string_);
             it++;
         }
     }
