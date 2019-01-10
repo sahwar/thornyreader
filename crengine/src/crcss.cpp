@@ -67,7 +67,7 @@ img, image, .section_image, .coverpage, coverpage {
   padding-bottom: 1em;
 }
 
-p image, li image /*, p img, li img*/ {
+p image, li image , p img, li img {
   display: inline;
   padding-left: 1em;
   padding-right: 1em;

@@ -1655,6 +1655,11 @@ protected:
 public:
     CrDom();
     virtual ~CrDom();
+
+    EpubStylesManager stylesManager;
+
+    void ApplyEmbeddedStyles();
+
     void forceReinitStyles() {
         dropStyles();
         _hdr.render_style_hash = 0;
