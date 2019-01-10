@@ -2729,10 +2729,7 @@ void LVDocView::GetOutline(LVPtrVector<LvTocItem, false> &outline)
 			for (int i = 0; i < outline_root->getChildCount(); i++)
 			{
 			    LvTocItem * child = outline_root->getChild(i);
-			    if(!child->getName().DigitsOnly())
-                {
-                    UpdateOutline(this, outline, child);
-                }
+                UpdateOutline(this, outline, child);
 			}
 		}
 	}

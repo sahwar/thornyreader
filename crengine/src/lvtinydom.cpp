@@ -9149,7 +9149,7 @@ void RecurseTOC(ldomNode * node,LvTocItem * toc)
     {
         return;
     }
-    if(node->isNodeName("img") || node->isNodeName("image") ||node->isNodeName("table")  )
+    if(node->isNodeName("img") || node->isNodeName("image") ||node->isNodeName("table")|| node->isNodeName("a")  )
     {
         return;
     }
@@ -9198,7 +9198,7 @@ void GetTOC(CrDom * crDom, LvTocItem * toc)
         {
             continue;
         }
-        if(child->isNodeName("img") || child->isNodeName("image")|| child->isNodeName("table") )
+        if(child->isNodeName("img") || child->isNodeName("image")|| child->isNodeName("table") || child->isNodeName("a") )
         {
             continue;
         }
