@@ -411,7 +411,20 @@ bool FootnotesPrinter::PrintLinksList(LVArray<LinkStruct> LinksList)
             }
             else if (found->isNodeName("a"))
             {
-                PrintLinkNode(found);
+                lString16 text = found->getText();
+                if(text.startsWith("[") || text.startsWith(".") ||text.startsWith(" "))
+                {
+                    text = text.substr(1);
+                }
+                if( text.endsWith("]") || text.endsWith(".")  || text.endsWith(" "))
+                {
+                    text = text.substr(0,text.length()-1);
+                }
+                int num;
+                if (!(text.DigitsOnly() && text.atoi(num)))
+                {
+                    PrintLinkNode(found);
+                }
             }
             else
             {

@@ -152,6 +152,7 @@ void LVDocView::RequestRender()
 {
 	is_rendered_ = false;
 	cr_dom_->clearRendBlockCache();
+	cr_dom_->ApplyEmbeddedStyles();
 }
 
 /// Ensure current position is set to current bookmark value
@@ -2728,10 +2729,7 @@ void LVDocView::GetOutline(LVPtrVector<LvTocItem, false> &outline)
 			for (int i = 0; i < outline_root->getChildCount(); i++)
 			{
 			    LvTocItem * child = outline_root->getChild(i);
-			    if(!child->getName().DigitsOnly())
-                {
-                    UpdateOutline(this, outline, child);
-                }
+                UpdateOutline(this, outline, child);
 			}
 		}
 	}

@@ -329,7 +329,7 @@ void LVCssDeclaration::apply(const ldomNode* node, css_style_rec_t* style)
 {
     if (!_data) {
 #ifdef TRDEBUG
-        CRLog::info("CSS: no declaration for %s", LCSTR(GetNodeDesc(node)));
+        //CRLog::info("CSS: no declaration for %s", LCSTR(GetNodeDesc(node)));
 #endif
         return;
     }

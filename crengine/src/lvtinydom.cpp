@@ -8894,6 +8894,17 @@ void CrDom::setNodeNumberingProps( lUInt32 nodeDataIndex, ListNumberingPropsRef 
     lists.set(nodeDataIndex, v);
 }
 
+void CrDom::ApplyEmbeddedStyles()
+{
+    //CRLog::error("applying embedded styles");
+    for (int i = 0; i < this->stylesManager.char_CSS_classes_.length(); i++)
+    {
+        //CRLog::trace("CRDOM ADD class [%s]",LCSTR(this->stylesManager.char_CSS_classes_.get(i)));
+        lString16 str = this->stylesManager.char_CSS_classes_.get(i);
+        this->setStylesheet(UnicodeToUtf8(str).c_str(), false);
+    }
+}
+
 /// formats final block
 int ldomNode::renderFinalBlock(  LFormattedTextRef & frmtext, RenderRectAccessor * fmt, int width )
 {
@@ -9138,7 +9149,7 @@ void RecurseTOC(ldomNode * node,LvTocItem * toc)
     {
         return;
     }
-    if(node->isNodeName("img") || node->isNodeName("image") ||node->isNodeName("table")  )
+    if(node->isNodeName("img") || node->isNodeName("image") ||node->isNodeName("table")|| node->isNodeName("a")  )
     {
         return;
     }
@@ -9187,7 +9198,7 @@ void GetTOC(CrDom * crDom, LvTocItem * toc)
         {
             continue;
         }
-        if(child->isNodeName("img") || child->isNodeName("image")|| child->isNodeName("table") )
+        if(child->isNodeName("img") || child->isNodeName("image")|| child->isNodeName("table") || child->isNodeName("a") )
         {
             continue;
         }

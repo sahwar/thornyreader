@@ -106,15 +106,17 @@ class EpubCSSClass
 public:
     lString16 source_line_;
     lString16 name_;
+    lString16 margin_top_;
+    lString16 margin_bottom_;
     bool rtl_       = false;
     bool bold_      = false;
     bool italic_    = false;
     bool underline_ = false;
     int text_align_ = ta_inherit;
-    lString16 bg_color_;
+    lString16 style_string_;
     EpubCSSClass() {};
 
-    inline bool empty() {return source_line_.empty();}
+    inline bool empty() { return (name_.empty() || source_line_.empty());}
 
     lString16 getAttrval(lString16 in, lString16 attrname)
     {
@@ -145,6 +147,37 @@ public:
             result = attrstr.substr(colonpos,attrstr.length()-colonpos);
         }
         return result.trimDoubleSpaces(false, false, false);
+    }
+
+    lString16 formatCSSstring()
+    {
+        lString16 text_align;
+
+        //switch (text_align_)
+        //{
+        //    case ta_left    : text_align = lString16("left");    break;
+        //    case ta_right   : text_align = lString16("right");   break;
+        //    case ta_center  : text_align = lString16("center");  break;
+        //    case ta_justify : text_align = lString16("justify"); break;
+        //    case ta_inherit : text_align = lString16::empty_str; break;
+        //}
+        //if(!text_align.empty())     { CSS_class_string += "text-align: "    + text_align      + "; "; }
+
+        lString16 CSS_class_string;
+        if(bold_)                  { CSS_class_string += "font-weight: bold; ";}
+        if(italic_)                { CSS_class_string += "font-style: italic; ";}
+        if(underline_)             { CSS_class_string += "text-decoration: underline; ";}
+        if(!margin_top_.empty())    { CSS_class_string += "margin-top: "    + margin_top_    + "; "; }
+        if(!margin_bottom_.empty()) { CSS_class_string += "margin-bottom: " + margin_bottom_ + ";"; }
+
+        if(CSS_class_string.empty())
+        {
+            //CRLog::error("class [%s] malformed",LCSTR(name_));
+            return lString16::empty_str;
+        }
+        CSS_class_string = "." + name_ + " { " + CSS_class_string + "}";
+        //CRLog::error("class = [%s]", LCSTR(CSS_class_string));
+        return CSS_class_string;
     }
 
     EpubCSSClass(lString16 in)
@@ -205,7 +238,10 @@ public:
             italic_     = (attrval == "italic");
             attrval     = getAttrval(rest,lString16("text-decoration"));
             underline_  = (attrval == "underline");
-            bg_color_   = getAttrval(rest,lString16("background-color"));
+            margin_top_    = getAttrval(rest,lString16("margin-top"));
+            margin_bottom_ = getAttrval(rest,lString16("margin-bottom"));
+
+            style_string_ = formatCSSstring();
         }
     };
 };
@@ -216,9 +252,108 @@ class EpubStylesManager
 {
 private:
     EpubCSSMap classes_map_;
-    void addCSSClass(EpubCSSClass CSSclass)
+
+    bool CheckClassName(lString16 name)
     {
-        classes_map_.insert(std::make_pair(CSSclass.name_.getHash(),CSSclass));
+        //CRLog::error("check classname = [%s]",LCSTR(name));
+        if(name.empty())
+        {
+            return false;
+        }
+        for (int i = 0; i < name.length(); i++)
+        {
+            lChar16 ch = name.at(i);
+            if ((ch >= 45 && ch <= 57)     || //0-9
+                (ch >= 65 && ch <= 90)     || //A-Z
+                (ch >= 97 && ch <= 122)    || //a-z
+                (ch == ' ') || (ch == '.') ||
+                (ch == ',') || (ch == '=') ||
+                (ch == '_') || (ch == '"') ||
+                (ch == '<') || (ch == '>') ||
+                (ch == '[') || (ch == ']'))
+            {
+                continue;
+            }
+            else
+            {
+                //CRLog::error("Found illegal character in CSS class name: [%s] -> [%lc]",LCSTR(name),ch);
+                return false;
+            }
+        }
+
+        lChar16 last = '.';
+        int q_count = 0;
+        bool br_open = false;
+        for (int i = 0; i < name.length(); i++)
+        {
+            lChar16 ch = name.at(i);
+            if (last == '.' || last == ' ' || last == ',')
+            {
+                if ((ch >= 45 && ch <= 57) || ch == '-')
+                {
+                    //CRLog::error("Illegal character combination in css class name: [%s] -> [%lc][%lc]",LCSTR(name),last,ch);
+                    return false;
+                }
+            }
+            if(ch == '[')
+            {
+                if(br_open)
+                {
+                    //CRLog::error("brackets error 1");
+                    return false;
+                }
+                br_open = true;
+            }
+            else if(ch == ']')
+            {
+                if(!br_open)
+                {
+                    //CRLog::error("brackets error 2");
+                    return false;
+                }
+                br_open = false;
+            }
+            else if(ch=='"')
+            {
+                q_count++;
+            }
+
+            last = ch;
+        }
+        if(q_count %2 != 0 || br_open)
+        {
+            //CRLog::error("unpaired quotes or br_open");
+            return false;
+        }
+
+        return true;
+    }
+
+
+    void addCSSClass(EpubCSSClass css)
+    {
+        if( css.empty() && !css.rtl_ )
+        {
+            //CRLog::error("EpubCSSclass is empty [%s].",LCSTR(css.name_));
+            return;
+        }
+        if(css.style_string_.empty() && !css.rtl_)
+        {
+            //CRLog::error("EpubCSSclass style string is empty and class is not rtl [%s].",LCSTR(css.name_));
+            return;
+        }
+        if(classes_map_.find(css.name_.getHash())!=classes_map_.end())
+        {
+            //CRLog::error("EpubCSSclass already exists [%s].",LCSTR(css.name_));
+            return;
+        }
+        if(!CheckClassName(css.name_))
+        {
+            //CRLog::error("EpubCSSclass is invalid [%s].",LCSTR(css.name_));
+            return;
+        }
+        //CRLog::trace("EpubCSSclass added [%s] ",LCSTR(css.name_));
+        classes_map_.insert(std::make_pair(css.name_.getHash(),css));
     }
 
     lString16Collection SplitToClasses(lString16 in)
@@ -226,9 +361,25 @@ private:
         lString16Collection result;
         int classstart = -1;
         int classend = -1;
+        bool comment_skip = false;
         for (int i = 0; i < in.length(); i++)
         {
             lChar16 curr = in.at(i);
+
+            if(comment_skip && !(curr =='*' && in.at(i+1) == '/'))
+            {
+                continue;
+            }
+            if(curr == '*' && in.at(i+1) == '/')
+            {
+                comment_skip = false;
+                continue;
+            }
+            if(curr == '/' && in.at(i+1) == '*')
+            {
+                comment_skip = true;
+                continue;
+            }
 
             if (classstart == -1 && curr== '.')
             {
@@ -274,45 +425,24 @@ public:
     void parseString(lString16 in)
     {
         {
-        in = in.trimDoubleSpaces(false,false,false);
-        lString16Collection classes_str_coll = SplitToClasses(in);
-        for (int i = 0; i < classes_str_coll.length(); i++)
-        {
-            EpubCSSClass cssClass = EpubCSSClass(classes_str_coll.at(i));
-            this->addCSSClass(cssClass);
+            in = in.trimDoubleSpaces(false,false,false);
+            lString16Collection classes_str_coll = SplitToClasses(in);
+            for (int i = 0; i < classes_str_coll.length(); i++)
+            {
+                EpubCSSClass cssClass = EpubCSSClass(classes_str_coll.at(i));
+                this->addCSSClass(cssClass);
+            }
         }
-        }
-        std::map<lUInt32 , EpubCSSClass>::iterator it = classes_map_.begin();
+    }
 
+    void ConvertClassesMap()
+    {
+        std::map<lUInt32 , EpubCSSClass>::iterator it = classes_map_.begin();
         while (it != classes_map_.end())
         {
             //lUInt32 hash = it->first;
             EpubCSSClass curr = it->second;
-            lString16 text_align;
-
-            switch (curr.text_align_)
-            {
-                case ta_left:text_align = lString16("left"); break;
-                case ta_right:text_align = lString16("right"); break;
-                case ta_center:text_align = lString16("center"); break;
-                case ta_justify:text_align = lString16("justify"); break;
-                case ta_inherit:text_align = lString16("inherit"); break;
-            }
-            CRLog::error("class [%s], biu = %d%d%d ,rtl = %d, text_align = %s, color = %s",
-                    LCSTR(curr.name_),
-                    (int)curr.bold_,
-                    (int)curr.italic_,
-                    (int)curr.underline_,
-                    (int)curr.rtl_,
-                    LCSTR(text_align)),
-                    LCSTR(curr.bg_color_);
-
-            lString16 f_weight = (curr.bold_)?lString16("bold"):lString16("normal");
-            lString16 f_style = (curr.italic_)?lString16("italic"):lString16("normal");
-            lString16 t_decoration = (curr.underline_)?lString16("underline"):lString16("normal");
-            lString16 CSS_class("."+curr.name_+"{"+"font-weight: "+f_weight+"; font-style: "+f_style+"; text-decoration: "+t_decoration+"; background-color:" +curr.bg_color_ + "; }");
-            CRLog::error("class = [%s]",LCSTR(CSS_class));
-            char_CSS_classes_.add(CSS_class);
+            char_CSS_classes_.add(curr.style_string_);
             it++;
         }
     }
