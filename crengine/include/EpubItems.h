@@ -255,6 +255,7 @@ private:
 
     bool CheckClassName(lString16 name)
     {
+        //CRLog::error("check classname = [%s]",LCSTR(name));
         if(name.empty())
         {
             return false;
@@ -280,7 +281,9 @@ private:
             }
         }
 
-        lChar16 last = 0;
+        lChar16 last = '.';
+        int q_count = 0;
+        bool br_open = false;
         for (int i = 0; i < name.length(); i++)
         {
             lChar16 ch = name.at(i);
@@ -292,8 +295,37 @@ private:
                     return false;
                 }
             }
+            if(ch == '[')
+            {
+                if(br_open)
+                {
+                    //CRLog::error("brackets error 1");
+                    return false;
+                }
+                br_open = true;
+            }
+            else if(ch == ']')
+            {
+                if(!br_open)
+                {
+                    //CRLog::error("brackets error 2");
+                    return false;
+                }
+                br_open = false;
+            }
+            else if(ch=='"')
+            {
+                q_count++;
+            }
+
             last = ch;
         }
+        if(q_count %2 != 0 || br_open)
+        {
+            //CRLog::error("unpaired quotes or br_open");
+            return false;
+        }
+
         return true;
     }
 
@@ -302,25 +334,25 @@ private:
     {
         if( css.empty() && !css.rtl_ )
         {
-            //CRLog::error("EpubCSSclass is empty [%s].",LCSTR(CSSclass.name_));
+            //CRLog::error("EpubCSSclass is empty [%s].",LCSTR(css.name_));
             return;
         }
         if(css.style_string_.empty() && !css.rtl_)
         {
-            //CRLog::error("EpubCSSclass style string is empty and class is not rtl [%s].",LCSTR(CSSclass.name_));
+            //CRLog::error("EpubCSSclass style string is empty and class is not rtl [%s].",LCSTR(css.name_));
             return;
         }
         if(classes_map_.find(css.name_.getHash())!=classes_map_.end())
         {
-            //CRLog::error("EpubCSSclass already exists [%s].",LCSTR(CSSclass.name_));
+            //CRLog::error("EpubCSSclass already exists [%s].",LCSTR(css.name_));
             return;
         }
         if(!CheckClassName(css.name_))
         {
-            //CRLog::error("EpubCSSclass is invalid [%s].",LCSTR(CSSclass.name_));
+            //CRLog::error("EpubCSSclass is invalid [%s].",LCSTR(css.name_));
             return;
         }
-        //CRLog::trace("EpubCSSclass added [%s] ",LCSTR(CSSclass.name_));
+        //CRLog::trace("EpubCSSclass added [%s] ",LCSTR(css.name_));
         classes_map_.insert(std::make_pair(css.name_.getHash(),css));
     }
 

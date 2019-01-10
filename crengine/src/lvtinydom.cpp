@@ -8899,7 +8899,7 @@ void CrDom::ApplyEmbeddedStyles()
     //CRLog::error("applying embedded styles");
     for (int i = 0; i < this->stylesManager.char_CSS_classes_.length(); i++)
     {
-        //CRLog::error("class [%s]",LCSTR(this->stylesManager.char_CSS_classes_.get(i)));
+        //CRLog::trace("CRDOM ADD class [%s]",LCSTR(this->stylesManager.char_CSS_classes_.get(i)));
         lString16 str = this->stylesManager.char_CSS_classes_.get(i);
         this->setStylesheet(UnicodeToUtf8(str).c_str(), false);
     }
