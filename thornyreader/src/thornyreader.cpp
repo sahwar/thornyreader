@@ -26,9 +26,19 @@ const bool ThornyBuildDebug() {
 #endif
 }
 
+#define STRINGIZE(x) #x
+#define STRINGIZE_VALUE_OF(x) STRINGIZE(x)
+
 std::string ThornyVersion(std::string base_version)
 {
-    return ThornyBuildDebug() ? base_version + "+DEBUG" : base_version;
+#ifdef TR_BUILD_TYPE
+    base_version += "+";
+    base_version += STRINGIZE_VALUE_OF(TR_BUILD_TYPE);
+#endif
+    if (ThornyBuildDebug()) {
+        base_version += "+DEBUG";
+    }
+    return base_version;
 }
 
 void ThornyStart(const char* name) {
